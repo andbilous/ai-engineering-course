@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MLOps & AIOps Foundations — заняття 12</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#15181d; --panel2:#1d2127; --line:#2a2f37;
+    --text:#e6e8ec; --muted:#9aa3ad;
+    --accent:#7cd1ff; --accent2:#ffd166; --accent3:#9be37c; --accent4:#c79bff; --accent5:#ff7eb6;
+    --warn:#ff7676; --ok:#9be37c;
+    --data:#7cd1ff; --train:#c79bff; --deploy:#9be37c; --monitor:#ffd166; --feedback:#ff7eb6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .wrap{max-width:1320px;margin:0 auto;padding:24px}
+  h1{font-size:30px;letter-spacing:.5px;margin:0 0 6px}
+  h1 small{color:var(--muted);font-weight:400;font-size:14px;display:block;margin-top:6px}
+  .sub{color:var(--muted);margin-bottom:24px;font-size:14px}
+
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 30px;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+  .toc a{color:var(--accent);text-decoration:none;font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel2)}
+  .toc a:hover{border-color:var(--accent)}
+
+  section{margin:36px 0;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px;scroll-margin-top:20px}
+  section h2{font-size:20px;margin:0 0 8px;color:#fff;letter-spacing:.5px}
+  section h2 .num{color:var(--accent);font-weight:400}
+  section .lead{color:var(--muted);margin:0 0 18px;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.6}
+  section h3{font-size:14px;margin:18px 0 8px;color:#fff;text-transform:uppercase;letter-spacing:1.2px}
+
+  .pad{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;line-height:1.65;color:#cdd5de}
+  .pad b{color:#fff}
+  .pad code{background:#11151a;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+  @media(max-width:980px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .card h4{margin:0 0 8px;font-size:13px;color:#fff;letter-spacing:.5px}
+  .card p{margin:0;color:#cdd5de;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:13px}
+
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:13px}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px;background:var(--panel2)}
+  td b{color:#fff}
+  td code{background:#11151a;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
+
+  pre{background:#0a0c0f;border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;font-size:12px;line-height:1.5;color:#cdd5de}
+  pre .k{color:#ff7eb6}
+  pre .s{color:#9be37c}
+  pre .c{color:#6a737d;font-style:italic}
+  pre .n{color:#7cd1ff}
+  pre .f{color:#ffd166}
+
+  .demo{margin-top:14px;padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:10px}
+  .demo .demoHead{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .demo .demoHead .tag{padding:3px 10px;border-radius:999px;background:var(--accent);color:#0b0d10;font-weight:700;font-size:11px;letter-spacing:.5px;text-transform:uppercase}
+  .demo .demoHead h4{margin:0;font-size:13px;color:#fff}
+  .btn{background:#26303b;color:#fff;border:1px solid #3a4654;border-radius:8px;padding:7px 14px;cursor:pointer;font:inherit;font-size:12px;font-weight:600}
+  .btn:hover{border-color:#57667a}
+  .btn.primary{background:var(--accent);color:#0b0d10;border-color:var(--accent)}
+  .btn.warn{background:var(--warn);color:#fff;border-color:var(--warn)}
+
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:11px;color:var(--muted)}
+  .sev{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-right:6px}
+  .sev.crit{background:rgba(255,118,118,0.2);color:var(--warn);border:1px solid var(--warn)}
+  .sev.med{background:rgba(255,209,102,0.2);color:var(--accent2);border:1px solid var(--accent2)}
+  .sev.low{background:rgba(155,227,124,0.2);color:var(--ok);border:1px solid var(--ok)}
+
+  /* DevOps vs MLOps vs LLMOps comparison */
+  .compareCols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:980px){.compareCols{grid-template-columns:1fr}}
+  .compareCol{padding:16px;border:2px solid var(--line);border-radius:12px;background:var(--panel2);font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .compareCol.devops{border-color:var(--accent)}
+  .compareCol.mlops{border-color:var(--accent4)}
+  .compareCol.llmops{border-color:var(--accent2)}
+  .compareCol h5{margin:0 0 12px;font-size:14px;color:#fff;display:flex;align-items:center;gap:8px}
+  .compareCol .icon{font-size:20px}
+  .compareCol ul{margin:0;padding-left:18px;color:#cdd5de;font-size:12px;line-height:1.6}
+  .compareCol li{margin-bottom:5px}
+  .compareCol li b{color:#fff}
+
+  /* MLOps lifecycle wheel */
+  .lifecycle{position:relative;width:100%;max-width:600px;margin:30px auto;aspect-ratio:1}
+  .lifeNode{position:absolute;width:120px;height:120px;border-radius:50%;border:3px solid var(--line);background:var(--panel2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;cursor:pointer;transition:all .4s ease;text-align:center}
+  .lifeNode .icon{font-size:24px;margin-bottom:2px}
+  .lifeNode .name{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.5px;line-height:1.1}
+  .lifeNode.data{border-color:var(--data);top:0;left:50%;transform:translateX(-50%)}
+  .lifeNode.train{border-color:var(--train);top:25%;right:0}
+  .lifeNode.deploy{border-color:var(--deploy);bottom:25%;right:0}
+  .lifeNode.monitor{border-color:var(--monitor);bottom:0;left:50%;transform:translateX(-50%)}
+  .lifeNode.feedback{border-color:var(--feedback);bottom:25%;left:0}
+  .lifeNode.govern{border-color:var(--accent5);top:25%;left:0}
+  .lifeNode.active{transform:scale(1.15) translateX(-50%);box-shadow:0 0 24px rgba(255,255,255,0.3)}
+  .lifeNode.train.active,.lifeNode.deploy.active,.lifeNode.feedback.active,.lifeNode.govern.active{transform:scale(1.15)}
+  .lifeNode.data.active.active{transform:scale(1.15) translateX(-50%)}
+  .lifeCenter{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:140px;height:140px;border-radius:50%;background:var(--panel);border:2px dashed var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;color:var(--muted);font-size:12px}
+  .lifeDesc{margin-top:20px;padding:14px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;min-height:80px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#cdd5de}
+  .lifeDesc .pn{font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
+
+  /* Stack architecture diagram */
+  .stackBox{padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:10px;display:grid;gap:6px}
+  .stackLayer{padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;display:grid;grid-template-columns:1fr 2fr;gap:14px;align-items:center;transition:all .3s ease}
+  .stackLayer:hover{border-color:var(--accent);transform:translateX(4px)}
+  .stackLayer .nm{font-weight:700;color:#fff;font-size:13px;letter-spacing:.5px;text-transform:uppercase}
+  .stackLayer .desc{color:#cdd5de;font-size:12px;line-height:1.5}
+  .stackLayer .desc b{color:#fff}
+  .stackLayer.l1{border-left:4px solid var(--data)}
+  .stackLayer.l2{border-left:4px solid var(--train)}
+  .stackLayer.l3{border-left:4px solid var(--deploy)}
+  .stackLayer.l4{border-left:4px solid var(--monitor)}
+  .stackLayer.l5{border-left:4px solid var(--feedback)}
+  .stackLayer.l6{border-left:4px solid var(--accent5)}
+
+  /* CI/CD pipeline animation */
+  .pipeline{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:center;padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:10px}
+  @media(max-width:780px){.pipeline{grid-template-columns:1fr 1fr 1fr}}
+  .pipeStage{padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;text-align:center;transition:all .35s ease;font-size:11px}
+  .pipeStage .ic{font-size:18px;margin-bottom:4px;display:block}
+  .pipeStage .lbl{color:#fff;font-weight:600;font-size:11px}
+  .pipeStage.checking{border-color:var(--accent);background:rgba(124,209,255,0.1);box-shadow:0 0 12px rgba(124,209,255,0.3)}
+  .pipeStage.pass{border-color:var(--ok);background:rgba(155,227,124,0.08)}
+  .pipeStage.fail{border-color:var(--warn);background:rgba(255,118,118,0.1)}
+  .pipeArr{text-align:center;color:var(--muted);font-size:14px}
+  .pipeLog{margin-top:10px;padding:10px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:12px;min-height:36px;color:var(--muted);line-height:1.5}
+  .pipeLog.ok{border-color:var(--ok);color:#fff;background:rgba(155,227,124,0.06)}
+  .pipeLog.fail{border-color:var(--warn);color:#fff;background:rgba(255,118,118,0.06)}
+
+  /* Drift detection chart */
+  .driftChart{padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:10px}
+  .driftChart canvas{width:100%;height:240px;display:block}
+  .driftLegend{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;color:var(--muted);font-size:12px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .driftLegend .item{display:flex;align-items:center;gap:6px}
+  .driftLegend .dot{width:12px;height:12px;border-radius:50%}
+
+  /* Incident response runbook */
+  .runbook{display:grid;gap:8px}
+  .runStep{display:grid;grid-template-columns:40px 1fr;gap:14px;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;align-items:start}
+  .runStep .nm{width:36px;height:36px;border-radius:50%;background:var(--panel);border:2px solid var(--accent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+  .runStep .body h5{margin:0 0 4px;color:#fff;font-size:13px}
+  .runStep .body p{margin:0;color:#cdd5de;font-size:12px;line-height:1.5}
+  .runStep .body p code{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--accent)}
+
+  /* Metrics dashboard */
+  .metricsGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px}
+  .metricCard{padding:14px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .metricCard .ml{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .metricCard .mv{font-size:22px;font-weight:700;margin-top:6px}
+  .metricCard .mh{font-size:11px;color:var(--muted);margin-top:4px}
+  .metricCard.good .mv{color:var(--ok)}
+  .metricCard.bad .mv{color:var(--warn)}
+  .metricCard.warn .mv{color:var(--accent2)}
+  .metricCard.info .mv{color:var(--accent)}
+
+  /* AIOps incident timeline */
+  .timeline{padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:10px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .tlEntry{display:grid;grid-template-columns:90px 16px 1fr;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);align-items:start}
+  .tlEntry:last-child{border-bottom:none}
+  .tlEntry .ts{color:var(--muted);font-family:ui-monospace,Menlo,monospace;font-size:11px;padding-top:2px}
+  .tlEntry .marker{width:14px;height:14px;border-radius:50%;margin-top:2px}
+  .tlEntry.alert .marker{background:var(--warn)}
+  .tlEntry.detect .marker{background:var(--accent2)}
+  .tlEntry.action .marker{background:var(--accent)}
+  .tlEntry.resolve .marker{background:var(--ok)}
+  .tlEntry .text{color:#cdd5de;font-size:12px;line-height:1.5}
+  .tlEntry .text b{color:#fff}
+
+  .footer{margin-top:30px;padding:18px;text-align:center;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>MLOps & AIOps Foundations
+  <small>Заняття 12 · як підтримувати ML/AI системи в продакшні: training pipelines, deployment, monitoring, drift, incidents</small>
+</h1>
+<div class="sub">Інтерактивна лекція з циклом MLOps, CI/CD pipeline, drift detection, AIOps incident response. Натискай — все живе.</div>
+
+<nav class="toc">
+  <a href="#sec-intro">Що таке MLOps/AIOps</a>
+  <a href="#sec-difference">DevOps vs MLOps vs LLMOps</a>
+  <a href="#sec-lifecycle">ML Lifecycle</a>
+  <a href="#sec-stack">MLOps Stack</a>
+  <a href="#sec-cicd">CI/CD для ML</a>
+  <a href="#sec-monitoring">Monitoring & Drift</a>
+  <a href="#sec-aiops">AIOps</a>
+  <a href="#sec-incidents">Incident Response</a>
+  <a href="#sec-metrics">Метрики</a>
+  <a href="#sec-pitfalls">Pitfalls</a>
+</nav>
+
+<!-- ===================== 01 — Intro ===================== -->
+<section id="sec-intro">
+  <h2><span class="num">01.</span> Що таке MLOps та AIOps</h2>
+  <p class="lead">Натренувати модель — це 10% роботи. <b>90%</b> — це підтримати її роботу в продакшні: дані оновлюються, моделі дрейфують, інфраструктура падає, бізнес змінює правила. MLOps і AIOps — про те, щоб ця підтримка була systematic, а не "пожежна".</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>🛠 MLOps</h4>
+      <p><b>Machine Learning Operations.</b> Practices + tools для життєвого циклу ML моделей: data → train → deploy → monitor → retrain. Аналог DevOps, але з додатковими рівнями: version data, version models, monitor drift, manage experiments.</p>
+    </div>
+    <div class="card">
+      <h4>🤖 AIOps</h4>
+      <p><b>AI for IT Operations.</b> Використання ML/AI <b>для</b> моніторингу і керування інфраструктурою. Anomaly detection у логах, root cause analysis, incident prediction, auto-remediation.</p>
+    </div>
+  </div>
+
+  <h3>Чому "просто DevOps" не вистачає</h3>
+  <div class="grid3">
+    <div class="card"><h4><span class="sev crit">crit</span>Models silently degrade</h4><p>Код не змінюється — а accuracy впала з 91% до 73% за місяць. Дані dрейфують, ти не бачиш цього в логах сервера.</p></div>
+    <div class="card"><h4><span class="sev crit">crit</span>Reproducibility</h4><p>"Ми тренували це 3 місяці тому" — а train data вже інший, library version інша, hyperparameters в чиємусь notebook.</p></div>
+    <div class="card"><h4><span class="sev med">med</span>Experimentation велика</h4><p>Data scientists запускають 200 експериментів. Хто переміг? Як порівняти? Куди підключити winner?</p></div>
+    <div class="card"><h4><span class="sev med">med</span>Data versioning</h4><p>Train на v1 → deploy → v2 даних → нова модель не bit-equal. Без data version — нема reproducibility.</p></div>
+    <div class="card"><h4><span class="sev med">med</span>Train/serve skew</h4><p>Pipeline featurization training відрізняється від production. 5% accuracy gap "де? чому?" — і це норма без feature store.</p></div>
+    <div class="card"><h4><span class="sev low">low</span>Long feedback loops</h4><p>Помилкова credit decision виявиться через 6 місяців через chargeback. До того часу модель уже випустила 100K bad predictions.</p></div>
+  </div>
+</section>
+
+<!-- ===================== 02 — DevOps vs MLOps vs LLMOps ===================== -->
+<section id="sec-difference">
+  <h2><span class="num">02.</span> DevOps vs MLOps vs LLMOps</h2>
+  <p class="lead">Це не просто три різні слова — це три різні дисципліни з різними артефактами, тестами і failure modes.</p>
+
+  <div class="compareCols">
+    <div class="compareCol devops">
+      <h5><span class="icon">🛠</span> DevOps</h5>
+      <ul>
+        <li><b>Артефакти:</b> код, контейнери</li>
+        <li><b>Тести:</b> unit, integration, e2e</li>
+        <li><b>Версіонування:</b> Git</li>
+        <li><b>Deploy:</b> blue/green, canary</li>
+        <li><b>Моніторинг:</b> latency, errors, CPU/RAM</li>
+        <li><b>Failure mode:</b> exception, 500</li>
+        <li><b>Cycle:</b> commit → CI → CD → prod</li>
+      </ul>
+    </div>
+    <div class="compareCol mlops">
+      <h5><span class="icon">📊</span> MLOps</h5>
+      <ul>
+        <li><b>Артефакти:</b> код + дані + модель</li>
+        <li><b>Тести:</b> data validation, model perf, fairness</li>
+        <li><b>Версіонування:</b> Git + DVC + MLflow registry</li>
+        <li><b>Deploy:</b> shadow, A/B, champion-challenger</li>
+        <li><b>Моніторинг:</b> + accuracy, drift, bias</li>
+        <li><b>Failure mode:</b> silent degradation</li>
+        <li><b>Cycle:</b> data → train → eval → deploy → monitor → retrain</li>
+      </ul>
+    </div>
+    <div class="compareCol llmops">
+      <h5><span class="icon">🤖</span> LLMOps</h5>
+      <ul>
+        <li><b>Артефакти:</b> prompts + RAG + agents + few-shot</li>
+        <li><b>Тести:</b> eval sets, LLM-judge, regression</li>
+        <li><b>Версіонування:</b> prompt registry (Langfuse, PromptLayer)</li>
+        <li><b>Deploy:</b> feature flags, prompt A/B</li>
+        <li><b>Моніторинг:</b> hallucinations, токени, $$$</li>
+        <li><b>Failure mode:</b> впевнено невірна відповідь</li>
+        <li><b>Cycle:</b> prompt → eval → deploy → trace → iterate</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Що робить ML "складнішим за код"</h3>
+  <table>
+    <thead><tr><th>Дисципліна</th><th>Що версіонується</th><th>Що тестується</th></tr></thead>
+    <tbody>
+      <tr><td><b>DevOps</b></td><td>Код</td><td>Поведінка коду</td></tr>
+      <tr><td><b>MLOps</b></td><td>Код + дані + ваги моделі + hyperparams + environment</td><td>Поведінка моделі на test set + дрейф у проді</td></tr>
+      <tr><td><b>LLMOps</b></td><td>Prompts + tool definitions + retrieval + model version</td><td>Quality of generation на eval set + production traces</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===================== 03 — ML Lifecycle ===================== -->
+<section id="sec-lifecycle">
+  <h2><span class="num">03.</span> ML Lifecycle — повний цикл</h2>
+  <p class="lead">Це не "стрілочка зліва направо" — це <b>безкінечний цикл</b>. Як тільки модель потрапила в прод, починається monitor → drift → retrain → redeploy. Більшість команд недооцінюють цикл і релізять "одноразово".</p>
+
+  <div class="demo">
+    <div class="demoHead"><span class="tag">Interactive</span><h4>ML Lifecycle Wheel — клікни на стадію</h4></div>
+    <div class="lifecycle">
+      <div class="lifeNode data" data-stage="data" onclick="showStage('data')">
+        <div class="icon">📥</div><div class="name">Data</div>
+      </div>
+      <div class="lifeNode train" data-stage="train" onclick="showStage('train')">
+        <div class="icon">🏋️</div><div class="name">Train</div>
+      </div>
+      <div class="lifeNode deploy" data-stage="deploy" onclick="showStage('deploy')">
+        <div class="icon">🚀</div><div class="name">Deploy</div>
+      </div>
+      <div class="lifeNode monitor" data-stage="monitor" onclick="showStage('monitor')">
+        <div class="icon">📊</div><div class="name">Monitor</div>
+      </div>
+      <div class="lifeNode feedback" data-stage="feedback" onclick="showStage('feedback')">
+        <div class="icon">🔄</div><div class="name">Feedback</div>
+      </div>
+      <div class="lifeNode govern" data-stage="govern" onclick="showStage('govern')">
+        <div class="icon">📜</div><div class="name">Govern</div>
+      </div>
+      <div class="lifeCenter">ML Lifecycle<br>↻ continuous loop</div>
+    </div>
+    <div class="lifeDesc" id="lifeDesc">↑ Клікни на стадію щоб побачити деталі</div>
+    <div style="margin-top:10px"><button class="btn primary" onclick="autoRotate()">▶ Auto-rotate</button></div>
+  </div>
+</section>
+
+<!-- ===================== 04 — Stack ===================== -->
+<section id="sec-stack">
+  <h2><span class="num">04.</span> MLOps Stack — інструменти за рівнями</h2>
+  <p class="lead">Стандартного стеку нема — є <b>category</b> інструментів. Маленька команда обере 3-4, велика — 10+. Це шар, який треба знати щоб обирати свідомо.</p>
+
+  <div class="stackBox">
+    <div class="stackLayer l1">
+      <div><div class="nm">📥 Data layer</div></div>
+      <div class="desc"><b>Збір, валідація, версіонування даних.</b> Tools: <code>DVC</code>, <code>LakeFS</code>, <code>Great Expectations</code>, <code>Pachyderm</code>. Storage: S3, GCS, Snowflake, BigQuery. Streaming: Kafka, Kinesis.</div>
+    </div>
+    <div class="stackLayer l1">
+      <div><div class="nm">🔧 Feature Store</div></div>
+      <div class="desc"><b>Спільні фічі для train і serving.</b> Tools: <code>Feast</code>, <code>Tecton</code>, <code>Hopsworks</code>, <code>Vertex AI Feature Store</code>. Розв'язує train/serve skew.</div>
+    </div>
+    <div class="stackLayer l2">
+      <div><div class="nm">🧪 Experiment Tracking</div></div>
+      <div class="desc"><b>Версії, метрики, артефакти експериментів.</b> Tools: <code>MLflow</code>, <code>Weights & Biases</code>, <code>Neptune</code>, <code>Comet</code>. ClearML для full-stack.</div>
+    </div>
+    <div class="stackLayer l2">
+      <div><div class="nm">📦 Model Registry</div></div>
+      <div class="desc"><b>Зберігання версій моделей зі стейджами (staging/prod/archived).</b> MLflow Registry, SageMaker Model Registry, Vertex AI Model Registry, BentoML.</div>
+    </div>
+    <div class="stackLayer l3">
+      <div><div class="nm">🚀 Serving / Deployment</div></div>
+      <div class="desc"><b>Експонування моделей як API.</b> Tools: <code>BentoML</code>, <code>Seldon</code>, <code>KServe</code>, <code>TorchServe</code>, <code>Triton</code>. Cloud: SageMaker Endpoints, Vertex AI, Databricks Model Serving.</div>
+    </div>
+    <div class="stackLayer l3">
+      <div><div class="nm">⚙ Orchestration / Pipelines</div></div>
+      <div class="desc"><b>Workflow для train, batch inference, retraining.</b> Tools: <code>Airflow</code>, <code>Prefect</code>, <code>Dagster</code>, <code>Kubeflow Pipelines</code>, <code>Metaflow</code>, <code>Flyte</code>.</div>
+    </div>
+    <div class="stackLayer l4">
+      <div><div class="nm">📊 Monitoring & Observability</div></div>
+      <div class="desc"><b>Drift, perf, data quality в проді.</b> Tools: <code>Evidently</code>, <code>Arize</code>, <code>WhyLabs</code>, <code>Fiddler</code>, <code>NannyML</code>. Для LLM — Langfuse, LangSmith, Helicone.</div>
+    </div>
+    <div class="stackLayer l5">
+      <div><div class="nm">🏷 Labeling & Annotation</div></div>
+      <div class="desc"><b>Розмітка нових даних з продакшну для retraining.</b> Tools: <code>Label Studio</code>, <code>Snorkel</code>, <code>Scale AI</code>, <code>Argilla</code> (LLM-focused).</div>
+    </div>
+    <div class="stackLayer l6">
+      <div><div class="nm">📜 Governance & Lineage</div></div>
+      <div class="desc"><b>Audit, compliance, model cards, fairness reports.</b> Tools: <code>OpenLineage</code>, <code>DataHub</code>, <code>Amundsen</code>. Critical для regulated industries (banking, healthcare).</div>
+    </div>
+  </div>
+
+  <h3>Як обрати — мінімальний практичний MLOps стек</h3>
+  <div class="grid3">
+    <div class="card"><h4>🚀 Startup MVP (2 інженери)</h4><p>Git + DVC + MLflow + FastAPI + Prometheus. Без feature store, без Kubeflow. Працює до 5-10 моделей у проді.</p></div>
+    <div class="card"><h4>🏢 Mid-stage (5-10 ML)</h4><p>+ Airflow / Prefect, + Evidently, + Feast. Auto-retraining piepeline, drift alerts. ~25-50 моделей.</p></div>
+    <div class="card"><h4>🏛 Enterprise (50+ ML)</h4><p>SageMaker / Vertex AI full suite, Tecton, Arize, OpenLineage. Compliance audits. Хтось окремий тримає платформу.</p></div>
+  </div>
+</section>
+
+<!-- ===================== 05 — CI/CD for ML ===================== -->
+<section id="sec-cicd">
+  <h2><span class="num">05.</span> CI/CD для ML — від коміта до прод-моделі</h2>
+  <p class="lead">У звичайному CI/CD: код → тести → deploy. У ML: код + дані + модель → <b>data validation</b> + <b>model tests</b> + <b>fairness checks</b> + <b>shadow mode</b> → deploy. На кожен етап є gate, який може заблокувати release.</p>
+
+  <div class="demo">
+    <div class="demoHead"><span class="tag">Animated</span><h4>ML CI/CD pipeline — натисни Run</h4></div>
+    <div class="pipeline">
+      <div class="pipeStage" id="pipe-1"><span class="ic">📝</span><span class="lbl">Code Lint</span></div>
+      <div class="pipeArr">→</div>
+      <div class="pipeStage" id="pipe-2"><span class="ic">📊</span><span class="lbl">Data Validation</span></div>
+      <div class="pipeArr">→</div>
+      <div class="pipeStage" id="pipe-3"><span class="ic">🏋️</span><span class="lbl">Train</span></div>
+      <div class="pipeArr">→</div>
+      <div class="pipeStage" id="pipe-4"><span class="ic">✅</span><span class="lbl">Eval Gate</span></div>
+    </div>
+    <div class="pipeline" style="margin-top:8px">
+      <div class="pipeStage" id="pipe-5"><span class="ic">⚖️</span><span class="lbl">Fairness Check</span></div>
+      <div class="pipeArr">→</div>
+      <div class="pipeStage" id="pipe-6"><span class="ic">👁</span><span class="lbl">Shadow Deploy</span></div>
+      <div class="pipeArr">→</div>
+      <div class="pipeStage" id="pipe-7"><span class="ic">🚀</span><span class="lbl">Canary 5%</span></div>
+      <div class="pipeArr">→</div>
+      <div class="pipeStage" id="pipe-8"><span class="ic">🏁</span><span class="lbl">Full Roll-out</span></div>
+    </div>
+    <div class="pipeLog" id="pipeLog">↓ виберіть сценарій</div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn primary" onclick="runPipe('happy')">✓ Happy path</button>
+      <button class="btn warn" onclick="runPipe('eval_fail')">✕ Eval gate fails</button>
+      <button class="btn warn" onclick="runPipe('fairness_fail')">⚠ Fairness violation</button>
+      <button class="btn warn" onclick="runPipe('shadow_fail')">⚠ Shadow mismatch</button>
+      <button class="btn" onclick="resetPipe()">↺ Reset</button>
+    </div>
+  </div>
+
+  <h3>Strategies деплою моделі</h3>
+  <div class="grid3">
+    <div class="card"><h4>👁 Shadow mode</h4><p>Нова модель отримує prod traffic, але виходи <b>не повертаються користувачам</b> — лише логуються для порівняння. Безпечно вимірюємо delta.</p></div>
+    <div class="card"><h4>🚀 Canary</h4><p>5% → 25% → 50% → 100%. На кожному кроці monitoring. Якщо метрика просіла — auto-rollback.</p></div>
+    <div class="card"><h4>⚔ Champion-Challenger</h4><p>Champion (current) обслуговує 80%, challenger (new) — 20%. Через тиждень дивимось хто переміг по бізнес-метриках.</p></div>
+    <div class="card"><h4>🔵 Blue-Green</h4><p>Дві ідентичні інфраструктури. Деплой на blue, тестуємо, перемикаємо traffic. Швидкий rollback.</p></div>
+    <div class="card"><h4>🅰 A/B test</h4><p>50/50 для нової фічі. Не для безпеки — для гіпотези про бізнес.</p></div>
+    <div class="card"><h4>🎚 Multi-armed bandit</h4><p>Динамічна ваги між моделями. Dynamic exploration vs exploitation. Складно але оптимально.</p></div>
+  </div>
+</section>
+
+<!-- ===================== 06 — Monitoring & Drift ===================== -->
+<section id="sec-monitoring">
+  <h2><span class="num">06.</span> Monitoring & Drift Detection</h2>
+  <p class="lead">Ось де "ML отличається від коду". Сервіс зеленый — pings ОК, latency нормальна, errors=0. А accuracy впала на 18% за місяць, бо змінився user behavior. Без spec drift detection ти просто не побачиш цього.</p>
+
+  <h3>Типи drift</h3>
+  <div class="grid3">
+    <div class="card"><h4><span class="sev crit">crit</span>Data drift</h4><p>Distribution input features змінилася. P(X) у проді ≠ P(X) на трейні. Наприклад: новий регіон, інша демографія, новий продукт.</p></div>
+    <div class="card"><h4><span class="sev crit">crit</span>Concept drift</h4><p>Зв'язок X→Y змінився. P(Y|X) інше. Наприклад: covid → люди купують маски а не парфуми. Найскладніший вид.</p></div>
+    <div class="card"><h4><span class="sev med">med</span>Label drift</h4><p>Distribution Y змінилась. Раніше fraud rate 1%, тепер 5%. Class imbalance ламає precision/recall.</p></div>
+    <div class="card"><h4><span class="sev med">med</span>Prediction drift</h4><p>Output моделі шифтиться. Може бути сигналом data drift до того як упала accuracy. Дешева перевірка без labels.</p></div>
+    <div class="card"><h4><span class="sev low">low</span>Schema drift</h4><p>Поле зникло, тип змінився, новий enum. Ламає pipeline. Великі data validation tools (Great Expectations) ловлять.</p></div>
+    <div class="card"><h4><span class="sev low">low</span>Performance drift</h4><p>Latency p95 ↑ через більший batch size або складніший feature set. Не data, але пов'язано.</p></div>
+  </div>
+
+  <div class="demo">
+    <div class="demoHead"><span class="tag">Live</span><h4>Drift detection — accuracy timeline</h4></div>
+    <div class="driftChart">
+      <canvas id="driftCanvas" width="900" height="240"></canvas>
+    </div>
+    <div class="driftLegend">
+      <div class="item"><span class="dot" style="background:var(--accent)"></span> Accuracy (training baseline)</div>
+      <div class="item"><span class="dot" style="background:var(--accent3)"></span> Production accuracy</div>
+      <div class="item"><span class="dot" style="background:var(--warn)"></span> Drift threshold</div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn primary" onclick="simulateDrift('gradual')">Gradual drift</button>
+      <button class="btn primary" onclick="simulateDrift('sudden')">Sudden shift</button>
+      <button class="btn primary" onclick="simulateDrift('seasonal')">Seasonal</button>
+      <button class="btn" onclick="simulateDrift('stable')">↺ Stable</button>
+    </div>
+  </div>
+
+  <h3>Методи detection (statistical tests)</h3>
+  <table>
+    <thead><tr><th>Метод</th><th>Тип drift</th><th>Як працює</th></tr></thead>
+    <tbody>
+      <tr><td><b>Kolmogorov-Smirnov</b></td><td>Numeric features</td><td>Порівнює distributions двох вибірок. p-value &lt; 0.05 → drift.</td></tr>
+      <tr><td><b>PSI</b> (Population Stability Index)</td><td>Categorical/binned</td><td>Сума (% bin_now − % bin_ref) × log(...). PSI &gt; 0.2 → шифт.</td></tr>
+      <tr><td><b>Jensen-Shannon divergence</b></td><td>Distributions</td><td>Симетрична KL. 0 = identical, 1 = повністю різні.</td></tr>
+      <tr><td><b>Wasserstein distance</b></td><td>Continuous</td><td>"Earth mover's distance". Більш стабільний за KS.</td></tr>
+      <tr><td><b>Chi-square</b></td><td>Categorical</td><td>Класичний тест залежності. Простий, але потребує bins.</td></tr>
+      <tr><td><b>ADWIN</b></td><td>Streaming</td><td>Online drift detection без зберігання історії.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===================== 07 — AIOps ===================== -->
+<section id="sec-aiops">
+  <h2><span class="num">07.</span> AIOps — AI для управління інфраструктурою</h2>
+  <p class="lead">AIOps — це не "ML моделі в проді" (це MLOps). Це <b>застосування ML/AI до проблем DevOps/SRE</b>: anomaly detection у метриках, root cause analysis по логах, prediction інцидентів, auto-remediation.</p>
+
+  <h3>4 основні категорії AIOps</h3>
+  <div class="grid2">
+    <div class="card">
+      <h4>🔍 Anomaly Detection</h4>
+      <p>ML моделі (Isolation Forest, LSTM Autoencoders, Prophet) знаходять незвичайну поведінку у time series метрик. Краще за статичні thresholds — адаптивні до seasonality.</p>
+    </div>
+    <div class="card">
+      <h4>🧠 Root Cause Analysis</h4>
+      <p>Коли pager paged — графа сервісів + correlation analysis + log clustering показує "ось 3 ймовірні причини". Скорочує MTTR з 60 до 12 хвилин.</p>
+    </div>
+    <div class="card">
+      <h4>📈 Predictive Alerting</h4>
+      <p>Замість "disk full at 95%" → "disk filling at this rate, will be full in 2h". Час реагувати proactively, а не fire-fighting.</p>
+    </div>
+    <div class="card">
+      <h4>🤖 Auto-remediation</h4>
+      <p>Найпопулярніші incident patterns → автоматичні runbooks: scale up, restart, rollback, failover. Людина залучається тільки якщо bot не справився.</p>
+    </div>
+  </div>
+
+  <h3>AIOps tools</h3>
+  <div class="grid3">
+    <div class="card"><h4>Datadog Watchdog / AIOps</h4><p>Auto-detect anomalies на metrics, logs, traces. Forecasting. Корелює incidents.</p></div>
+    <div class="card"><h4>New Relic AI</h4><p>Apdex anomaly, error grouping, golden signals. AI assistant для SRE.</p></div>
+    <div class="card"><h4>Dynatrace Davis</h4><p>Causal AI engine. Сам будує service map, automatic root cause.</p></div>
+    <div class="card"><h4>BigPanda / Moogsoft</h4><p>Alert correlation і noise reduction. Зменшує 1000 alerts → 10 incidents.</p></div>
+    <div class="card"><h4>PagerDuty AIOps</h4><p>Intelligent alert routing, на-каллер'у показує тільки критичні.</p></div>
+    <div class="card"><h4>Open Source</h4><p>Prometheus + Cortex anomaly, OpenSearch ML, Robusta для k8s.</p></div>
+  </div>
+</section>
+
+<!-- ===================== 08 — Incidents ===================== -->
+<section id="sec-incidents">
+  <h2><span class="num">08.</span> Incident Response для ML/AI систем</h2>
+  <p class="lead">ML інциденти — інші. "Сервіс не падає, але результати шкідливі". Hallucination, bias, data poisoning, prompt injection. SRE runbook потрібен інший.</p>
+
+  <div class="demo">
+    <div class="demoHead"><span class="tag">Timeline</span><h4>Реальний інцидент: model accuracy drop</h4></div>
+    <div class="timeline">
+      <div class="tlEntry alert">
+        <div class="ts">14:02</div>
+        <div class="marker"></div>
+        <div class="text"><b>Alert fired</b> — Evidently detected accuracy drop from 0.91 → 0.74 over last 6h. P95 latency normal.</div>
+      </div>
+      <div class="tlEntry detect">
+        <div class="ts">14:05</div>
+        <div class="marker"></div>
+        <div class="text"><b>On-call paged.</b> Dashboard показує: prediction distribution shifted to class A (was 30%, now 65%). Input feature <code>user_segment</code> має новий enum value <code>"premium_v2"</code>.</div>
+      </div>
+      <div class="tlEntry action">
+        <div class="ts">14:11</div>
+        <div class="marker"></div>
+        <div class="text"><b>Investigation:</b> деплой product team 2 дні тому — нова preview group "premium_v2". Не була у train set. Model fallback до most-frequent class.</div>
+      </div>
+      <div class="tlEntry action">
+        <div class="ts">14:18</div>
+        <div class="marker"></div>
+        <div class="text"><b>Mitigation:</b> rollback моделі до v2.3 (без feature). Це знизить точність, але повертає 0.85 accuracy. Trigger emergency retrain.</div>
+      </div>
+      <div class="tlEntry resolve">
+        <div class="ts">14:25</div>
+        <div class="marker"></div>
+        <div class="text"><b>Rollback complete.</b> Production accuracy back to 0.85. Retrain pipeline запущена з recent data, ETA 4 години.</div>
+      </div>
+      <div class="tlEntry resolve">
+        <div class="ts">19:30</div>
+        <div class="marker"></div>
+        <div class="text"><b>v2.5 deployed</b> з новим segment у train data. Accuracy 0.92. <b>Postmortem:</b> треба data validation alert на новий enum value перед деплоєм фічі.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>ML Incident Runbook</h3>
+  <div class="runbook">
+    <div class="runStep"><div class="nm">1</div><div class="body"><h5>Detect</h5><p>Alert fired (drift, accuracy, error rate, customer complaint). <code>severity</code> level (P1-P4).</p></div></div>
+    <div class="runStep"><div class="nm">2</div><div class="body"><h5>Triage</h5><p>Подивитись dashboard. Чи інші моделі теж? Чи це конкретно ця? Чи це data issue?</p></div></div>
+    <div class="runStep"><div class="nm">3</div><div class="body"><h5>Mitigate</h5><p>Швидкий fix: <b>rollback до previous version</b>, або <b>fallback rule</b> (rule-based замість ML), або <b>circuit-breaker</b> (return default).</p></div></div>
+    <div class="runStep"><div class="nm">4</div><div class="body"><h5>Investigate</h5><p>Логи, traces, sample bad predictions. Що в input? Що в output? Корелює з deployment?</p></div></div>
+    <div class="runStep"><div class="nm">5</div><div class="body"><h5>Fix root cause</h5><p>Retrain з новими даними, fix bug у feature pipeline, update threshold. <b>Не на гарячу</b> в проді — через CI/CD.</p></div></div>
+    <div class="runStep"><div class="nm">6</div><div class="body"><h5>Postmortem</h5><p>Blameless. Що сталось, чому, що зробити щоб не повторилось. Action items з owner-ами і deadlines.</p></div></div>
+  </div>
+
+  <h3>ML-specific failure modes</h3>
+  <div class="grid3">
+    <div class="card"><h4><span class="sev crit">crit</span>Silent accuracy drop</h4><p>Сервіс ОК, але передбачення гірші. Detect: drift monitors + rolling accuracy on labeled feedback.</p></div>
+    <div class="card"><h4><span class="sev crit">crit</span>Data poisoning</h4><p>Хтось зіпсував train data (deliberately або bug). Симптом: model bias на specific groups.</p></div>
+    <div class="card"><h4><span class="sev crit">crit</span>Train/serve skew</h4><p>Featurization різна. Прогнози ОК на test, плохі в проді. Feature store вирішує.</p></div>
+    <div class="card"><h4><span class="sev med">med</span>Cold start</h4><p>Новий user/item немає історії — рекомендації безглузді. Fallback на popularity-based.</p></div>
+    <div class="card"><h4><span class="sev med">med</span>Adversarial attacks</h4><p>Spam-фільтр обходять обфускацією. Image classifier — adversarial patches. Robust training.</p></div>
+    <div class="card"><h4><span class="sev med">med</span>Bias amplification</h4><p>Модель посилює existing biases у даних. Fairness monitoring + balanced sampling.</p></div>
+  </div>
+</section>
+
+<!-- ===================== 09 — Metrics ===================== -->
+<section id="sec-metrics">
+  <h2><span class="num">09.</span> MLOps метрики — що міряти</h2>
+  <p class="lead">"Якщо це не міряється — це не покращується". Метрики мають бути <b>трьох рівнів</b>: business, model, infrastructure. Без перших — оптимізуєш не те, без других — не помічаєш drift, без третіх — не розумієш чому повільно.</p>
+
+  <h3>Live Dashboard</h3>
+  <div class="metricsGrid">
+    <div class="metricCard good">
+      <div class="ml">Model Accuracy</div>
+      <div class="mv" id="mm1">0.91</div>
+      <div class="mh">7-day rolling, target ≥ 0.85</div>
+    </div>
+    <div class="metricCard warn">
+      <div class="ml">Drift Score (PSI)</div>
+      <div class="mv" id="mm2">0.18</div>
+      <div class="mh">threshold 0.20</div>
+    </div>
+    <div class="metricCard info">
+      <div class="ml">Inference P95</div>
+      <div class="mv" id="mm3">142ms</div>
+      <div class="mh">SLO &lt; 200ms</div>
+    </div>
+    <div class="metricCard good">
+      <div class="ml">Throughput</div>
+      <div class="mv" id="mm4">1.2K</div>
+      <div class="mh">predictions/sec</div>
+    </div>
+    <div class="metricCard info">
+      <div class="ml">Data Quality</div>
+      <div class="mv" id="mm5">98.4%</div>
+      <div class="mh">% rows passing checks</div>
+    </div>
+    <div class="metricCard warn">
+      <div class="ml">Feature Freshness</div>
+      <div class="mv" id="mm6">3.2h</div>
+      <div class="mh">avg lag, target &lt; 4h</div>
+    </div>
+    <div class="metricCard good">
+      <div class="ml">Retrain Cadence</div>
+      <div class="mv" id="mm7">7d</div>
+      <div class="mh">on schedule</div>
+    </div>
+    <div class="metricCard bad">
+      <div class="ml">Failed Pipelines</div>
+      <div class="mv" id="mm8">3</div>
+      <div class="mh">last 24h</div>
+    </div>
+  </div>
+  <div style="margin-top:14px"><button class="btn primary" onclick="randomMetrics()">↻ Refresh</button></div>
+
+  <h3>Категорії метрик</h3>
+  <div class="grid3">
+    <div class="card">
+      <h4>💼 Business metrics</h4>
+      <p>Conversion uplift, revenue per user, churn reduction, fraud savings. <b>Це те, заради чого існує модель.</b> Якщо не корелює з accuracy — accuracy неважлива.</p>
+    </div>
+    <div class="card">
+      <h4>📊 Model metrics</h4>
+      <p>Accuracy, F1, AUC, RMSE для класичного ML. Hallucination rate, faithfulness, BLEU/ROUGE для LLM. Cohen's kappa для labeled feedback.</p>
+    </div>
+    <div class="card">
+      <h4>⚙ Infra metrics</h4>
+      <p>P50/P95/P99 latency, throughput (RPS), GPU utilization, memory, $cost per 1K predictions. Cold start time для autoscaling.</p>
+    </div>
+    <div class="card">
+      <h4>📈 Drift metrics</h4>
+      <p>PSI, KS p-value, feature distribution distance, prediction distribution shift. Per-feature і aggregate.</p>
+    </div>
+    <div class="card">
+      <h4>🔄 Pipeline metrics</h4>
+      <p>Train pipeline success rate, deploy frequency, MTTR, rollback frequency. Це DORA-like для ML.</p>
+    </div>
+    <div class="card">
+      <h4>⚖ Fairness metrics</h4>
+      <p>Demographic parity, equalized odds, predictive parity. Disparate impact ratio. Critical для regulated industries.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 10 — Pitfalls ===================== -->
+<section id="sec-pitfalls">
+  <h2><span class="num">10.</span> Pitfalls — що часто ламається</h2>
+  <p class="lead">90% фейлів MLOps — не технічні, а організаційні. "ML team не говорить з infra", "data scientists не розуміють CI/CD", "немає budget на платформу до того як 5 моделей у проді ламаються".</p>
+
+  <div class="grid2">
+    <div class="card"><h4><span class="sev crit">crit</span>"Деплоїмо коли модель готова"</h4><p>А потім три місяці нічого. Model rotting. Бажано auto-retrain pipeline з самого старту.</p></div>
+    <div class="card"><h4><span class="sev crit">crit</span>Train/serve skew</h4><p>Pandas у train, SQL у serving. 5% accuracy gap "де?". Feature store або shared feature library — обов'язково.</p></div>
+    <div class="card"><h4><span class="sev crit">crit</span>Немає data validation</h4><p>Pipeline ламається коли data team змінив schema. Great Expectations або equivalent — на кожен ingestion.</p></div>
+    <div class="card"><h4><span class="sev crit">crit</span>Notebook → prod direct</h4><p>"Він працює локально". Жоден тест не пройшов. Config — у комірках. Виправляється культурою + linters + pre-commit hooks.</p></div>
+    <div class="card"><h4><span class="sev med">med</span>Один моніторинг для всіх моделей</h4><p>Generic dashboard показує усе, нічого не зрозуміло. Per-model SLOs, per-model alerts.</p></div>
+    <div class="card"><h4><span class="sev med">med</span>Без data lineage</h4><p>"Звідки ця колонка взялась?" — ніхто не знає. OpenLineage / DataHub дають історію змін на даних.</p></div>
+    <div class="card"><h4><span class="sev med">med</span>Retraining без trigger logic</h4><p>"Кожен понеділок переучуємо" — навіть коли drift = 0. Або retrain on drift, або hybrid (schedule + drift).</p></div>
+    <div class="card"><h4><span class="sev low">low</span>Vendor lock-in</h4><p>Усе на SageMaker → не можеш перейти. Layer abstraction (BentoML, MLflow) дає portable models.</p></div>
+  </div>
+
+  <h3>Зрілість MLOps — рівні Google</h3>
+  <table>
+    <thead><tr><th>Level</th><th>Що є</th><th>Кого описує</th></tr></thead>
+    <tbody>
+      <tr><td><b>Level 0</b></td><td>Manual process. Notebook → серіалізація. Деплой raz на місяць.</td><td>Стартап з 1 моделлю</td></tr>
+      <tr><td><b>Level 1</b></td><td>ML pipeline automation. Auto-retrain trigger. Feature store.</td><td>Mid-stage компанія</td></tr>
+      <tr><td><b>Level 2</b></td><td>Full CI/CD pipeline. Multi-model, multi-team. Governance.</td><td>Enterprise з 50+ моделями</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pad" style="margin-top:14px;padding:14px;background:rgba(255,209,102,0.06);border:1px solid var(--accent2);border-radius:10px">
+    <b>⚠ Реальність:</b> 87% ML моделей ніколи не доходять до прод (Gartner). З тих що доходять — 60% не проходять і 6 місяців без переробки. MLOps не зменшує цей відсоток до 0, але дає 2-3x кращі шанси на тривалу роботу системи.
+  </div>
+</section>
+
+<div class="footer">
+  Заняття 12 · MLOps & AIOps Foundations · Курс AI Engineering
+</div>
+
+</div>
+
+<script>
+/* ============== Lifecycle Wheel ============== */
+const STAGES = {
+  data: {
+    name: "Data Layer",
+    desc: "Збір, валідація, версіонування. Зміни схем відстежуються. Data lineage — звідки дані прийшли. Feature engineering. Train/test/holdout splits з date-based logic. Tools: DVC, Great Expectations, dbt."
+  },
+  train: {
+    name: "Training & Experimentation",
+    desc: "Хто, коли, з якими гіперпараметрами тренував. MLflow або W&B логує все: code git hash, dataset hash, metrics. Hyperparameter search. Reproducibility — той самий run має давати ті ж результати."
+  },
+  deploy: {
+    name: "Deployment & Serving",
+    desc: "Model registry зі stages (dev/staging/prod). Канарковий деплой. Shadow mode. Champion-challenger. A/B test. Auto-rollback на metric degradation. Tools: BentoML, KServe, SageMaker Endpoints."
+  },
+  monitor: {
+    name: "Monitoring & Drift Detection",
+    desc: "Performance, drift, data quality, fairness. Per-model dashboards. Alerts на violations. Tools: Evidently, Arize, NannyML, WhyLabs. Для LLM: Langfuse + custom evals."
+  },
+  feedback: {
+    name: "Feedback & Retraining",
+    desc: "Labeled data з production (clicks, complaints, manual labels). Retraining trigger: schedule або drift-based. Active learning — обираємо confusing samples для розмітки. Continuous improvement loop."
+  },
+  govern: {
+    name: "Governance & Compliance",
+    desc: "Model cards (для кожної моделі: purpose, limitations, fairness analysis). Audit trail. Privacy (PII removal). Fairness reports. Critical для banking/healthcare/insurance."
+  }
+};
+function showStage(key){
+  document.querySelectorAll('.lifeNode').forEach(n=>n.classList.remove('active'));
+  document.querySelector(`.lifeNode[data-stage="${key}"]`).classList.add('active');
+  const s = STAGES[key];
+  document.getElementById('lifeDesc').innerHTML =
+    `<div class="pn" style="color:var(--accent)">${s.name}</div><div>${s.desc}</div>`;
+}
+let rotateTimer = null;
+function autoRotate(){
+  if(rotateTimer){clearInterval(rotateTimer);rotateTimer=null;return}
+  const order = ['data','train','deploy','monitor','feedback','govern'];
+  let i = 0;
+  showStage(order[0]);
+  rotateTimer = setInterval(()=>{
+    i = (i + 1) % order.length;
+    showStage(order[i]);
+  }, 1800);
+}
+
+/* ============== CI/CD Pipeline ============== */
+const PIPE_STAGES = ['1','2','3','4','5','6','7','8'];
+function resetPipe(){
+  PIPE_STAGES.forEach(id=>{
+    const el = document.getElementById('pipe-' + id);
+    el.classList.remove('checking','pass','fail');
+  });
+  const log = document.getElementById('pipeLog');
+  log.className = 'pipeLog';
+  log.textContent = '↓ виберіть сценарій';
+}
+const PIPE_SCENARIOS = {
+  happy: {fail: null, log: '✓ All gates passed · v2.7 deployed to 100% · prediction quality stable · cost +$120/day'},
+  eval_fail: {fail: '4', log: '✕ Eval gate failed: F1 0.82 < threshold 0.85. Block deploy. Notify team.'},
+  fairness_fail: {fail: '5', log: '⚠ Fairness violation: demographic parity 0.71 < 0.80 across age groups. Block deploy. Required review.'},
+  shadow_fail: {fail: '6', log: '⚠ Shadow mode revealed 12% prediction divergence vs champion on 24h traffic. Block canary. Investigate.'},
+};
+function runPipe(scenario){
+  resetPipe();
+  const cfg = PIPE_SCENARIOS[scenario];
+  let delay = 100;
+  for(const id of PIPE_STAGES){
+    setTimeout(()=>{
+      const el = document.getElementById('pipe-' + id);
+      el.classList.add('checking');
+    }, delay);
+    delay += 350;
+    setTimeout(()=>{
+      const el = document.getElementById('pipe-' + id);
+      el.classList.remove('checking');
+      if(cfg.fail === id){
+        el.classList.add('fail');
+        const log = document.getElementById('pipeLog');
+        log.textContent = cfg.log;
+        log.className = 'pipeLog fail';
+      } else {
+        el.classList.add('pass');
+      }
+    }, delay);
+    if(cfg.fail === id) return;
+  }
+  setTimeout(()=>{
+    const log = document.getElementById('pipeLog');
+    log.textContent = cfg.log;
+    log.className = 'pipeLog ok';
+  }, delay + 200);
+}
+
+/* ============== Drift Chart ============== */
+const canvas = document.getElementById('driftCanvas');
+const ctx = canvas.getContext('2d');
+function resizeCanvas(){
+  const dpi = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpi;
+  canvas.height = rect.height * dpi;
+  ctx.scale(dpi, dpi);
+}
+resizeCanvas();
+window.addEventListener('resize', ()=>{resizeCanvas();drawDrift(currentDrift)});
+function genData(scenario, n){
+  const data = [];
+  const baseline = 0.91;
+  const threshold = 0.85;
+  for(let i=0;i<n;i++){
+    let val;
+    if(scenario === 'stable') val = baseline + (Math.random()-0.5)*0.02;
+    else if(scenario === 'gradual') val = baseline - i/n*0.18 + (Math.random()-0.5)*0.02;
+    else if(scenario === 'sudden') val = i < n*0.6 ? baseline + (Math.random()-0.5)*0.02 : baseline - 0.16 + (Math.random()-0.5)*0.025;
+    else if(scenario === 'seasonal') val = baseline + Math.sin(i/n*Math.PI*4)*0.05 + (Math.random()-0.5)*0.015;
+    data.push(val);
+  }
+  return data;
+}
+let currentDrift = 'stable';
+function drawDrift(scenario){
+  currentDrift = scenario;
+  const rect = canvas.getBoundingClientRect();
+  const W = rect.width, H = rect.height;
+  ctx.clearRect(0, 0, W, H);
+  const data = genData(scenario, 60);
+  const baseline = 0.91, threshold = 0.85;
+  const yMin = 0.6, yMax = 1.0;
+  const xPad = 40, yPad = 20;
+  const plotW = W - xPad*2, plotH = H - yPad*2;
+  const x = i => xPad + (i / (data.length - 1)) * plotW;
+  const y = v => yPad + (1 - (v - yMin) / (yMax - yMin)) * plotH;
+
+  // Grid
+  ctx.strokeStyle = '#2a2f37';
+  ctx.lineWidth = 1;
+  for(let v = yMin; v <= yMax; v += 0.1){
+    ctx.beginPath();
+    ctx.moveTo(xPad, y(v));
+    ctx.lineTo(W - xPad, y(v));
+    ctx.stroke();
+    ctx.fillStyle = '#9aa3ad';
+    ctx.font = '10px ui-monospace,Menlo,monospace';
+    ctx.fillText(v.toFixed(1), 6, y(v) + 3);
+  }
+
+  // Threshold line
+  ctx.strokeStyle = '#ff7676';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(xPad, y(threshold));
+  ctx.lineTo(W - xPad, y(threshold));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Baseline (training)
+  ctx.strokeStyle = '#7cd1ff';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(xPad, y(baseline));
+  ctx.lineTo(W - xPad, y(baseline));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Production data
+  ctx.strokeStyle = '#9be37c';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  data.forEach((v, i)=>{
+    if(i === 0) ctx.moveTo(x(i), y(v));
+    else ctx.lineTo(x(i), y(v));
+  });
+  ctx.stroke();
+
+  // Highlight points below threshold
+  data.forEach((v, i)=>{
+    if(v < threshold){
+      ctx.fillStyle = '#ff7676';
+      ctx.beginPath();
+      ctx.arc(x(i), y(v), 3, 0, Math.PI*2);
+      ctx.fill();
+    }
+  });
+
+  // Labels
+  ctx.fillStyle = '#9aa3ad';
+  ctx.font = '11px -apple-system,Helvetica,Arial,sans-serif';
+  ctx.fillText('60 days →', W - xPad - 60, H - 4);
+}
+function simulateDrift(scenario){
+  drawDrift(scenario);
+}
+drawDrift('stable');
+
+/* ============== Metrics ============== */
+function randomMetrics(){
+  const r = (a, b, d=0) => (Math.random()*(b-a)+a).toFixed(d);
+  document.getElementById('mm1').textContent = r(0.85, 0.94, 2);
+  document.getElementById('mm2').textContent = r(0.10, 0.28, 2);
+  document.getElementById('mm3').textContent = r(95, 220, 0) + 'ms';
+  document.getElementById('mm4').textContent = r(0.8, 2.1, 1) + 'K';
+  document.getElementById('mm5').textContent = r(94, 99.5, 1) + '%';
+  document.getElementById('mm6').textContent = r(1.5, 5.5, 1) + 'h';
+  document.getElementById('mm7').textContent = r(3, 14, 0) + 'd';
+  document.getElementById('mm8').textContent = r(0, 8, 0);
+}
+</script>
+
+</body>
+</html>
