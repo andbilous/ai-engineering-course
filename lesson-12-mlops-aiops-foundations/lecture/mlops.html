@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MLOps Foundations (AIOps · LLMOps) — заняття 12</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#15181d; --panel2:#1d2127; --line:#2a2f37;
+    --text:#e6e8ec; --muted:#9aa3ad;
+    --mlops:#7cd1ff; --aiops:#ffb27c; --llmops:#9be37c;
+    --accent:#7cd1ff; --accent2:#ffd166; --accent3:#9be37c; --accent4:#c79bff; --accent5:#ff7eb6;
+    --warn:#ff7676; --ok:#9be37c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .wrap{max-width:1320px;margin:0 auto;padding:24px}
+  h1{font-size:30px;letter-spacing:.5px;margin:0 0 6px}
+  h1 small{color:var(--muted);font-weight:400;font-size:14px;display:block;margin-top:6px}
+  .sub{color:var(--muted);margin-bottom:24px;font-size:14px}
+
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 30px;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+  .toc a{color:var(--accent);text-decoration:none;font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel2)}
+  .toc a:hover{border-color:var(--accent)}
+
+  section{margin:36px 0;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px;scroll-margin-top:20px}
+  section h2{font-size:20px;margin:0 0 8px;color:#fff;letter-spacing:.5px}
+  section h2 .num{color:var(--accent);font-weight:400}
+  section .lead{color:var(--muted);margin:0 0 18px;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.6}
+  section h3{font-size:14px;margin:18px 0 8px;color:#fff;text-transform:uppercase;letter-spacing:1.2px}
+
+  .pad{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;line-height:1.65;color:#cdd5de}
+  .pad b{color:#fff}
+  .pad code{background:#11151a;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+  @media(max-width:980px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .card h4{margin:0 0 8px;font-size:13px;color:#fff;letter-spacing:.5px}
+  .card p{margin:0;color:#cdd5de;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:13px}
+
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:13px}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px;background:var(--panel2)}
+  td b{color:#fff}
+  td code{background:#11151a;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
+
+  pre{background:#0a0c0f;border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;font-size:12px;line-height:1.5;color:#cdd5de}
+  pre .k{color:#ff7eb6}
+  pre .s{color:#9be37c}
+  pre .c{color:#6a737d;font-style:italic}
+  pre .n{color:#7cd1ff}
+  pre .f{color:#ffd166}
+
+  .demo{margin-top:14px;padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:10px}
+  .demo .demoHead{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .demo .demoHead .tag{padding:3px 10px;border-radius:999px;background:var(--accent);color:#0b0d10;font-weight:700;font-size:11px;letter-spacing:.5px;text-transform:uppercase}
+  .demo .demoHead h4{margin:0;font-size:13px;color:#fff}
+  .btn{background:#26303b;color:#fff;border:1px solid #3a4654;border-radius:8px;padding:7px 14px;cursor:pointer;font:inherit;font-size:12px;font-weight:600}
+  .btn:hover{border-color:#57667a}
+  .btn.primary{background:var(--accent);color:#0b0d10;border-color:var(--accent)}
+  .btn.warn{background:var(--warn);color:#fff;border-color:var(--warn)}
+  .btn.ok{background:var(--ok);color:#0b0d10;border-color:var(--ok)}
+
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:11px;color:var(--muted)}
+  .pill.ok{background:rgba(155,227,124,0.15);border-color:var(--ok);color:var(--ok)}
+  .pill.warn{background:rgba(255,118,118,0.15);border-color:var(--warn);color:var(--warn)}
+  .pill.mlops{background:rgba(124,209,255,0.15);border-color:var(--mlops);color:var(--mlops)}
+  .pill.aiops{background:rgba(255,178,124,0.15);border-color:var(--aiops);color:var(--aiops)}
+  .pill.llmops{background:rgba(155,227,124,0.15);border-color:var(--llmops);color:var(--llmops)}
+
+  /* MLOps pipeline animation */
+  .pipeline{display:flex;align-items:stretch;justify-content:space-between;gap:8px;padding:24px;flex-wrap:wrap}
+  .pipeNode{flex:1;min-width:140px;padding:14px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;text-align:center;transition:all .4s ease;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .pipeNode .icon{font-size:30px}
+  .pipeNode .name{font-size:13px;font-weight:700;color:#fff;letter-spacing:1px;text-transform:uppercase;margin-top:6px}
+  .pipeNode .desc{font-size:11px;color:var(--muted);margin-top:4px}
+  .pipeNode.active{border-color:var(--mlops);background:rgba(124,209,255,0.12);transform:translateY(-3px);box-shadow:0 6px 20px rgba(124,209,255,0.2)}
+  .pipeArrow{display:flex;align-items:center;color:var(--muted);font-size:24px;transition:color .4s ease;flex:0 0 auto}
+  .pipeArrow.active{color:var(--mlops)}
+  .pipeLog{margin-top:14px;padding:14px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;min-height:120px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#cdd5de}
+  .pipeLog .entry{margin:4px 0;padding-left:22px;position:relative;opacity:0;animation:fadeIn .4s ease forwards}
+  .pipeLog .entry::before{position:absolute;left:0;font-weight:700}
+  .pipeLog .entry.ingest::before{content:"📥"}
+  .pipeLog .entry.train::before{content:"🧠"}
+  .pipeLog .entry.eval::before{content:"📊"}
+  .pipeLog .entry.deploy::before{content:"🚀"}
+  .pipeLog .entry.monitor::before{content:"📡"}
+  .pipeLog .entry.alert::before{content:"⚠️";color:var(--warn)}
+  .pipeLog .entry.alert{color:var(--warn)}
+
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Drift simulator */
+  .drift{display:grid;grid-template-columns:2fr 1fr;gap:14px;align-items:start}
+  @media(max-width:980px){.drift{grid-template-columns:1fr}}
+  .driftChart{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .driftChart svg{width:100%;height:240px}
+  .driftStat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .driftStat .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .driftStat .value{font-size:24px;font-weight:700;color:#fff;margin:6px 0}
+  .driftStat .value.warn{color:var(--warn)}
+  .driftStat .value.ok{color:var(--ok)}
+
+  /* AIOps log stream */
+  .logStream{background:#000;border:1px solid var(--line);border-radius:10px;padding:14px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.5;height:320px;overflow-y:auto}
+  .logStream .row{padding:3px 8px;border-radius:4px;margin:1px 0;display:flex;gap:8px;align-items:center}
+  .logStream .row .ts{color:var(--muted);font-size:11px}
+  .logStream .row .lvl{padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700}
+  .logStream .row .lvl.INFO{background:#1a2735;color:var(--accent)}
+  .logStream .row .lvl.WARN{background:#3a2f1a;color:var(--accent2)}
+  .logStream .row .lvl.ERROR{background:#3a1a1a;color:var(--warn)}
+  .logStream .row .msg{flex:1;color:#cdd5de}
+  .logStream .row.anomaly{background:rgba(255,118,118,0.12);border-left:3px solid var(--warn);animation:pulseAlert 1.2s}
+  @keyframes pulseAlert{0%{background:rgba(255,118,118,0.4)}100%{background:rgba(255,118,118,0.12)}}
+  .aiopsBadge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--aiops);background:rgba(255,178,124,0.12);color:var(--aiops);border-radius:999px;font-size:11px;font-weight:600;margin-left:auto}
+
+  /* LLMOps observability dashboard */
+  .obsGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media(max-width:980px){.obsGrid{grid-template-columns:1fr 1fr}}
+  .obsCard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .obsCard .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .obsCard .value{font-size:22px;font-weight:700;color:#fff;margin:4px 0}
+  .obsCard .delta{font-size:11px;color:var(--ok)}
+  .obsCard .delta.bad{color:var(--warn)}
+  .traceTable{margin-top:14px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:0;overflow:hidden}
+  .traceTable table{margin:0;font-size:12px}
+  .traceTable td{padding:8px 12px}
+  .spanBar{height:8px;background:var(--accent);border-radius:4px;display:inline-block;vertical-align:middle}
+
+  /* Comparison toggle */
+  .toggleBar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+  .toggleBar button{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 16px;cursor:pointer;color:var(--muted);font:inherit;font-size:12px;font-weight:600;transition:all .25s}
+  .toggleBar button.active.mlops{background:rgba(124,209,255,0.18);color:var(--mlops);border-color:var(--mlops)}
+  .toggleBar button.active.aiops{background:rgba(255,178,124,0.18);color:var(--aiops);border-color:var(--aiops)}
+  .toggleBar button.active.llmops{background:rgba(155,227,124,0.18);color:var(--llmops);border-color:var(--llmops)}
+
+  /* Token budget calculator */
+  .calc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .calc .row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap}
+  .calc label{min-width:160px;color:var(--muted);font-size:13px}
+  .calc input,.calc select{background:#0a0c0f;border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:#fff;font:inherit;font-size:13px;flex:1;min-width:120px}
+  .calc input:focus,.calc select:focus{outline:none;border-color:var(--accent)}
+  .calcResult{margin-top:14px;padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:680px){.calcResult{grid-template-columns:1fr}}
+  .calcResult .item{text-align:center}
+  .calcResult .item .lab{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .calcResult .item .val{font-size:22px;font-weight:700;color:#fff;margin-top:4px}
+  .calcResult .item.cost .val{color:var(--accent2)}
+
+  /* Gateway diagram */
+  .gateway{display:grid;grid-template-columns:1fr auto 1fr 1fr;gap:14px;align-items:center;padding:20px;background:var(--panel2);border:1px solid var(--line);border-radius:12px}
+  @media(max-width:980px){.gateway{grid-template-columns:1fr;gap:8px}}
+  .gwBlock{padding:14px;text-align:center;background:#0a0c0f;border:2px solid var(--line);border-radius:10px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .gwBlock .name{font-size:13px;font-weight:700;color:#fff}
+  .gwBlock .sub{font-size:11px;color:var(--muted);margin-top:3px}
+  .gwArrow{font-size:22px;color:var(--muted);text-align:center}
+  .gwProviders{display:flex;flex-direction:column;gap:8px}
+  .gwProvider{padding:10px 12px;background:#0a0c0f;border:2px solid var(--line);border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .25s;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:12px}
+  .gwProvider:hover{border-color:var(--accent)}
+  .gwProvider.active{border-color:var(--ok);background:rgba(155,227,124,0.12);color:#fff}
+  .gwProvider.failed{border-color:var(--warn);background:rgba(255,118,118,0.12);color:var(--warn);text-decoration:line-through}
+  .gwProvider .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+  .gwProvider.active .dot{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .gwProvider.failed .dot{background:var(--warn)}
+  .gwLog{margin-top:14px;padding:12px;background:#000;border:1px solid var(--line);border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.6;min-height:60px}
+  .gwLog .ok{color:var(--ok)}
+  .gwLog .err{color:var(--warn)}
+  .gwLog .info{color:var(--accent)}
+
+  /* LLM-as-judge demo */
+  .judgeBox{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .judgeBox .qa{padding:10px 12px;background:#0a0c0f;border-radius:8px;margin-bottom:10px;font-size:13px;color:#cdd5de}
+  .judgeBox .qa b{color:var(--accent)}
+  .scoreBar{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px}
+  .scoreBar .lab{width:140px;color:var(--muted)}
+  .scoreBar .track{flex:1;height:10px;background:#0a0c0f;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+  .scoreBar .fill{height:100%;width:0;background:var(--accent3);transition:width 1s ease}
+  .scoreBar .fill.med{background:var(--accent2)}
+  .scoreBar .fill.bad{background:var(--warn)}
+  .scoreBar .num{width:42px;text-align:right;color:#fff;font-weight:700}
+
+  /* Career ladder */
+  .ladder{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:10px}
+  @media(max-width:980px){.ladder{grid-template-columns:1fr}}
+  .ladderCard{padding:18px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .ladderCard h4{margin:0 0 4px;color:#fff;font-size:14px}
+  .ladderCard .salary{font-size:18px;font-weight:700;margin:8px 0;color:var(--accent2)}
+  .ladderCard .demand{font-size:11px;color:var(--muted);margin-bottom:8px}
+  .ladderCard.llmops{border-color:var(--llmops)}
+  .ladderCard.mlops{border-color:var(--mlops)}
+  .ladderCard.aiops{border-color:var(--aiops)}
+  .ladderCard.llmops h4{color:var(--llmops)}
+  .ladderCard.mlops h4{color:var(--mlops)}
+  .ladderCard.aiops h4{color:var(--aiops)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>MLOps · AIOps · LLMOps Foundations
+  <small>Заняття 12 · як AI-системи живуть у продакшні: від тренування моделі до моніторингу промптів</small>
+</h1>
+<div class="sub">Інтерактивна лекція з MLOps-пайплайном, drift-симулятором, AIOps-стрімом логів, LLMOps observability дашбордом, токен-калькулятором і LLM Gateway. Натискай кнопки — все живе.</div>
+
+<nav class="toc">
+  <a href="#sec-why">Навіщо Ops</a>
+  <a href="#sec-mlops">MLOps</a>
+  <a href="#sec-pipeline">Pipeline</a>
+  <a href="#sec-drift">Drift</a>
+  <a href="#sec-aiops">AIOps</a>
+  <a href="#sec-llmops">LLMOps</a>
+  <a href="#sec-stack">Стек LLMOps</a>
+  <a href="#sec-compare">Порівняння</a>
+  <a href="#sec-tokens">Токен-бюджет</a>
+  <a href="#sec-gateway">LLM Gateway</a>
+  <a href="#sec-evals">Evals & judge</a>
+  <a href="#sec-priorities">Що знати</a>
+</nav>
+
+<!-- ===================== SECTION 1: Why Ops ===================== -->
+<section id="sec-why">
+  <h2><span class="num">01.</span> Навіщо взагалі потрібні Ops-фреймворки</h2>
+  <p class="lead">"Працює на моєму ноутбуці" — найдорожча фраза у AI. <b>Ops</b> — це набір практик, що дозволяє надійно <b>будувати</b>, <b>деплоїти</b> і <b>підтримувати</b> AI-системи у реальному середовищі.</p>
+
+  <div class="grid2">
+    <div class="card" style="border-color:var(--warn)">
+      <h4 style="color:var(--warn)">⚠️ Без Ops</h4>
+      <p>• Модель працює на ноутбуці — але не в продакшені<br>
+         • Немає контролю версій промптів та конфігів<br>
+         • Неможливо відтворити результати<br>
+         • Система падає — ніхто не знає чому</p>
+    </div>
+    <div class="card" style="border-color:var(--ok)">
+      <h4 style="color:var(--ok)">✓ З Ops</h4>
+      <p>• CI/CD пайплайн, версіювання, відтворюваність<br>
+         • Моніторинг latency, cost, quality в реальному часі<br>
+         • Алерти спрацьовують <b>до</b> того як юзер помітив<br>
+         • Нова версія котиться canary → progressive → 100%</p>
+    </div>
+  </div>
+
+  <h3>3 фреймворки, що працюють разом</h3>
+  <div class="grid3">
+    <div class="card" style="border-color:var(--mlops)">
+      <h4 style="color:var(--mlops)">🔧 MLOps</h4>
+      <p>DevOps для класичного ML. Тренування, версіювання даних, деплой моделей, моніторинг точності.</p>
+    </div>
+    <div class="card" style="border-color:var(--aiops)">
+      <h4 style="color:var(--aiops)">🛰 AIOps</h4>
+      <p>AI <i>для</i> керування IT-інфраструктурою. Аналіз логів, anomaly detection, root cause, MTTR.</p>
+    </div>
+    <div class="card" style="border-color:var(--llmops)">
+      <h4 style="color:var(--llmops)">💬 LLMOps</h4>
+      <p>Operations для LLM-систем. Промпти, evals, guardrails, токен-бюджети, gateway, RAG.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 2: MLOps overview ===================== -->
+<section id="sec-mlops">
+  <h2><span class="num">02.</span> MLOps: що це і навіщо знати</h2>
+  <p class="lead"><b>MLOps = Machine Learning Operations</b> — це DevOps, але для машинного навчання. Включає тренування, версіювання даних і моделей, автоматизацію пайплайнів та моніторинг точності у проді.</p>
+
+  <div class="grid2">
+    <div>
+      <h3>Що робить MLOps</h3>
+      <div class="pad">
+        <ul>
+          <li>Тренування та <b>деплой</b> ML-моделей (Docker → K8s)</li>
+          <li><b>Версіювання</b> даних та моделей (DVC + Model Registry)</li>
+          <li>Автоматизація пайплайнів (Airflow, Kubeflow)</li>
+          <li><b>Моніторинг</b> точності у продакшені (drift detection)</li>
+          <li>A/B тестування та canary deploy</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <h3>Хто використовує</h3>
+      <div class="pad">Google, AWS, Uber, Spotify, Netflix — будь-яка компанія з ML у продакшні.</div>
+      <h3 style="margin-top:18px">Для AI-інженера</h3>
+      <div class="pad">MLOps — це <b>мова команди</b>. Ти не налаштовуєш Kubeflow сам, але маєш розуміти що таке Model Registry, чому потрібен canary deploy, і коли треба перетренувати модель.</div>
+    </div>
+  </div>
+
+  <h3>Ключові метрики MLOps</h3>
+  <div class="grid4">
+    <div class="card"><h4>Accuracy / F1</h4><p>Якість моделі на golden set. Падає → треба retrain.</p></div>
+    <div class="card"><h4>Latency p95</h4><p>Інференс має вкладатись у SLA (наприклад &lt;100ms).</p></div>
+    <div class="card"><h4>Throughput</h4><p>Скільки запитів на секунду тримає твій сервіс.</p></div>
+    <div class="card"><h4>Drift</h4><p>Зміна розподілу даних або точності з часом.</p></div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 3: Pipeline animation ===================== -->
+<section id="sec-pipeline">
+  <h2><span class="num">03.</span> MLOps пайплайн: від даних до проду</h2>
+  <p class="lead">Класичний MLOps-цикл — це <b>5 етапів</b>, які повторюються щотижня або щодня. Натисни <b>Run pipeline</b> — побачиш як це виглядає у проді.</p>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag">Live</span>
+      <h4>End-to-end MLOps пайплайн (CI/CD для моделі)</h4>
+      <button class="btn primary" onclick="runPipeline()">▶ Run pipeline</button>
+      <button class="btn" onclick="resetPipeline()">Reset</button>
+    </div>
+
+    <div class="pipeline">
+      <div class="pipeNode" id="pipe-ingest">
+        <div class="icon">📥</div>
+        <div class="name">Ingest</div>
+        <div class="desc">Дані з S3 / DB</div>
+      </div>
+      <div class="pipeArrow" id="arrow-1">→</div>
+      <div class="pipeNode" id="pipe-train">
+        <div class="icon">🧠</div>
+        <div class="name">Train</div>
+        <div class="desc">PyTorch + MLflow</div>
+      </div>
+      <div class="pipeArrow" id="arrow-2">→</div>
+      <div class="pipeNode" id="pipe-eval">
+        <div class="icon">📊</div>
+        <div class="name">Evaluate</div>
+        <div class="desc">Golden set</div>
+      </div>
+      <div class="pipeArrow" id="arrow-3">→</div>
+      <div class="pipeNode" id="pipe-deploy">
+        <div class="icon">🚀</div>
+        <div class="name">Deploy</div>
+        <div class="desc">Canary → 100%</div>
+      </div>
+      <div class="pipeArrow" id="arrow-4">→</div>
+      <div class="pipeNode" id="pipe-monitor">
+        <div class="icon">📡</div>
+        <div class="name">Monitor</div>
+        <div class="desc">Drift + alerts</div>
+      </div>
+    </div>
+
+    <div class="pipeLog" id="pipeLog">
+      <div style="color:var(--muted);font-style:italic">Натисни "Run pipeline" щоб побачити повний цикл…</div>
+    </div>
+  </div>
+
+  <h3>Інструменти для кожного етапу</h3>
+  <table>
+    <thead><tr><th>Етап</th><th>Що робить</th><th>Інструменти</th></tr></thead>
+    <tbody>
+      <tr><td><b>Ingest</b></td><td>Тягне дані, валідує схему, версіює</td><td><code>DVC</code> · <code>LakeFS</code> · <code>Airflow</code></td></tr>
+      <tr><td><b>Train</b></td><td>Тренує модель, логує гіперпараметри і метрики</td><td><code>MLflow</code> · <code>W&amp;B</code> · <code>SageMaker</code></td></tr>
+      <tr><td><b>Evaluate</b></td><td>Прогон на golden set, regression check</td><td><code>pytest</code> · <code>Great Expectations</code></td></tr>
+      <tr><td><b>Deploy</b></td><td>Canary, A/B тест, rollback за метрикою</td><td><code>BentoML</code> · <code>Seldon</code> · <code>KServe</code></td></tr>
+      <tr><td><b>Monitor</b></td><td>Latency, accuracy, data drift, model drift</td><td><code>Evidently</code> · <code>WhyLabs</code> · <code>Arize</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===================== SECTION 4: Drift simulator ===================== -->
+<section id="sec-drift">
+  <h2><span class="num">04.</span> Data drift: чому модель ламається у проді</h2>
+  <p class="lead">Модель навчилась на даних 2024 — а у 2025 розподіл змінився (нові юзери, новий продукт, сезон). <b>Drift</b> — головна причина того що "модель раптом стала тупою". Натисни <b>Simulate drift</b>.</p>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag" style="background:var(--accent2);color:#0b0d10">Simulator</span>
+      <h4>Distribution drift і падіння accuracy</h4>
+      <button class="btn primary" onclick="simulateDrift()">📈 Simulate drift</button>
+      <button class="btn" onclick="resetDrift()">Reset</button>
+    </div>
+
+    <div class="drift">
+      <div class="driftChart">
+        <svg viewBox="0 0 600 240" id="driftSvg">
+          <!-- axes -->
+          <line x1="40" y1="200" x2="580" y2="200" stroke="#2a2f37" stroke-width="1"/>
+          <line x1="40" y1="20" x2="40" y2="200" stroke="#2a2f37" stroke-width="1"/>
+          <text x="40" y="218" fill="#9aa3ad" font-size="10" font-family="monospace">week 1</text>
+          <text x="540" y="218" fill="#9aa3ad" font-size="10" font-family="monospace">week 12</text>
+          <text x="10" y="30" fill="#9aa3ad" font-size="10" font-family="monospace">100%</text>
+          <text x="14" y="200" fill="#9aa3ad" font-size="10" font-family="monospace">0%</text>
+          <!-- baseline -->
+          <line x1="40" y1="50" x2="580" y2="50" stroke="#2a2f37" stroke-dasharray="4 3" stroke-width="1"/>
+          <text x="44" y="46" fill="#9aa3ad" font-size="10" font-family="monospace">baseline 92%</text>
+          <!-- live polyline filled by JS -->
+          <polyline id="driftLine" points="" fill="none" stroke="#7cd1ff" stroke-width="2.5"/>
+          <g id="driftDots"></g>
+          <!-- alert marker -->
+          <line id="driftAlertLine" x1="0" y1="20" x2="0" y2="200" stroke="#ff7676" stroke-width="2" stroke-dasharray="3 3" opacity="0"/>
+          <text id="driftAlertText" x="0" y="14" fill="#ff7676" font-size="11" font-family="monospace" opacity="0">⚠ ALERT: retrain</text>
+        </svg>
+      </div>
+      <div>
+        <div class="driftStat">
+          <div class="label">Accuracy (live)</div>
+          <div class="value" id="driftAcc">92%</div>
+          <div class="label" style="margin-top:10px">Drift score (PSI)</div>
+          <div class="value" id="driftPsi">0.02</div>
+          <div class="label" style="margin-top:10px">Status</div>
+          <div class="value ok" id="driftStatus" style="font-size:14px">HEALTHY</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Типи drift</h3>
+  <div class="grid3">
+    <div class="card"><h4>Data drift</h4><p>Розподіл вхідних фіч змінився (нова географія, новий вік юзерів). PSI > 0.2 — alert.</p></div>
+    <div class="card"><h4>Concept drift</h4><p>Зв'язок X → Y змінився (юзери стали по-іншому реагувати на ціни). Acc падає — model знає неправильно.</p></div>
+    <div class="card"><h4>Label drift</h4><p>Розподіл цільової змінної змінився (раніше 5% fraud, тепер 15%). Класифікатор перестає тримати recall.</p></div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 5: AIOps ===================== -->
+<section id="sec-aiops">
+  <h2><span class="num">05.</span> AIOps: AI для керування IT-інфраструктурою</h2>
+  <p class="lead"><b>AIOps</b> — не плутати з MLOps. Це <b>AI <i>для</i> Operations</b>: алгоритми аналізують мільйони логів і метрик у real-time, знаходять аномалії, визначають root cause і скорочують MTTR (mean time to resolution).</p>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag" style="background:var(--aiops);color:#0b0d10">AIOps</span>
+      <h4>Live log stream з anomaly detection</h4>
+      <button class="btn primary" onclick="startAIOpsStream()">▶ Start stream</button>
+      <button class="btn" onclick="stopAIOpsStream()">⏸ Stop</button>
+      <button class="btn warn" onclick="injectAnomaly()">💥 Inject incident</button>
+    </div>
+    <div class="logStream" id="aiopsStream">
+      <div style="color:var(--muted);font-style:italic;text-align:center;padding:40px">Натисни "Start stream" щоб увімкнути потік логів…</div>
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:var(--muted);font-family:-apple-system,Helvetica,Arial,sans-serif">
+      AIOps моделі шукають патерн <b>"раптовий стрибок latency + 5xx + memory pressure"</b> → тригер root cause analysis. Тут спрощено: коли в потоці зʼявляється трійка ERROR підряд — alert.
+    </div>
+  </div>
+
+  <h3>Хто використовує AIOps</h3>
+  <div class="grid4">
+    <div class="card"><h4>IT Ops / SRE</h4><p>Зменшити пейджер-ноіз і MTTR на проді.</p></div>
+    <div class="card"><h4>DevOps</h4><p>Корелювати деплой з регресіями метрик.</p></div>
+    <div class="card"><h4>Cloud admins</h4><p>Передбачати overload до того як впаде.</p></div>
+    <div class="card"><h4>Enterprise</h4><p>Складна гетерогенна інфра — банки, телеком.</p></div>
+  </div>
+
+  <h3>Інструменти AIOps</h3>
+  <div class="pad">IBM Watson AIOps · Splunk ITSI · Dynatrace · ServiceNow · New Relic · Datadog Watchdog</div>
+
+  <div class="card" style="margin-top:14px;border-color:var(--aiops)">
+    <h4 style="color:var(--aiops)">📋 Реальний кейс</h4>
+    <p>Великий банк фіксує аномальні стрибки мережевого трафіку. AIOps миттєво аналізує логи, знаходить першопричину (новий деплой mobile API + DDoS-патерн з 1 IP) і сповіщає команду — <b>ще до того</b> як юзери відчули збій.</p>
+  </div>
+
+  <div class="card" style="margin-top:10px">
+    <h4>Для AI-інженера</h4>
+    <p>AIOps — <b>суміжна область</b>. Корисно розуміти концепцію (бо твій LLM-сервіс теж під AIOps моніторингом), але не основний фокус.</p>
+  </div>
+</section>
+
+<!-- ===================== SECTION 6: LLMOps ===================== -->
+<section id="sec-llmops">
+  <h2><span class="num">06.</span> LLMOps: твій основний інструментарій</h2>
+  <p class="lead"><b>LLMOps</b> — найновіший і найбільш зростаючий напрям 2025. Якщо ти AI-інженер — це <b>твій</b> повсякденний інструментарій. Promptи, evals, guardrails, токен-бюджети, gateway.</p>
+
+  <h3>Що робить LLMOps</h3>
+  <div class="grid3">
+    <div class="card"><h4>📊 Observability</h4><p>Кожен LLM call — trace з prompt, response, токенами, latency, cost.</p></div>
+    <div class="card"><h4>🎯 Prompt management</h4><p>Версіювання промптів, A/B тести, rollback як для коду.</p></div>
+    <div class="card"><h4>🛡 Guardrails</h4><p>Фільтр шкідливого контенту, prompt injection, PII redaction.</p></div>
+    <div class="card"><h4>🧪 Evals</h4><p>Автоматична оцінка якості: golden set + LLM-as-a-judge.</p></div>
+    <div class="card"><h4>💰 Cost control</h4><p>Токен-бюджети, кешування, маршрутизація на дешевшу модель.</p></div>
+    <div class="card"><h4>🚪 Gateway</h4><p>Єдина точка входу до всіх LLM провайдерів з fallback.</p></div>
+  </div>
+
+  <div class="demo" style="margin-top:18px">
+    <div class="demoHead">
+      <span class="tag" style="background:var(--llmops);color:#0b0d10">Live mock</span>
+      <h4>LLMOps observability dashboard</h4>
+      <button class="btn primary" onclick="refreshObs()">🔄 Refresh</button>
+    </div>
+
+    <div class="obsGrid">
+      <div class="obsCard">
+        <div class="label">Requests / 5min</div>
+        <div class="value" id="obsReq">12 480</div>
+        <div class="delta" id="obsReqDelta">+4.2%</div>
+      </div>
+      <div class="obsCard">
+        <div class="label">Avg latency</div>
+        <div class="value" id="obsLat">820ms</div>
+        <div class="delta bad" id="obsLatDelta">+12% slow</div>
+      </div>
+      <div class="obsCard">
+        <div class="label">Cost / 5min</div>
+        <div class="value" id="obsCost">$3.18</div>
+        <div class="delta" id="obsCostDelta">-8% saved</div>
+      </div>
+      <div class="obsCard">
+        <div class="label">Error rate</div>
+        <div class="value" id="obsErr">0.4%</div>
+        <div class="delta" id="obsErrDelta">stable</div>
+      </div>
+    </div>
+
+    <div class="traceTable" style="margin-top:14px">
+      <table>
+        <thead><tr><th>Trace ID</th><th>Endpoint</th><th>Tokens</th><th>Cost</th><th>Latency</th><th>Span</th></tr></thead>
+        <tbody id="traceRows"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 7: LLMOps stack ===================== -->
+<section id="sec-stack">
+  <h2><span class="num">07.</span> LLMOps: повний стек інструментів</h2>
+  <p class="lead">Кожна категорія має 2-3 топ-гравців. Не треба знати всі — обирай <b>один</b> з кожної категорії і будуй стек.</p>
+
+  <table>
+    <thead><tr><th>Категорія</th><th>Інструменти</th><th>Що робить</th></tr></thead>
+    <tbody>
+      <tr><td><b>Observability</b></td><td><code>Langfuse</code> · <code>LangSmith</code> · <code>Arize Phoenix</code></td><td>Trace кожного LLM-виклику: prompt, response, tokens, latency, cost</td></tr>
+      <tr><td><b>Prompt mgmt</b></td><td><code>PromptLayer</code> · <code>Agenta</code> · <code>Langfuse Prompts</code></td><td>Версіювання, A/B тести, rollback промптів — як Git, але для тексту</td></tr>
+      <tr><td><b>Gateway</b></td><td><code>LiteLLM</code> · <code>Portkey</code> · <code>OpenRouter</code></td><td>Єдина точка входу, fallback між провайдерами, rate limit, кеш</td></tr>
+      <tr><td><b>Evals</b></td><td><code>RAGAS</code> · <code>DeepEval</code> · <code>PromptFoo</code> · <code>Braintrust</code></td><td>Автоматична оцінка: golden set + LLM-as-a-judge</td></tr>
+      <tr><td><b>Guardrails</b></td><td><code>NeMo Guardrails</code> · <code>Guardrails AI</code> · <code>Lakera</code></td><td>Фільтр PII, prompt injection, шкідливий контент</td></tr>
+      <tr><td><b>Vector DB</b></td><td><code>Pinecone</code> · <code>Weaviate</code> · <code>Qdrant</code> · <code>pgvector</code></td><td>Embeddings storage та semantic search для RAG</td></tr>
+      <tr><td><b>Fine-tuning</b></td><td><code>Together AI</code> · <code>OpenAI FT</code> · <code>Axolotl</code></td><td>LoRA / full fine-tune під свій домен</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===================== SECTION 8: Comparison ===================== -->
+<section id="sec-compare">
+  <h2><span class="num">08.</span> MLOps vs AIOps vs LLMOps</h2>
+  <p class="lead">Часта плутанина: ці три фреймворки <b>не</b> заміняють одне одного. Вони працюють <b>паралельно</b> для різних задач. Натисни вкладки — побачиш ключові відмінності.</p>
+
+  <div class="toggleBar">
+    <button class="active mlops" data-cmp="mlops" onclick="showCmp('mlops')">🔧 MLOps</button>
+    <button data-cmp="aiops" onclick="showCmp('aiops')">🛰 AIOps</button>
+    <button data-cmp="llmops" onclick="showCmp('llmops')">💬 LLMOps</button>
+  </div>
+
+  <div id="cmpPane">
+    <!-- filled by JS -->
+  </div>
+
+  <h3 style="margin-top:24px">Повна таблиця порівняння</h3>
+  <table>
+    <thead><tr><th>Аспект</th><th><span class="pill mlops">MLOps</span></th><th><span class="pill aiops">AIOps</span></th><th><span class="pill llmops">LLMOps</span></th></tr></thead>
+    <tbody>
+      <tr><td><b>Фокус</b></td><td>ML моделі</td><td>IT інфраструктура</td><td>LLM системи</td></tr>
+      <tr><td><b>Версіювання</b></td><td>Дані + моделі</td><td>—</td><td>Промпти + конфіги</td></tr>
+      <tr><td><b>Моніторинг</b></td><td>Accuracy, drift</td><td>Logs, traces, metrics</td><td>Quality, hallucinations, tokens</td></tr>
+      <tr><td><b>Тестування</b></td><td>Unit + integration</td><td>Synthetic monitoring</td><td>Evals, LLM-as-a-judge</td></tr>
+      <tr><td><b>Деплой</b></td><td>Docker + CI/CD</td><td>—</td><td>Gateway + API routing</td></tr>
+      <tr><td><b>Безпека</b></td><td>Валідація даних</td><td>Anomaly detection</td><td>Guardrails, prompt injection</td></tr>
+      <tr><td><b>Метрика вартості</b></td><td>Compute $</td><td>MTTR, downtime $</td><td>Tokens / API $</td></tr>
+      <tr><td><b>Для AI Engineer</b></td><td>Базове розуміння</td><td>Контекст</td><td><b>Основний фокус</b></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===================== SECTION 9: Token budget calculator ===================== -->
+<section id="sec-tokens">
+  <h2><span class="num">09.</span> Токен-бюджет: рахуємо реальні гроші</h2>
+  <p class="lead">Якщо у тебе 10K юзерів × 20 запитів/день — будь-яка помилка вибору моделі коштує тисячі $/місяць. Покрути слайдери і подивись як мінятиметься рахунок.</p>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag" style="background:var(--accent2);color:#0b0d10">Calc</span>
+      <h4>Місячний LLM-рахунок</h4>
+    </div>
+
+    <div class="calc">
+      <div class="row">
+        <label>Користувачів за місяць</label>
+        <input type="number" id="calcUsers" value="10000" min="1" oninput="recalc()">
+      </div>
+      <div class="row">
+        <label>Запитів на користувача / день</label>
+        <input type="number" id="calcReqs" value="15" min="1" oninput="recalc()">
+      </div>
+      <div class="row">
+        <label>Tokens in / запит</label>
+        <input type="number" id="calcIn" value="800" min="1" oninput="recalc()">
+      </div>
+      <div class="row">
+        <label>Tokens out / запит</label>
+        <input type="number" id="calcOut" value="300" min="1" oninput="recalc()">
+      </div>
+      <div class="row">
+        <label>Модель</label>
+        <select id="calcModel" onchange="recalc()">
+          <option value="haiku">Claude Haiku 4.5 — $1 / $5 per 1M</option>
+          <option value="sonnet" selected>Claude Sonnet 4.6 — $3 / $15 per 1M</option>
+          <option value="opus">Claude Opus 4.7 — $15 / $75 per 1M</option>
+          <option value="4omini">GPT-4o mini — $0.15 / $0.60 per 1M</option>
+          <option value="4o">GPT-4o — $2.50 / $10 per 1M</option>
+          <option value="gem-flash">Gemini 2.5 Flash — $0.30 / $2.50 per 1M</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Cache hit rate</label>
+        <input type="range" id="calcCache" value="0" min="0" max="90" step="5" oninput="recalc()">
+        <span id="calcCacheVal" style="color:var(--accent2);font-weight:700;min-width:50px">0%</span>
+      </div>
+
+      <div class="calcResult">
+        <div class="item"><div class="lab">Запитів / місяць</div><div class="val" id="rOut1">—</div></div>
+        <div class="item"><div class="lab">Токенів / місяць</div><div class="val" id="rOut2">—</div></div>
+        <div class="item cost"><div class="lab">Рахунок / місяць</div><div class="val" id="rOut3">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Способи скоротити рахунок</h3>
+  <div class="grid3">
+    <div class="card"><h4>Prompt caching</h4><p>Anthropic / OpenAI: до 90% знижки на cached input. Найбільший ефект для довгого system prompt.</p></div>
+    <div class="card"><h4>Routing</h4><p>Простий запит → Haiku/Flash. Складний → Opus/4o. Економія 5-10×.</p></div>
+    <div class="card"><h4>Batch API</h4><p>Async batch — 50% знижка. Підходить для аналітики, summaries, не для real-time.</p></div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 10: Gateway ===================== -->
+<section id="sec-gateway">
+  <h2><span class="num">10.</span> LLM Gateway: одна точка для всіх моделей</h2>
+  <p class="lead"><b>Gateway</b> (LiteLLM, Portkey, OpenRouter) — це <code>nginx</code> для LLM. Один API → роутинг по моделях, fallback при падінні провайдера, rate limit, cache, observability.</p>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag">Live</span>
+      <h4>Gateway з fallback ланцюжком</h4>
+      <button class="btn primary" onclick="gwSendRequest()">📤 Send request</button>
+      <button class="btn warn" onclick="gwKillProvider()">💥 Kill primary</button>
+      <button class="btn" onclick="gwReset()">Reset</button>
+    </div>
+
+    <div class="gateway">
+      <div class="gwBlock">
+        <div class="name">📱 Your app</div>
+        <div class="sub">POST /v1/chat</div>
+      </div>
+      <div class="gwArrow">→</div>
+      <div class="gwBlock" style="border-color:var(--accent)">
+        <div class="name" style="color:var(--accent)">🚪 LiteLLM Gateway</div>
+        <div class="sub">retry + fallback + cache</div>
+      </div>
+      <div class="gwProviders">
+        <div class="gwProvider" id="gw-1"><span class="dot"></span><span>OpenAI · gpt-4o</span><span class="pill" style="margin-left:auto">primary</span></div>
+        <div class="gwProvider" id="gw-2"><span class="dot"></span><span>Anthropic · Sonnet 4.6</span><span class="pill" style="margin-left:auto">fallback 1</span></div>
+        <div class="gwProvider" id="gw-3"><span class="dot"></span><span>Google · Gemini 2.5</span><span class="pill" style="margin-left:auto">fallback 2</span></div>
+      </div>
+    </div>
+
+    <div class="gwLog" id="gwLog">
+      <span style="color:var(--muted)">// натисни "Send request" щоб подивитись як працює routing</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 11: Evals & judge ===================== -->
+<section id="sec-evals">
+  <h2><span class="num">11.</span> Evals: як вимірювати якість LLM-відповідей</h2>
+  <p class="lead">У класичному ML accuracy — одне число. У LLM "правильна відповідь" нечітка. Тому ми використовуємо <b>LLM-as-a-judge</b>: одна модель оцінює іншу за критеріями (correctness, relevance, safety, citation).</p>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag" style="background:var(--accent4);color:#0b0d10">Judge</span>
+      <h4>Live LLM-as-a-judge eval</h4>
+      <button class="btn primary" onclick="runJudge()">⚖️ Run eval</button>
+    </div>
+
+    <div class="judgeBox">
+      <div class="qa"><b>Q:</b> Який зворотний термін для refund на amazon?</div>
+      <div class="qa"><b>A (model):</b> Зазвичай 30 днів з моменту отримання товару, але є категорії (електроніка) — 14 днів.</div>
+
+      <div class="scoreBar">
+        <div class="lab">Correctness</div>
+        <div class="track"><div class="fill" id="sc-correct" data-target="85"></div></div>
+        <div class="num" id="num-correct">—</div>
+      </div>
+      <div class="scoreBar">
+        <div class="lab">Relevance</div>
+        <div class="track"><div class="fill" id="sc-relevant" data-target="92"></div></div>
+        <div class="num" id="num-relevant">—</div>
+      </div>
+      <div class="scoreBar">
+        <div class="lab">Citation</div>
+        <div class="track"><div class="fill bad" id="sc-citation" data-target="20"></div></div>
+        <div class="num" id="num-citation">—</div>
+      </div>
+      <div class="scoreBar">
+        <div class="lab">Safety</div>
+        <div class="track"><div class="fill" id="sc-safety" data-target="100"></div></div>
+        <div class="num" id="num-safety">—</div>
+      </div>
+      <div class="scoreBar">
+        <div class="lab">Hallucination risk</div>
+        <div class="track"><div class="fill med" id="sc-hall" data-target="35"></div></div>
+        <div class="num" id="num-hall">—</div>
+      </div>
+
+      <div class="pad" style="margin-top:14px;font-size:13px;border-left:3px solid var(--accent4);padding-left:10px">
+        <b>Judge verdict:</b> відповідь точна по структурі, але <b>не цитує джерело</b>. У RAG-системі такий output має тригерити warning або retry з instruction "cite the source".
+      </div>
+    </div>
+  </div>
+
+  <h3>Типи evals</h3>
+  <div class="grid3">
+    <div class="card"><h4>Reference-based</h4><p>Є golden answer. Порівняння через BLEU, ROUGE, exact match або embedding similarity.</p></div>
+    <div class="card"><h4>Reference-free</h4><p>Немає еталона. LLM-as-a-judge оцінює за критеріями (RAGAS, G-Eval).</p></div>
+    <div class="card"><h4>Human-in-the-loop</h4><p>Експерти оцінюють sample (5-10%). Дорого, але critical для high-stakes.</p></div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 12: Priorities ===================== -->
+<section id="sec-priorities">
+  <h2><span class="num">12.</span> Що AI-інженер має знати з кожної теми</h2>
+  <p class="lead">Не треба ставати MLOps SRE. Треба знати <b>достатньо</b> щоб говорити з командою і будувати свій LLMOps стек.</p>
+
+  <div class="grid3">
+    <div class="card" style="border-color:var(--mlops)">
+      <h4 style="color:var(--mlops)">🔧 MLOps — розуміти</h4>
+      <p>• Концепцію <b>MLflow</b> та <b>Model Registry</b><br>
+         • Як працює <b>CI/CD для ML</b> (build → train → eval → deploy)<br>
+         • Принцип <b>canary deploy</b> і <b>shadow traffic</b><br>
+         • Що таке <b>drift</b> і коли треба retrain</p>
+    </div>
+    <div class="card" style="border-color:var(--aiops)">
+      <h4 style="color:var(--aiops)">🛰 AIOps — знати що існує</h4>
+      <p>• Які задачі вирішує (anomaly, RCA, MTTR)<br>
+         • Які компанії та інструменти є (Splunk, Dynatrace)<br>
+         • Не потрібно глибоко — це сфера SRE команди</p>
+    </div>
+    <div class="card" style="border-color:var(--llmops)">
+      <h4 style="color:var(--llmops)">💬 LLMOps — вміти руками</h4>
+      <p>• Інтегрувати <b>Langfuse</b> у свій LLM-застосунок<br>
+         • <b>Версіювати промпти</b> через Langfuse Prompts або PromptLayer<br>
+         • Налаштувати <b>LLM Gateway</b> через LiteLLM (з fallback)<br>
+         • Оцінювати якість через <b>evals</b> (RAGAS, DeepEval, або LLM-as-a-judge)<br>
+         • Додати <b>guardrails</b> на input/output</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px;border-color:var(--ok);background:rgba(155,227,124,0.08)">
+    <h4 style="color:var(--ok)">🎯 Головний висновок</h4>
+    <p><b>LLMOps не замінює MLOps</b> — це розширення для нової реальності, де основний інструмент — LLM, а не класична ML-модель. У великих компаніях вони <b>співіснують</b>: ML-команда тримає рекомендаційні моделі, LLM-команда — чат-інтерфейс і RAG.</p>
+  </div>
+</section>
+
+</div><!-- /.wrap -->
+
+<script>
+// ============== MLOps PIPELINE ANIMATION ==============
+const pipeNodes = ['ingest','train','eval','deploy','monitor'];
+const pipeArrows = ['arrow-1','arrow-2','arrow-3','arrow-4'];
+const pipeMessages = {
+  ingest: [
+    {type:'ingest', text:'Pulling 124,500 rows from s3://prod-events/'},
+    {type:'ingest', text:'Schema validated · 0 nulls in critical fields'},
+    {type:'ingest', text:'DVC v2.4.1 committed → reproducible'},
+  ],
+  train: [
+    {type:'train', text:'Hyperparams: lr=3e-4, batch=64, epochs=12'},
+    {type:'train', text:'MLflow run started → run_id=abc-9f2'},
+    {type:'train', text:'Epoch 12/12 · loss=0.142 · val_acc=0.918'},
+  ],
+  eval: [
+    {type:'eval', text:'Golden set: 1,000 samples · acc=0.916 (≥ 0.90 ✓)'},
+    {type:'eval', text:'Latency p95: 78ms (≤ 100ms ✓)'},
+    {type:'eval', text:'Regression vs prod: -0.4% (within tolerance)'},
+  ],
+  deploy: [
+    {type:'deploy', text:'Building Docker image → pushing to ECR'},
+    {type:'deploy', text:'Canary 5% traffic → metrics OK'},
+    {type:'deploy', text:'Progressive 25% → 50% → 100% · LIVE'},
+  ],
+  monitor: [
+    {type:'monitor', text:'Evidently watching: data_drift, prediction_drift'},
+    {type:'monitor', text:'After 6 days: PSI = 0.18 (warning threshold)'},
+    {type:'alert', text:'Drift detected → triggering retrain pipeline'},
+  ],
+};
+
+let pipeRunning = false;
+
+async function runPipeline(){
+  if(pipeRunning) return;
+  pipeRunning = true;
+  resetPipeline();
+  const log = document.getElementById('pipeLog');
+  log.innerHTML = '';
+  for(let i=0; i<pipeNodes.length; i++){
+    const stage = pipeNodes[i];
+    document.getElementById('pipe-'+stage).classList.add('active');
+    if(i>0) document.getElementById(pipeArrows[i-1]).classList.add('active');
+    for(const msg of pipeMessages[stage]){
+      const div = document.createElement('div');
+      div.className = 'entry ' + msg.type;
+      div.textContent = msg.text;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+      await sleep(450);
+    }
+    await sleep(300);
+    if(i < pipeNodes.length-1) document.getElementById('pipe-'+stage).classList.remove('active');
+  }
+  pipeRunning = false;
+}
+
+function resetPipeline(){
+  pipeNodes.forEach(n => document.getElementById('pipe-'+n).classList.remove('active'));
+  pipeArrows.forEach(a => document.getElementById(a).classList.remove('active'));
+  document.getElementById('pipeLog').innerHTML = '<div style="color:var(--muted);font-style:italic">Натисни "Run pipeline" щоб побачити повний цикл…</div>';
+}
+
+function sleep(ms){ return new Promise(r => setTimeout(r,ms)); }
+
+// ============== DRIFT SIMULATOR ==============
+let driftRunning = false;
+async function simulateDrift(){
+  if(driftRunning) return;
+  driftRunning = true;
+  resetDrift();
+  const points = [];
+  // 12 weeks: stable then sharp drop
+  const xs = [];
+  for(let w=1; w<=12; w++){
+    let acc;
+    if(w <= 5) acc = 0.92 - Math.random()*0.015;       // stable
+    else if(w <= 7) acc = 0.91 - (w-5)*0.01 - Math.random()*0.01;  // creeping
+    else acc = 0.91 - (w-5)*0.04 - Math.random()*0.01; // drift
+    if(acc < 0.45) acc = 0.45;
+    xs.push({w, acc});
+  }
+  const svg = document.getElementById('driftSvg');
+  const line = document.getElementById('driftLine');
+  const dotsG = document.getElementById('driftDots');
+  dotsG.innerHTML='';
+  const xPos = w => 40 + (w-1) * (540/11);
+  const yPos = a => 200 - (a * 180);
+  let pointsStr = '';
+  for(let i=0; i<xs.length; i++){
+    const {w, acc} = xs[i];
+    const x = xPos(w), y = yPos(acc);
+    pointsStr += `${x},${y} `;
+    line.setAttribute('points', pointsStr.trim());
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',x); dot.setAttribute('cy',y); dot.setAttribute('r',4);
+    dot.setAttribute('fill', acc < 0.7 ? '#ff7676' : (acc < 0.85 ? '#ffd166' : '#7cd1ff'));
+    dotsG.appendChild(dot);
+    document.getElementById('driftAcc').textContent = (acc*100).toFixed(1)+'%';
+    const psi = (i/4) * (Math.random()*0.05 + 0.04);
+    document.getElementById('driftPsi').textContent = psi.toFixed(2);
+    const accEl = document.getElementById('driftAcc');
+    const stEl  = document.getElementById('driftStatus');
+    accEl.classList.remove('ok','warn');
+    stEl.classList.remove('ok','warn');
+    if(acc < 0.7){ accEl.classList.add('warn'); stEl.classList.add('warn'); stEl.textContent='CRITICAL · RETRAIN'; }
+    else if(acc < 0.85){ accEl.classList.add('warn'); stEl.classList.add('warn'); stEl.textContent='DRIFTING'; }
+    else { accEl.classList.add('ok'); stEl.classList.add('ok'); stEl.textContent='HEALTHY'; }
+    if(acc < 0.85 && document.getElementById('driftAlertLine').getAttribute('opacity')==='0'){
+      const alertLine = document.getElementById('driftAlertLine');
+      const alertText = document.getElementById('driftAlertText');
+      alertLine.setAttribute('x1', x); alertLine.setAttribute('x2', x);
+      alertText.setAttribute('x', Math.min(x-50, 480));
+      alertLine.setAttribute('opacity','1');
+      alertText.setAttribute('opacity','1');
+    }
+    await sleep(280);
+  }
+  driftRunning = false;
+}
+function resetDrift(){
+  document.getElementById('driftLine').setAttribute('points','');
+  document.getElementById('driftDots').innerHTML='';
+  document.getElementById('driftAcc').textContent='92%';
+  document.getElementById('driftPsi').textContent='0.02';
+  document.getElementById('driftStatus').textContent='HEALTHY';
+  document.getElementById('driftAcc').classList.remove('warn');
+  document.getElementById('driftAcc').classList.add('ok');
+  document.getElementById('driftStatus').classList.remove('warn');
+  document.getElementById('driftStatus').classList.add('ok');
+  document.getElementById('driftAlertLine').setAttribute('opacity','0');
+  document.getElementById('driftAlertText').setAttribute('opacity','0');
+}
+
+// ============== AIOPS LOG STREAM ==============
+let aiopsTimer = null;
+let consecErrors = 0;
+const aiopsTemplates = [
+  {l:'INFO',  m:'GET /api/v1/orders/4821 → 200 (42ms)'},
+  {l:'INFO',  m:'POST /api/v1/users → 201 (88ms)'},
+  {l:'INFO',  m:'GET /healthz → 200 (3ms)'},
+  {l:'INFO',  m:'cache HIT user:profile:21987'},
+  {l:'WARN',  m:'slow query: SELECT FROM events WHERE … (1.4s)'},
+  {l:'INFO',  m:'auth/refresh ok user_id=44219'},
+  {l:'INFO',  m:'POST /api/v1/checkout → 200 (124ms)'},
+  {l:'WARN',  m:'rate-limit hit · ip=10.0.4.18 · path=/search'},
+];
+const aiopsErrors = [
+  {l:'ERROR', m:'500 · /api/v1/checkout · stripe webhook timeout'},
+  {l:'ERROR', m:'pod payments-api-7d9 OOMKilled · restarting'},
+  {l:'ERROR', m:'DB pool exhausted · 50/50 connections busy'},
+  {l:'ERROR', m:'5xx ratio = 8% · SLO 1% breached'},
+];
+
+function addAiopsRow(level, msg, anomaly=false){
+  const stream = document.getElementById('aiopsStream');
+  if(stream.querySelector('div[style*="italic"]')) stream.innerHTML='';
+  const ts = new Date();
+  const t = `${pad(ts.getHours())}:${pad(ts.getMinutes())}:${pad(ts.getSeconds())}.${pad(ts.getMilliseconds(),3).slice(0,3)}`;
+  const row = document.createElement('div');
+  row.className = 'row' + (anomaly ? ' anomaly' : '');
+  row.innerHTML = `<span class="ts">${t}</span><span class="lvl ${level}">${level}</span><span class="msg">${msg}</span>` +
+    (anomaly ? '<span class="aiopsBadge">⚠ AIOps anomaly · root cause: payments-api</span>' : '');
+  stream.appendChild(row);
+  stream.scrollTop = stream.scrollHeight;
+  while(stream.children.length > 60) stream.removeChild(stream.firstChild);
+}
+function pad(n,w=2){ return String(n).padStart(w,'0'); }
+
+function startAIOpsStream(){
+  if(aiopsTimer) return;
+  aiopsTimer = setInterval(()=>{
+    const t = aiopsTemplates[Math.floor(Math.random()*aiopsTemplates.length)];
+    addAiopsRow(t.l, t.m);
+  }, 380);
+}
+function stopAIOpsStream(){
+  if(aiopsTimer){ clearInterval(aiopsTimer); aiopsTimer=null; }
+}
+async function injectAnomaly(){
+  if(!aiopsTimer) startAIOpsStream();
+  for(let i=0; i<3; i++){
+    const e = aiopsErrors[i % aiopsErrors.length];
+    addAiopsRow(e.l, e.m);
+    await sleep(220);
+  }
+  await sleep(120);
+  addAiopsRow('ERROR', 'AIOps detected anomaly · 3 errors in 800ms · auto-paging on-call', true);
+}
+
+// ============== LLMOPS OBSERVABILITY DASHBOARD ==============
+const traces = [
+  {id:'tr_a91…', endpoint:'/chat/rag', tokens:'1842', cost:'$0.0042', lat:'710ms', span:60},
+  {id:'tr_b72…', endpoint:'/agent/run', tokens:'5210', cost:'$0.0118', lat:'2.4s',  span:90},
+  {id:'tr_c08…', endpoint:'/chat/rag', tokens:' 612', cost:'$0.0014', lat:'320ms', span:30},
+  {id:'tr_d45…', endpoint:'/embed',    tokens:' 184', cost:'$0.0001', lat:'48ms',  span:5},
+  {id:'tr_e29…', endpoint:'/chat/rag', tokens:'2104', cost:'$0.0049', lat:'880ms', span:65},
+];
+function renderTraces(){
+  const tb = document.getElementById('traceRows');
+  tb.innerHTML = traces.map(t=>`
+    <tr><td><code>${t.id}</code></td><td>${t.endpoint}</td><td>${t.tokens}</td><td>${t.cost}</td><td>${t.lat}</td>
+      <td><span class="spanBar" style="width:${t.span*2}px"></span></td></tr>`).join('');
+}
+function refreshObs(){
+  const req = 12000 + Math.floor(Math.random()*1500);
+  const lat = 700 + Math.floor(Math.random()*220);
+  const cost = (3 + Math.random()*1.2).toFixed(2);
+  const err = (0.2 + Math.random()*0.6).toFixed(1);
+  document.getElementById('obsReq').textContent  = req.toLocaleString('en-US').replace(/,/g,' ');
+  document.getElementById('obsLat').textContent  = lat + 'ms';
+  document.getElementById('obsCost').textContent = '$' + cost;
+  document.getElementById('obsErr').textContent  = err + '%';
+  // shuffle traces
+  for(const t of traces){
+    t.tokens = String(Math.floor(200 + Math.random()*5000));
+    t.lat    = (Math.random()*2 + 0.1).toFixed(2)+'s';
+    t.cost   = '$' + (parseFloat(t.tokens)/1e6 * 12).toFixed(4);
+    t.span   = Math.floor(parseFloat(t.lat)*30);
+  }
+  renderTraces();
+}
+renderTraces();
+
+// ============== COMPARISON TOGGLE ==============
+const cmpData = {
+  mlops: {
+    color: 'var(--mlops)',
+    title: '🔧 MLOps · Machine Learning Operations',
+    desc: 'DevOps практики адаптовані для класичного ML. Тренування, версіювання моделей і даних, деплой, моніторинг точності.',
+    items: [
+      ['Версіювання', 'Дані (DVC) + моделі (Model Registry)'],
+      ['Тестування', 'Unit + integration + golden set'],
+      ['Метрики', 'Accuracy, F1, RMSE, latency, drift (PSI)'],
+      ['Деплой', 'Docker → K8s, canary + shadow traffic'],
+      ['Інструменти', 'MLflow, Kubeflow, BentoML, SageMaker, Evidently'],
+    ]
+  },
+  aiops: {
+    color: 'var(--aiops)',
+    title: '🛰 AIOps · AI for IT Operations',
+    desc: 'AI-алгоритми для керування IT-інфраструктурою. Аналіз логів і метрик у real-time, anomaly detection, root cause, MTTR.',
+    items: [
+      ['Дані', 'Логи, метрики, traces з усієї інфри'],
+      ['Алгоритми', 'Anomaly detection, time-series forecasting, clustering'],
+      ['Метрики', 'MTTR, anomaly precision/recall, alert noise ratio'],
+      ['Інтеграції', 'Splunk, Datadog, PagerDuty, ServiceNow'],
+      ['Інструменти', 'IBM Watson AIOps, Dynatrace, Datadog Watchdog, New Relic'],
+    ]
+  },
+  llmops: {
+    color: 'var(--llmops)',
+    title: '💬 LLMOps · Operations for Large Language Models',
+    desc: 'Operations для LLM-систем. Prompts як код, evals замість accuracy, gateway замість model server, guardrails замість валідації даних.',
+    items: [
+      ['Версіювання', 'Промпти + конфіги + RAG-індекси'],
+      ['Тестування', 'Evals, LLM-as-a-judge, RAGAS, regression suite'],
+      ['Метрики', 'Quality score, hallucination rate, токени, $/request'],
+      ['Деплой', 'LLM Gateway (LiteLLM), feature flags по моделям'],
+      ['Інструменти', 'Langfuse, LangSmith, LiteLLM, RAGAS, NeMo Guardrails, Pinecone'],
+    ]
+  },
+};
+function showCmp(key){
+  document.querySelectorAll('.toggleBar button').forEach(b=>{
+    b.classList.remove('active','mlops','aiops','llmops');
+    if(b.dataset.cmp === key){ b.classList.add('active', key); }
+  });
+  const d = cmpData[key];
+  const pane = document.getElementById('cmpPane');
+  pane.innerHTML = `
+    <div class="card" style="border-color:${d.color}">
+      <h4 style="color:${d.color};font-size:15px">${d.title}</h4>
+      <p style="margin-top:6px">${d.desc}</p>
+      <table style="margin-top:10px">
+        <tbody>
+          ${d.items.map(([k,v])=>`<tr><td style="width:200px"><b>${k}</b></td><td>${v}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+showCmp('mlops');
+
+// ============== TOKEN BUDGET CALCULATOR ==============
+const PRICES = {
+  haiku:    {in: 1.0,  out: 5.0},
+  sonnet:   {in: 3.0,  out: 15.0},
+  opus:     {in: 15.0, out: 75.0},
+  '4omini': {in: 0.15, out: 0.60},
+  '4o':     {in: 2.5,  out: 10.0},
+  'gem-flash': {in: 0.30, out: 2.5},
+};
+function recalc(){
+  const u = +document.getElementById('calcUsers').value || 0;
+  const r = +document.getElementById('calcReqs').value || 0;
+  const ti = +document.getElementById('calcIn').value || 0;
+  const to = +document.getElementById('calcOut').value || 0;
+  const cache = +document.getElementById('calcCache').value || 0;
+  document.getElementById('calcCacheVal').textContent = cache + '%';
+  const m = document.getElementById('calcModel').value;
+  const reqs = u * r * 30; // monthly
+  const tokIn = reqs * ti;
+  const tokOut = reqs * to;
+  const totalTok = tokIn + tokOut;
+  // cache discount on input only — 90% off cached portion
+  const cachedIn = tokIn * (cache/100);
+  const fullIn = tokIn - cachedIn;
+  const p = PRICES[m];
+  const cost = (fullIn/1e6)*p.in + (cachedIn/1e6)*p.in*0.1 + (tokOut/1e6)*p.out;
+  document.getElementById('rOut1').textContent = reqs.toLocaleString('en-US').replace(/,/g,' ');
+  document.getElementById('rOut2').textContent = (totalTok/1e6).toFixed(1) + 'M';
+  document.getElementById('rOut3').textContent = '$' + cost.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}).replace(/,/g,' ');
+}
+recalc();
+
+// ============== GATEWAY DEMO ==============
+const gwState = {
+  providers: [
+    {id:'gw-1', name:'OpenAI · gpt-4o', alive:true},
+    {id:'gw-2', name:'Anthropic · Sonnet 4.6', alive:true},
+    {id:'gw-3', name:'Google · Gemini 2.5', alive:true},
+  ]
+};
+function gwSyncUI(){
+  for(const p of gwState.providers){
+    const el = document.getElementById(p.id);
+    el.classList.remove('active','failed');
+    if(!p.alive) el.classList.add('failed');
+  }
+}
+async function gwSendRequest(){
+  const log = document.getElementById('gwLog');
+  log.innerHTML='';
+  const append = (cls, text) => {
+    const div = document.createElement('div');
+    div.className = cls;
+    div.textContent = text;
+    log.appendChild(div);
+  };
+  append('info', '> POST /v1/chat/completions  (1.2K tokens)');
+  await sleep(280);
+  for(const p of gwState.providers){
+    document.querySelectorAll('.gwProvider.active').forEach(e=>e.classList.remove('active'));
+    if(p.alive){
+      document.getElementById(p.id).classList.add('active');
+      append('info', `→ trying ${p.name}…`);
+      await sleep(420);
+      append('ok',   `✓ ${p.name} · 200 OK · 740ms · 982 tokens used`);
+      return;
+    } else {
+      append('err', `✗ ${p.name} · 503 / connection refused`);
+      append('info', `↻ falling back…`);
+      await sleep(360);
+    }
+  }
+  append('err', '✗ all providers exhausted · returning 503 to client');
+}
+function gwKillProvider(){
+  const alive = gwState.providers.filter(p=>p.alive);
+  if(alive.length === 0) return;
+  alive[0].alive = false;
+  gwSyncUI();
+  const log = document.getElementById('gwLog');
+  log.innerHTML = `<div class="err">// killed ${alive[0].name} · next request will fall back</div>`;
+}
+function gwReset(){
+  gwState.providers.forEach(p=>p.alive=true);
+  gwSyncUI();
+  document.getElementById('gwLog').innerHTML = '<span style="color:var(--muted)">// натисни "Send request"</span>';
+}
+
+// ============== JUDGE BARS ==============
+function runJudge(){
+  document.querySelectorAll('.scoreBar .fill').forEach(el=>{
+    el.style.width = '0%';
+    const num = el.parentElement.parentElement.querySelector('.num');
+    num.textContent = '—';
+  });
+  setTimeout(()=>{
+    document.querySelectorAll('.scoreBar .fill').forEach(el=>{
+      const target = +el.dataset.target;
+      el.style.width = target + '%';
+      const num = el.parentElement.parentElement.querySelector('.num');
+      num.textContent = target + '%';
+    });
+  }, 100);
+}
+</script>
+</body>
+</html>
