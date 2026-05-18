@@ -57,8 +57,8 @@ class RAGService:
 
         async with httpx.AsyncClient(timeout=30) as client:
             r = await client.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={"Authorization": f"Bearer {settings.openrouter_api_key}"},
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.openai_api_key}"},
                 json={
                     "model": self.llm_model,
                     "messages": [{"role": "user", "content": prompt}],
