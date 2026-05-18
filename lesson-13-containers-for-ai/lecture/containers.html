@@ -1,0 +1,1195 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Containers for AI — заняття 13</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#15181d; --panel2:#1d2127; --line:#2a2f37;
+    --text:#e6e8ec; --muted:#9aa3ad;
+    --accent:#7cd1ff; --accent2:#ffd166; --accent3:#9be37c; --accent4:#c79bff; --accent5:#ff7eb6;
+    --warn:#ff7676; --ok:#9be37c;
+    --docker:#2496ed; --nvidia:#76b900;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .wrap{max-width:1320px;margin:0 auto;padding:24px}
+  h1{font-size:30px;letter-spacing:.5px;margin:0 0 6px}
+  h1 small{color:var(--muted);font-weight:400;font-size:14px;display:block;margin-top:6px}
+  .sub{color:var(--muted);margin-bottom:24px;font-size:14px}
+
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 30px;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+  .toc a{color:var(--accent);text-decoration:none;font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel2)}
+  .toc a:hover{border-color:var(--accent)}
+
+  section{margin:36px 0;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px;scroll-margin-top:20px}
+  section h2{font-size:20px;margin:0 0 8px;color:#fff;letter-spacing:.5px}
+  section h2 .num{color:var(--accent);font-weight:400}
+  section .lead{color:var(--muted);margin:0 0 18px;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.6}
+  section h3{font-size:14px;margin:18px 0 8px;color:#fff;text-transform:uppercase;letter-spacing:1.2px}
+
+  .pad{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;line-height:1.65;color:#cdd5de}
+  .pad b{color:#fff}
+  .pad code{background:#11151a;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+  @media(max-width:980px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .card h4{margin:0 0 8px;font-size:13px;color:#fff;letter-spacing:.5px}
+  .card p{margin:0;color:#cdd5de;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:13px}
+
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:13px}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px;background:var(--panel2)}
+  td b{color:#fff}
+  td code{background:#11151a;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
+
+  pre{background:#0a0c0f;border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;font-size:12px;line-height:1.5;color:#cdd5de}
+  pre .k{color:#ff7eb6}
+  pre .s{color:#9be37c}
+  pre .c{color:#6a737d;font-style:italic}
+  pre .n{color:#7cd1ff}
+  pre .f{color:#ffd166}
+
+  .demo{margin-top:14px;padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:10px}
+  .demo .demoHead{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .demo .demoHead .tag{padding:3px 10px;border-radius:999px;background:var(--accent);color:#0b0d10;font-weight:700;font-size:11px;letter-spacing:.5px;text-transform:uppercase}
+  .demo .demoHead h4{margin:0;font-size:13px;color:#fff}
+  .btn{background:#26303b;color:#fff;border:1px solid #3a4654;border-radius:8px;padding:7px 14px;cursor:pointer;font:inherit;font-size:12px;font-weight:600}
+  .btn:hover{border-color:#57667a}
+  .btn.primary{background:var(--accent);color:#0b0d10;border-color:var(--accent)}
+  .btn.warn{background:var(--warn);color:#fff;border-color:var(--warn)}
+  .btn.ok{background:var(--ok);color:#0b0d10;border-color:var(--ok)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:11px;color:var(--muted)}
+  .pill.ok{background:rgba(155,227,124,0.15);border-color:var(--ok);color:var(--ok)}
+  .pill.warn{background:rgba(255,118,118,0.15);border-color:var(--warn);color:var(--warn)}
+  .pill.docker{background:rgba(36,150,237,0.15);border-color:var(--docker);color:var(--docker)}
+  .pill.nvidia{background:rgba(118,185,0,0.15);border-color:var(--nvidia);color:var(--nvidia)}
+
+  /* Layer cake (image anatomy) */
+  .cake{display:flex;flex-direction:column;gap:3px;padding:14px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .layer{display:flex;align-items:center;padding:10px 14px;border-radius:6px;cursor:pointer;transition:all .25s;border:1px solid transparent;position:relative;color:#fff}
+  .layer:hover{transform:translateX(4px);border-color:#fff}
+  .layer .name{flex:1;font-weight:600;font-size:13px}
+  .layer .size{font-family:ui-monospace,Menlo,monospace;font-size:12px;opacity:.85;background:rgba(0,0,0,0.25);padding:2px 8px;border-radius:4px}
+  .layer.os{background:#3a4654;height:38px}
+  .layer.runtime{background:#5b6b80;height:42px}
+  .layer.system{background:#7a8a9e;height:52px;color:#000}
+  .layer.python{background:#3b6fa5;height:60px}
+  .layer.torch{background:#d04545;height:120px}
+  .layer.transformers{background:#c79bff;color:#0b0d10;height:70px}
+  .layer.appdeps{background:#9be37c;color:#0b0d10;height:46px}
+  .layer.code{background:#ffd166;color:#0b0d10;height:30px}
+  .layer.model{background:#ff7eb6;color:#0b0d10;height:110px}
+  .layer.junk{background:#5e3030;height:60px;border-left:3px solid var(--warn)}
+  .layerInfo{margin-top:12px;padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:8px;min-height:120px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#cdd5de}
+  .layerInfo .title{font-weight:700;color:#fff;margin-bottom:6px}
+  .layerInfo .meta{color:var(--muted);font-size:11px;margin-bottom:8px}
+
+  /* Multi-stage animation */
+  .stages{display:grid;grid-template-columns:1fr 60px 1fr 60px 1fr;align-items:stretch;gap:8px}
+  @media(max-width:980px){.stages{grid-template-columns:1fr;gap:14px}}
+  .stage{background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;transition:all .4s;position:relative;min-height:200px;display:flex;flex-direction:column}
+  .stage h5{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#fff}
+  .stage .tagline{font-size:11px;color:var(--muted);margin-bottom:10px}
+  .stage .blocks{display:flex;flex-direction:column;gap:4px;flex:1}
+  .stage .blk{padding:5px 8px;border-radius:4px;font-size:11px;background:#0a0c0f;border:1px solid var(--line);color:#cdd5de;opacity:.4;transition:all .3s}
+  .stage .blk.on{opacity:1}
+  .stage .blk.compile{background:rgba(255,118,118,0.15);border-color:var(--warn);color:var(--warn)}
+  .stage .blk.deps{background:rgba(124,209,255,0.15);border-color:var(--accent);color:var(--accent)}
+  .stage .blk.code{background:rgba(255,209,102,0.15);border-color:var(--accent2);color:var(--accent2)}
+  .stage .blk.runtime{background:rgba(155,227,124,0.15);border-color:var(--accent3);color:var(--accent3)}
+  .stage .sz{margin-top:10px;padding:6px;background:#0a0c0f;border-radius:6px;font-family:ui-monospace,Menlo,monospace;font-size:13px;text-align:center;font-weight:700}
+  .stage.builder{border-color:var(--warn)}
+  .stage.builder .sz{color:var(--warn)}
+  .stage.runtime{border-color:var(--ok)}
+  .stage.runtime .sz{color:var(--ok)}
+  .stage.dropped{opacity:.25}
+  .stageArrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:32px;transition:color .4s}
+  .stageArrow.active{color:var(--accent)}
+  @media(max-width:980px){.stageArrow{font-size:18px;transform:rotate(90deg)}}
+
+  /* Cache simulator */
+  .cacheSim{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:980px){.cacheSim{grid-template-columns:1fr}}
+  .dockerfile{background:#0a0c0f;border:1px solid var(--line);border-radius:8px;padding:12px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+  .dockerfile .line{padding:4px 8px;border-radius:4px;margin:2px 0;display:flex;justify-content:space-between;align-items:center;transition:all .3s}
+  .dockerfile .line.hit{background:rgba(155,227,124,0.12);border-left:3px solid var(--ok)}
+  .dockerfile .line.miss{background:rgba(255,118,118,0.15);border-left:3px solid var(--warn)}
+  .dockerfile .line .tag{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:700;text-transform:uppercase}
+  .dockerfile .line.hit .tag{background:var(--ok);color:#0b0d10}
+  .dockerfile .line.miss .tag{background:var(--warn);color:#fff}
+  .cacheStat{display:flex;flex-direction:column;gap:10px}
+  .cacheStat .row{padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .cacheStat .row .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .cacheStat .row .v{font-size:22px;font-weight:700;color:#fff;margin-top:4px}
+  .cacheStat .row .v.warn{color:var(--warn)}
+  .cacheStat .row .v.ok{color:var(--ok)}
+
+  /* GPU compat matrix */
+  .gpuMatrix{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:14px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,Menlo,monospace;font-size:11px}
+  .gpuCell{padding:8px;text-align:center;border-radius:4px;cursor:pointer;transition:all .2s}
+  .gpuCell.h{font-weight:700;background:var(--panel);color:var(--muted);cursor:default}
+  .gpuCell.ok{background:rgba(155,227,124,0.18);color:var(--ok);border:1px solid rgba(155,227,124,0.4)}
+  .gpuCell.bad{background:rgba(255,118,118,0.18);color:var(--warn);border:1px solid rgba(255,118,118,0.4)}
+  .gpuCell.warn{background:rgba(255,209,102,0.18);color:var(--accent2);border:1px solid rgba(255,209,102,0.4)}
+  .gpuCell:not(.h):hover{transform:scale(1.05);z-index:1}
+  .gpuLog{margin-top:14px;padding:12px;background:#000;border:1px solid var(--line);border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#9be37c;min-height:140px;line-height:1.5}
+  .gpuLog .line{margin:1px 0}
+  .gpuLog .line.warn{color:var(--accent2)}
+  .gpuLog .line.err{color:var(--warn)}
+  .gpuLog .line.info{color:var(--accent)}
+  .gpuLog .prompt{color:#fff}
+
+  /* Model loading strategies */
+  .strategies{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media(max-width:980px){.strategies{grid-template-columns:1fr}}
+  .strat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .strat h5{margin:0 0 6px;font-size:13px;color:#fff}
+  .strat .meta{font-size:11px;color:var(--muted);margin-bottom:10px}
+  .strat .bars{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .strat .bar{position:relative}
+  .strat .bar .lbl{font-size:11px;color:var(--muted);margin-bottom:3px;display:flex;justify-content:space-between}
+  .strat .bar .lbl b{color:#fff;font-weight:700;font-family:ui-monospace,Menlo,monospace}
+  .strat .bar .track{height:6px;background:#0a0c0f;border-radius:3px;overflow:hidden}
+  .strat .bar .fill{height:100%;background:var(--accent);transition:width .8s ease}
+  .strat .bar .fill.warn{background:var(--warn)}
+  .strat .bar .fill.ok{background:var(--ok)}
+  .strat .verdict{margin-top:12px;padding:8px;background:#0a0c0f;border-radius:6px;font-size:11px;color:#cdd5de;line-height:1.5}
+  .strat .verdict b{color:#fff}
+
+  /* Build animation log */
+  .buildLog{margin-top:12px;padding:14px;background:#000;border:1px solid var(--line);border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:11px;min-height:140px;line-height:1.55;color:#9be37c}
+  .buildLog .row{margin:1px 0;opacity:0;animation:fadeIn .3s ease forwards}
+  .buildLog .row .ms{color:var(--muted);margin-right:8px}
+  .buildLog .row.step{color:#fff}
+  .buildLog .row.cache{color:var(--accent3)}
+  .buildLog .row.miss{color:var(--warn)}
+  .buildLog .row.info{color:var(--accent)}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Anti-pattern cards */
+  .antipattern{background:rgba(255,118,118,0.06);border:1px solid rgba(255,118,118,0.3);border-radius:10px;padding:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .antipattern h5{margin:0 0 6px;color:var(--warn);font-size:13px}
+  .antipattern .bad,.antipattern .good{padding:8px 10px;border-radius:6px;font-family:ui-monospace,Menlo,monospace;font-size:11px;margin:6px 0}
+  .antipattern .bad{background:rgba(255,118,118,0.1);color:#ffb3b3;border-left:3px solid var(--warn)}
+  .antipattern .good{background:rgba(155,227,124,0.1);color:#c5f0a8;border-left:3px solid var(--ok)}
+  .antipattern .why{font-size:12px;color:#cdd5de;margin-top:8px;line-height:1.5}
+
+  .ascii{font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.3;white-space:pre;color:#cdd5de;padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:8px;overflow-x:auto}
+
+  .keypoint{padding:12px 14px;background:rgba(124,209,255,0.06);border-left:3px solid var(--accent);border-radius:6px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;color:#cdd5de;line-height:1.6}
+  .keypoint b{color:#fff}
+
+  hr{border:none;border-top:1px solid var(--line);margin:24px 0}
+
+  .smallnote{font-size:12px;color:var(--muted);font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;line-height:1.5;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Containers for AI</h1>
+<div class="sub">Чому AI-сервіси (RAG, agents, LLM API) ламають звичайні Docker-патерни, як це фіксити multi-stage збірками, як запускати GPU-контейнери для inference і де це деплоїти на AWS. Все з інтерактивами — клікай і дивись як числа змінюються.</div>
+
+<nav class="toc">
+  <a href="#why">1. Чому AI ≠ web</a>
+  <a href="#anatomy">2. Anatomy of an AI image</a>
+  <a href="#docker">3. Dockerfile минимум</a>
+  <a href="#multistage">4. Multi-stage build</a>
+  <a href="#cache">5. Layer cache</a>
+  <a href="#gpu">6. GPU containers</a>
+  <a href="#loading">7. Model loading strategies</a>
+  <a href="#prod">8. Production patterns</a>
+  <a href="#aws">9. AWS для AI</a>
+  <a href="#recap">10. Recap</a>
+</nav>
+
+<!-- ============================ SECTION 1: WHY ============================ -->
+<section id="why">
+  <h2><span class="num">01 ·</span> Чому AI-сервіси — це <b>не</b> звичайні веб-сервіси</h2>
+  <p class="lead">Більшість Docker-туторіалів пишуть люди які деплоять Flask + Postgres. У AI ти стикаєшся з накладеннями які звичайний веб не має: GPU runtime, мегабайтні залежності, мультигігабайтні ваги моделей, повільний cold start. Стандартні поради ("просто додай Dockerfile") ламаються.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>🌐 Звичайний веб-сервіс</h4>
+      <p style="margin-top:8px">Flask + requests + sqlalchemy. Image ~150 MB. Cold start &lt; 1 сек. Зміна коду = новий деплой за 30 сек. State у базі. CPU + 512 MB RAM. Будь-яка машина у будь-якій cloud.</p>
+    </div>
+    <div class="card" style="border-color:rgba(255,118,118,0.3)">
+      <h4 style="color:var(--warn)">🧠 LLM inference сервіс</h4>
+      <p style="margin-top:8px">FastAPI + PyTorch + transformers + vLLM. Image <b>8-15 GB</b>. Cold start <b>30-180 сек</b> (завантаження ваг). Зміна коду = новий деплой <b>5-15 хв</b>. State у GPU memory + model cache. Потребує GPU драйвер + CUDA toolkit. Хост повинен мати NVIDIA Container Toolkit.</p>
+    </div>
+  </div>
+
+  <h3>Конкретні pain points</h3>
+  <div class="grid4">
+    <div class="card">
+      <h4 style="color:var(--accent)">🪜 GPU runtime</h4>
+      <p>Драйвер на хості, CUDA в контейнері. Версії <b>повинні</b> бути сумісними. Без NVIDIA Container Toolkit твій <code>--gpus all</code> не побачить жодної відеокарти.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent2)">📦 Розмір артефакту</h4>
+      <p>Модель 7B у fp16 = <b>14 GB</b>. Python image = 1 GB. Стандартний "запхай все в image" дає 15+ GB і push 20 хв.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent3)">⏱️ Cold start</h4>
+      <p>Завантаження ваг моделі у GPU memory — <b>10-120 сек</b>. Звичайний healthcheck <code>/health → 200</code> бреше: порт відкритий, але запит впаде.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent4)">🔌 Зовнішні залежності</h4>
+      <p>Твій AI сервіс рідко самостійний. Це <b>контейнер + vector DB + LLM API + observability</b>. <code>docker-compose</code> = твій базовий стек локально, ECS task / k8s pod = той самий стек у проді.</p>
+    </div>
+  </div>
+
+  <div class="keypoint" style="margin-top:18px">
+    <b>Головна ідея уроку:</b> Docker для AI — це не "запакуй Python". Це <b>оптимізація image size</b> (інакше CI/CD задушиться), <b>правильний model loading</b> (інакше скейлінг неможливий) і <b>розуміння GPU runtime</b> (інакше воно просто не запускається).
+  </div>
+</section>
+
+<!-- ============================ SECTION 2: ANATOMY ============================ -->
+<section id="anatomy">
+  <h2><span class="num">02 ·</span> Anatomy of an AI image — на що йдуть гігабайти</h2>
+  <p class="lead">Перш ніж оптимізувати — треба бачити що саме розпухає. Це <b>real breakdown</b> naive Dockerfile для PyTorch FastAPI сервісу. Клікни на шар щоб дізнатись що там.</p>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag">interactive</span>
+      <h4>Layer cake — клікай на шари</h4>
+      <span style="margin-left:auto;color:var(--muted);font-size:11px">Кожен прямокутник = 1 шар у Docker image. Висота ∝ розмір.</span>
+    </div>
+    <div class="cake" id="cake"></div>
+    <div class="layerInfo" id="layerInfo">
+      <div class="title">👈 Клікни на будь-який шар вище</div>
+      <div>Побачиш звідки беруться мегабайти, чи можна цей шар прибрати або зменшити, і що буде якщо лишити "як є".</div>
+    </div>
+    <div class="smallnote">Total: <b>8.2 GB</b> для naive image з PyTorch CUDA wheels + transformers + dev tools. Multi-stage версія (далі) робить <b>~1.2 GB</b>.</div>
+  </div>
+</section>
+
+<!-- ============================ SECTION 3: DOCKERFILE BASICS ============================ -->
+<section id="docker">
+  <h2><span class="num">03 ·</span> Dockerfile minimum для AI-інженера</h2>
+  <p class="lead">Без занурення в DevOps. Топ-10 команд яких достатньо для 99% AI кейсів.</p>
+
+  <div class="grid2">
+    <div>
+      <h3>Базовий шаблон</h3>
+<pre><span class="k">FROM</span> python:3.11-slim
+<span class="k">WORKDIR</span> /app
+
+<span class="c"># 1) залежності окремо — для cache</span>
+<span class="k">COPY</span> requirements.txt .
+<span class="k">RUN</span> pip install --no-cache-dir -r requirements.txt
+
+<span class="c"># 2) код останнім — змінюється часто</span>
+<span class="k">COPY</span> app/ ./app/
+
+<span class="k">EXPOSE</span> 8000
+<span class="k">CMD</span> [<span class="s">"uvicorn"</span>, <span class="s">"app.main:app"</span>, <span class="s">"--host"</span>, <span class="s">"0.0.0.0"</span>]
+</pre>
+    </div>
+    <div>
+      <h3>Що означає кожна інструкція</h3>
+      <table>
+        <thead><tr><th>Команда</th><th>Що робить</th></tr></thead>
+        <tbody>
+          <tr><td><code>FROM</code></td><td>База на якій будуємо. Для AI = <code>python:slim</code>, <code>nvidia/cuda</code>, <code>pytorch/pytorch</code></td></tr>
+          <tr><td><code>WORKDIR</code></td><td>cd всередині контейнера. <code>/app</code> — конвенція</td></tr>
+          <tr><td><code>COPY</code></td><td>Хост → image. <b>Порядок важливий</b> для cache</td></tr>
+          <tr><td><code>RUN</code></td><td>Виконати команду на build time. Створює новий layer</td></tr>
+          <tr><td><code>ENV</code></td><td>Env var що лишиться у runtime</td></tr>
+          <tr><td><code>EXPOSE</code></td><td>Документація — який порт. <b>Не</b> публікує</td></tr>
+          <tr><td><code>CMD</code></td><td>Що запускати при <code>docker run</code></td></tr>
+          <tr><td><code>HEALTHCHECK</code></td><td>Команда яку Docker запускає для перевірки що контейнер живий</td></tr>
+          <tr><td><code>USER</code></td><td>Не запускати від root. <b>Обов'язково для прод</b></td></tr>
+          <tr><td><code>ARG</code></td><td>Build-time змінна. Доступна тільки на білді, не у runtime</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr>
+
+  <h3>🚫 Топ-5 анти-патернів</h3>
+  <div class="grid2">
+    <div class="antipattern">
+      <h5>1. COPY все, потім pip install</h5>
+      <div class="bad">COPY . .<br>RUN pip install -r requirements.txt</div>
+      <div class="good">COPY requirements.txt .<br>RUN pip install -r requirements.txt<br>COPY . .</div>
+      <div class="why"><b>Чому:</b> при першому варіанті будь-яка зміна коду (1 байт) інвалідує cache для <code>pip install</code> — повторний білд 4 хв замість 5 сек.</div>
+    </div>
+    <div class="antipattern">
+      <h5>2. Запуск від root</h5>
+      <div class="bad"># нічого про USER, default = root</div>
+      <div class="good">RUN useradd --create-home --uid 1000 app<br>USER app</div>
+      <div class="why"><b>Чому:</b> якщо хтось пробʼє Python — він root всередині container. На k8s з privileged mounts це = root на хості. Безкоштовна best practice.</div>
+    </div>
+    <div class="antipattern">
+      <h5>3. Не закріплені версії</h5>
+      <div class="bad">torch<br>transformers<br>fastapi</div>
+      <div class="good">torch==2.3.0<br>transformers==4.46.2<br>fastapi==0.115.5</div>
+      <div class="why"><b>Чому:</b> сьогодні білд проходить, завтра нова версія transformers ламає API. Reproducibility = закріплені версії.</div>
+    </div>
+    <div class="antipattern">
+      <h5>4. pip install без --no-cache-dir</h5>
+      <div class="bad">RUN pip install -r requirements.txt</div>
+      <div class="good">RUN pip install --no-cache-dir -r requirements.txt</div>
+      <div class="why"><b>Чому:</b> pip за замовчуванням кешує .whl у <code>~/.cache/pip</code> → +200-500 MB зайвого у фінальному image. У контейнері кеш не потрібен.</div>
+    </div>
+    <div class="antipattern">
+      <h5>5. Немає .dockerignore</h5>
+      <div class="bad"># файл просто відсутній</div>
+      <div class="good">.venv/<br>__pycache__/<br>.git/<br>.env<br>data/cache/<br>*.ipynb</div>
+      <div class="why"><b>Чому:</b> без нього <code>COPY . .</code> тягне 5+ GB сміття: твоє venv, .git history, дата-кеші. Image розпухає, build повільніший.</div>
+    </div>
+    <div class="antipattern">
+      <h5>6. Ваги моделі всередині image</h5>
+      <div class="bad">RUN python -c "from transformers import ...; .from_pretrained(...)"</div>
+      <div class="good"># mount як volume<br># або download at startup<br># або bake тільки для маленьких моделей</div>
+      <div class="why"><b>Чому:</b> image на 15 GB. Push у registry — 20 хв. Pull при автоскейлі — 8 хв. Розглянемо стратегії у секції 7.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ SECTION 4: MULTI-STAGE ============================ -->
+<section id="multistage">
+  <h2><span class="num">04 ·</span> Multi-stage build — головна tool для AI образів</h2>
+  <p class="lead">Multi-stage = декілька <code>FROM</code> у одному Dockerfile. Build dependencies (gcc, dev headers) живуть у проміжному stage і <b>не потрапляють</b> у фінальний image. Для AI це різниця між 8 GB і 1.2 GB.</p>
+
+  <div class="grid2">
+    <div>
+      <h3>Шаблон multi-stage для PyTorch FastAPI</h3>
+<pre><span class="c"># --- Stage 1: builder ---</span>
+<span class="k">FROM</span> python:3.11 <span class="k">AS</span> builder
+<span class="k">RUN</span> apt-get install -y gcc g++
+<span class="k">COPY</span> requirements.txt .
+<span class="k">RUN</span> pip install --no-cache-dir \
+    --target=/deps -r requirements.txt
+
+<span class="c"># --- Stage 2: runtime ---</span>
+<span class="k">FROM</span> python:3.11-slim <span class="k">AS</span> runtime
+<span class="k">RUN</span> useradd --uid 1000 app
+<span class="k">USER</span> app
+
+<span class="k">COPY</span> --from=builder /deps /deps
+<span class="k">COPY</span> --chown=app:app app/ ./app/
+
+<span class="k">ENV</span> PYTHONPATH=/deps
+
+<span class="k">HEALTHCHECK</span> --interval=10s \
+  CMD python -c <span class="s">"import httpx; ..."</span>
+
+<span class="k">CMD</span> [<span class="s">"python"</span>, <span class="s">"-m"</span>, <span class="s">"uvicorn"</span>, <span class="s">"app.main:app"</span>]
+</pre>
+      <p class="smallnote">Builder має gcc/g++ для компіляції C-розширень (flash-attn, vllm). Runtime — чистий slim без жодного компайлера.</p>
+    </div>
+    <div>
+      <h3>Що дає multi-stage у цифрах (реальні заміри з boilerplate ДЗ)</h3>
+      <table>
+        <thead><tr><th></th><th>Naive</th><th>Multi-stage</th></tr></thead>
+        <tbody>
+          <tr><td>Image size</td><td><b>1.26 GB</b></td><td><b>251 MB</b> <span class="pill ok">5x</span></td></tr>
+          <tr><td>Build cold</td><td>102 s</td><td>22 s <span class="pill ok">4.6x</span></td></tr>
+          <tr><td>Rebuild after code change</td><td>17 s</td><td><b>1 s</b> <span class="pill ok">17x</span></td></tr>
+          <tr><td>Push до registry</td><td>~90 s</td><td>~18 s</td></tr>
+          <tr><td>Pull на новій ноді</td><td>~60 s</td><td>~12 s</td></tr>
+          <tr><td>Cold start (image-only)</td><td>1.0 s</td><td>3.3 s</td></tr>
+        </tbody>
+      </table>
+      <p class="smallnote">Naive cold start швидший — slim base мікроскопічно повільніше імпортує. Це нормальний trade-off за 5x менший образ і 17x швидший rebuild.</p>
+    </div>
+  </div>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag">animation</span>
+      <h4>Multi-stage: дивись як stages працюють</h4>
+      <button class="btn primary" id="buildBtn">▶ Run build</button>
+      <button class="btn" id="resetBuildBtn">Reset</button>
+    </div>
+
+    <div class="stages">
+      <div class="stage builder" id="stBuilder">
+        <h5>Stage 1: builder</h5>
+        <div class="tagline">python:3.11 (повний)</div>
+        <div class="blocks">
+          <div class="blk compile" data-stage="builder" data-step="1">📦 gcc, g++, headers</div>
+          <div class="blk deps" data-stage="builder" data-step="2">📥 pip download wheels</div>
+          <div class="blk deps" data-stage="builder" data-step="3">🔨 compile C extensions</div>
+          <div class="blk deps" data-stage="builder" data-step="4">📁 install → /deps</div>
+        </div>
+        <div class="sz" id="szBuilder">— MB</div>
+      </div>
+
+      <div class="stageArrow" id="arrow1">→</div>
+
+      <div class="stage runtime" id="stRuntime">
+        <h5>Stage 2: runtime</h5>
+        <div class="tagline">python:3.11-slim (мінімум)</div>
+        <div class="blocks">
+          <div class="blk runtime" data-stage="runtime" data-step="5">👤 useradd app, non-root</div>
+          <div class="blk deps" data-stage="runtime" data-step="6">📋 COPY --from=builder /deps</div>
+          <div class="blk code" data-stage="runtime" data-step="7">📄 COPY app/ ./app/</div>
+          <div class="blk runtime" data-stage="runtime" data-step="8">⚙️ HEALTHCHECK</div>
+        </div>
+        <div class="sz" id="szRuntime">— MB</div>
+      </div>
+
+      <div class="stageArrow" id="arrow2">→</div>
+
+      <div class="stage" id="stFinal" style="border-color:var(--accent)">
+        <h5>Final image</h5>
+        <div class="tagline">що піде у registry</div>
+        <div class="blocks" id="finalBlocks">
+          <div class="blk" style="opacity:.3">очікую завершення build...</div>
+        </div>
+        <div class="sz" id="szFinal" style="color:var(--accent)">— MB</div>
+      </div>
+    </div>
+
+    <div class="buildLog" id="buildLog"></div>
+  </div>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>Чому це працює:</b> Docker зберігає <b>тільки stages які мають тег</b> (тобто фінальний). Builder з gcc, апт-кешами, тимчасовими файлами — викидається. У фінальний layer потрапляє лише те що ти явно <code>COPY --from=builder</code>.
+  </div>
+</section>
+
+<!-- ============================ SECTION 5: CACHE ============================ -->
+<section id="cache">
+  <h2><span class="num">05 ·</span> Layer cache — чому порядок інструкцій критичний</h2>
+  <p class="lead">Docker кешує кожен layer. Якщо інструкція не змінилась — використовується кеш. <b>Найменша зміна</b> у файлі/команді інвалідує цей layer і <b>всі наступні</b>. Один зайвий "miss" і твій <code>pip install</code> йде 4 хв замість 0 сек.</p>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag">interactive</span>
+      <h4>Cache simulator — зміни код, дивись які layers перебудовуються</h4>
+      <button class="btn" id="cacheCodeChange">📝 Change app/main.py</button>
+      <button class="btn" id="cacheDepsChange">📦 Update requirements.txt</button>
+      <button class="btn" id="cacheReset">↻ Clean rebuild</button>
+    </div>
+
+    <div class="cacheSim">
+      <div class="dockerfile" id="dockerfile">
+        <div class="line" data-key="from"><span>FROM python:3.11-slim</span><span class="tag hit">hit</span></div>
+        <div class="line" data-key="workdir"><span>WORKDIR /app</span><span class="tag hit">hit</span></div>
+        <div class="line" data-key="reqcopy"><span>COPY requirements.txt .</span><span class="tag hit">hit</span></div>
+        <div class="line" data-key="pip"><span>RUN pip install -r requirements.txt</span><span class="tag hit">hit</span></div>
+        <div class="line" data-key="codecopy"><span>COPY app/ ./app/</span><span class="tag hit">hit</span></div>
+        <div class="line" data-key="cmd"><span>CMD ["uvicorn", "app.main:app"]</span><span class="tag hit">hit</span></div>
+      </div>
+      <div class="cacheStat">
+        <div class="row"><div class="label">Cache misses</div><div class="v ok" id="cacheMisses">0 / 6</div></div>
+        <div class="row"><div class="label">Час повторного білду</div><div class="v ok" id="cacheTime">~0.5 s</div></div>
+        <div class="row"><div class="label">Що сталось</div><div class="v" id="cacheExplain" style="font-size:13px;font-weight:400;color:#cdd5de">Все з кеша. Білд миттєвий.</div></div>
+      </div>
+    </div>
+    <p class="smallnote">Правило: <b>часто-змінюване — нижче</b>. <code>requirements.txt</code> змінюється раз на тиждень, твій код — 50 разів на день. Тому requirements йде <b>перед</b> code copy.</p>
+  </div>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>Чому це жирно для AI:</b> якщо у тебе <code>torch==2.3.0</code> у requirements.txt — це 2.5 GB pip install з компіляцією CUDA wheels. Кожен miss = 4 хв чекання. Правильний порядок layers = ця компіляція виконується <b>один раз на тиждень</b>, а не на кожен push коду.
+  </div>
+</section>
+
+<!-- ============================ SECTION 6: GPU ============================ -->
+<section id="gpu">
+  <h2><span class="num">06 ·</span> GPU containers — коли потрібен і як працює</h2>
+  <p class="lead">Якщо ти ходиш у OpenAI/Anthropic/Bedrock через API — <b>GPU тобі не потрібен</b>, провайдер вже все має. GPU стає потрібен коли ти запускаєш модель <b>сам</b>: vLLM з Llama, Ollama локально, Whisper для транскрипції, embeddings через sentence-transformers, image generation (Stable Diffusion / Flux). Розглянемо різницю CPU vs GPU.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4 style="color:var(--accent)">🧮 CPU — універсал-послідовник</h4>
+      <p>4-16 ядер, кожне дуже розумне і швидке. Виконує <b>складні гілкові обчислення один за одним</b>. Чудово для бізнес-логіки, баз даних, API. Для матричного множення (а LLM = багато матриць) — повільно.</p>
+      <p style="margin-top:8px"><b>Llama 3.1 8B на CPU:</b> ~3-5 токенів/сек. Користувач чекає 30 сек на відповідь. UX зламано.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--nvidia)">⚡ GPU — паралельний робочий завод</h4>
+      <p>Тисячі простих ядер (RTX 4090 = 16,384 CUDA cores). Кожне окремо тупе, але <b>всі разом множать матриці одночасно</b>. Створювалися для графіки (це і є матриці), випадково ідеально підійшли для нейромереж.</p>
+      <p style="margin-top:8px"><b>Llama 3.1 8B на GPU (A10G):</b> ~80-120 токенів/сек. 2-3 сек на відповідь. UX живий.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">У числах — той самий запит на різному заліз</h3>
+  <table>
+    <thead><tr><th>Workload</th><th>CPU (32 vCPU Xeon)</th><th>T4 (entry GPU)</th><th>A10G</th><th>A100 (40GB)</th></tr></thead>
+    <tbody>
+      <tr><td>Embedding 1 doc (MiniLM)</td><td>~40 ms</td><td>~5 ms</td><td>~2 ms</td><td>~1 ms</td></tr>
+      <tr><td>Llama 3.1 8B inference (tok/s)</td><td><b>3-5</b></td><td>~30</td><td><b>80-120</b></td><td>~180</td></tr>
+      <tr><td>Llama 3.1 70B inference</td><td>не влізе у RAM</td><td>не влізе</td><td>тісно (~40 GB)</td><td><b>~50</b></td></tr>
+      <tr><td>Whisper-large транскрипція 1 хв аудіо</td><td>~25 s</td><td>~3 s</td><td>~1.5 s</td><td>~0.8 s</td></tr>
+      <tr><td>Stable Diffusion XL 1 image</td><td>~120 s</td><td>~12 s</td><td>~5 s</td><td>~3 s</td></tr>
+      <tr><td>Ціна $/год AWS (приблизно)</td><td>$1.4 (c6i.8xl)</td><td>$0.53 (g4dn.xl)</td><td>$1.21 (g5.xl)</td><td>$3.06 (p4d)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="grid3" style="margin-top:18px">
+    <div class="card">
+      <h4 style="color:var(--accent2)">📐 VRAM як ліміт</h4>
+      <p>На GPU модель має <b>влізти в VRAM</b> цілком. Llama 8B у fp16 = 16 GB → не влізе в T4 (16 GB треба ще для KV cache). Тому квантизація (Q4, Q8) — щоб втиснути в дешеву карту.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent3)">📊 Batch size — секрет throughput</h4>
+      <p>1 запит на GPU = недовикористання. <b>32 паралельних запити</b> на тій самій GPU = майже та ж latency, але throughput ×30. vLLM зі своїм paged attention робить це автоматично — тому в проді не запускають "просто transformers.generate()".</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent4)">🧠 Що CUDA робить за тебе</h4>
+      <p>CUDA = API + бібліотека від NVIDIA яка перетворює "помнож ці дві матриці" → 16k паралельних операцій на ядрах. PyTorch під капотом тільки кидає виклики у CUDA. У контейнері тобі треба <b>матчити CUDA Toolkit версію у image з driver на хості</b>.</p>
+    </div>
+  </div>
+
+  <div class="keypoint" style="margin-top:18px">
+    <b>Правило для AI-інженера:</b> якщо твій сервіс ходить у API (OpenAI/Bedrock/Anthropic) — <b>забудь про GPU</b>, деплой на Fargate, image &lt; 500 MB. GPU потрібен <b>тільки</b> якщо запускаєш модель сам. І навіть тоді — спочатку подивись чи можна обійтись API (90% RAG-кейсів — можна).
+  </div>
+
+  <hr>
+
+  <h3>Як GPU потрапляє в контейнер</h3>
+  <p class="pad">У 95% випадків AI-інженер цього не торкається — host driver встановлює платформа (AWS, RunPod, Lambda Labs). Достатньо знати 4 факти:</p>
+  <ul style="font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;color:#cdd5de;line-height:1.8;padding-left:22px;margin:10px 0">
+    <li>На <b>хості</b> встановлений NVIDIA driver + <code>nvidia-container-toolkit</code> (це менеджмент платформи)</li>
+    <li>Ти запускаєш контейнер з прапором <code>--gpus all</code> — toolkit прокидає driver libs з хоста всередину</li>
+    <li>У <b>image</b> у тебе CUDA Toolkit (через <code>nvidia/cuda:12.2-runtime</code> base) + PyTorch CUDA wheels</li>
+    <li><b>CUDA у image ≤ driver на хості</b>. Якщо взяв <code>nvidia/cuda:12.6</code> а на нозі driver 525.x → впаде з <code>CUDA driver version is insufficient</code>. Це єдиний симптом який треба впізнавати</li>
+  </ul>
+
+  <hr>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag">terminal</span>
+      <h4>Demo: запустити vLLM контейнер з GPU</h4>
+      <button class="btn primary" id="gpuRun">▶ docker run</button>
+      <button class="btn" id="gpuKill">Kill GPU</button>
+      <button class="btn" id="gpuReset">Reset</button>
+    </div>
+    <div class="gpuLog" id="gpuLog"><div class="line"><span class="prompt">$</span> _</div></div>
+  </div>
+
+  <div class="grid2" style="margin-top:14px">
+    <div class="card">
+      <h4 style="color:var(--accent)">📦 Inference container</h4>
+      <p>Read-only ваги, low-memory churn, оптимізація на throughput. <code>--gpus all</code>, <code>--shm-size=16g</code> (для tensor parallelism), HF cache як volume.</p>
+      <pre style="margin-top:8px;font-size:11px">docker run --gpus all \
+  --shm-size=16g \
+  -v ~/.cache/hf:/root/.cache/hf \
+  -p 8000:8000 \
+  vllm/vllm-openai \
+  --model llama-3.1-8b</pre>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent2)">🔀 LLM Gateway (CPU)</h4>
+      <p>Більшість AI-інженерів <b>не</b> тримають GPU. Звичайний паттерн — твій FastAPI сервіс ходить у <b>OpenAI / Anthropic / Bedrock</b>, плюс окремий gateway контейнер (LiteLLM) для fallback chain. CPU-only, image &lt; 300 MB.</p>
+      <pre style="margin-top:8px;font-size:11px">docker run -p 4000:4000 \
+  -e OPENAI_API_KEY=$OPENAI_KEY \
+  -e ANTHROPIC_API_KEY=$ANT_KEY \
+  ghcr.io/berriai/litellm \
+  --model gpt-4o-mini \
+  --fallbacks claude-3-5-haiku</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ SECTION 7: MODEL LOADING ============================ -->
+<section id="loading">
+  <h2><span class="num">07 ·</span> Model loading strategies — bake, volume, download</h2>
+  <p class="lead">Якщо ти запускаєш модель сам (не через API), у тебе є файл з вагами на 1-20 GB. Цей файл треба якось дати контейнеру. Є 3 способи — і кожен має свою ціну.</p>
+
+  <h3>Що означає "ваги моделі"?</h3>
+  <p class="pad">"Llama 3.1 8B" = <b>8 мільярдів чисел</b> у файлі. Кожне число — float у 2 байти. 8 × 2 = <b>~16 GB файл</b> з якого LLM "думає". Цей файл треба покласти в GPU memory <b>перш ніж</b> сервіс зможе відповідати. Поки не покладений — контейнер живий, але <code>/ask</code> повертає 503.</p>
+
+  <h3>Три стратегії — одна ідея на трьох</h3>
+  <p class="pad">Запам'ятай по ключовому слову:</p>
+  <ul style="font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:14px;color:#cdd5de;line-height:1.9;padding-left:22px;margin:10px 0">
+    <li><b style="color:var(--warn)">🥧 Bake</b> — ваги <b>всередині image</b>. <span style="color:var(--muted)">"запекли разом з кодом"</span></li>
+    <li><b style="color:var(--accent)">💾 Volume</b> — ваги <b>поруч з image</b>. <span style="color:var(--muted)">"лежать на диску, контейнер читає"</span></li>
+    <li><b style="color:var(--accent3)">⬇️ Download</b> — ваги <b>тягнуться з інтернету</b> при старті. <span style="color:var(--muted)">"кожен новий контейнер качає з HuggingFace"</span></li>
+  </ul>
+  <p class="pad" style="margin-top:8px">Трейдоф простий: чим швидший cold start, тим більший image. Чим менший image, тим повільніший cold start. <b>Третього не дано</b> — або ти платиш розміром, або часом старту.</p>
+
+  <h3 style="margin-top:24px">Основні метрики</h3>
+  <div class="grid4">
+    <div class="card">
+      <h4 style="color:var(--accent)">📦 Image size</h4>
+      <p>Скільки місця займає твій Docker image. Перевіряється: <code>docker images</code>.</p>
+      <p style="margin-top:6px"><b>Чому важливо:</b> великий image → довгий <code>docker pull</code> на кожну нову ноду при autoscale. Якщо image 15 GB, нова репліка стартує 5-10 хв замість 30 сек.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent3)">⏱️ Cold start</h4>
+      <p>Час від <code>docker run</code> до моменту коли сервіс готовий відповідати на запити (<code>/health → ok</code>).</p>
+      <p style="margin-top:6px"><b>Чому важливо:</b> на autoscale кожна нова репліка йде через cold start. Якщо він 5 хв, то трафіковий сплеск ти будеш переживати з 503 errors. Для chat UI &gt; 30 сек = поганий UX.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent2)">📤 Push в registry</h4>
+      <p>Час щоб залити image у container registry (ECR, GHCR, Docker Hub) після <code>docker build</code>.</p>
+      <p style="margin-top:6px"><b>Чому важливо:</b> якщо CI пайплайн будує + пушить image 25 хв, твоя deploy швидкість обмежена цим. 50 push-ів на день × 20 хв = 17 годин CI часу = реальні гроші. Тому маленький image → дешевший CI.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent4)">🎯 Reproducibility</h4>
+      <p>Гарантія що та сама команда <code>docker run image:v1</code> дасть однаковий результат сьогодні і через рік.</p>
+      <p style="margin-top:6px"><b>Чому важливо:</b> якщо ваги моделі качаються з HF при кожному старті, а HuggingFace оновив модель — твій сервіс поведеться інакше. Bake = 100% repro (ваги вшиті). Download = ризик "у понеділок працювало".</p>
+    </div>
+  </div>
+
+  <div class="strategies">
+    <div class="strat">
+      <h5>🥧 Bake in image</h5>
+      <div class="meta">ваги додаються в Docker image під час <code>docker build</code></div>
+      <p style="font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:12px;color:#cdd5de;line-height:1.5;margin:8px 0"><b>Як зробити:</b> у Dockerfile додаєш <code>RUN python -c "from transformers import ...; .from_pretrained(...)"</code> — ваги кешуються в layer і їдуть з image.</p>
+      <div class="bars">
+        <div class="bar"><div class="lbl">Image size <b>15 GB</b> <span style="color:var(--warn)">↑↑</span></div><div class="track"><div class="fill warn" style="width:95%"></div></div></div>
+        <div class="bar"><div class="lbl">Cold start <b>2 s</b> <span style="color:var(--ok)">найкраще</span></div><div class="track"><div class="fill ok" style="width:5%"></div></div></div>
+        <div class="bar"><div class="lbl">Push в registry <b>20 min</b> <span style="color:var(--warn)">довго</span></div><div class="track"><div class="fill warn" style="width:85%"></div></div></div>
+        <div class="bar"><div class="lbl">Reproducibility <b>100%</b> <span style="color:var(--ok)">ідеально</span></div><div class="track"><div class="fill ok" style="width:100%"></div></div></div>
+      </div>
+      <div class="verdict"><b>✓ Беремо коли:</b> модель маленька (&lt; 1 GB) — наприклад MiniLM для embeddings. Або prod де версія моделі = версія сервісу і це критично.<br><br><b>✗ Не беремо коли:</b> великі LLM (15 GB image страшно пушити), часті деплої (кожен push = 20 хв).</div>
+    </div>
+
+    <div class="strat">
+      <h5>💾 Volume mount</h5>
+      <div class="meta">ваги лежать на диску, контейнер їх "монтує" через <code>-v /models:/models</code></div>
+      <p style="font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:12px;color:#cdd5de;line-height:1.5;margin:8px 0"><b>Як зробити:</b> ваги один раз кладеш на shared FS (EFS / Filestore / NFS / локальний диск). Контейнер при старті бачить <code>/models/llama-8b/</code> і читає звідти.</p>
+      <div class="bars">
+        <div class="bar"><div class="lbl">Image size <b>1.2 GB</b> <span style="color:var(--ok)">мало</span></div><div class="track"><div class="fill ok" style="width:10%"></div></div></div>
+        <div class="bar"><div class="lbl">Cold start <b>30 s</b> <span style="color:var(--muted)">читання з FS</span></div><div class="track"><div class="fill" style="width:30%"></div></div></div>
+        <div class="bar"><div class="lbl">Push в registry <b>1 min</b> <span style="color:var(--ok)">швидко</span></div><div class="track"><div class="fill ok" style="width:8%"></div></div></div>
+        <div class="bar"><div class="lbl">Reproducibility <b>~70%</b> <span style="color:var(--warn)">ризик</span></div><div class="track"><div class="fill warn" style="width:70%"></div></div></div>
+      </div>
+      <div class="verdict"><b>✓ Беремо коли:</b> Kubernetes-кластер з EFS/Filestore, кілька реплік сервісу читають одну модель. Або dev environment де хочеш переключати моделі без перебудови image.<br><br><b>✗ Не беремо коли:</b> Lambda/Fargate (там немає persistent volumes). Hard truth: <b>хтось має оновлювати склад</b> — це окремий operational concern.</div>
+    </div>
+
+    <div class="strat">
+      <h5>⬇️ Download at startup</h5>
+      <div class="meta">ваги качаються з HuggingFace коли контейнер стартує, у <code>app.on_startup</code></div>
+      <p style="font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:12px;color:#cdd5de;line-height:1.5;margin:8px 0"><b>Як зробити:</b> у lifespan handler пишеш <code>SentenceTransformer('all-MiniLM-L6-v2')</code> — sentence-transformers сама викачає ваги з HF при першому виклику.</p>
+      <div class="bars">
+        <div class="bar"><div class="lbl">Image size <b>1.2 GB</b> <span style="color:var(--ok)">мало</span></div><div class="track"><div class="fill ok" style="width:10%"></div></div></div>
+        <div class="bar"><div class="lbl">Cold start <b>60-300 s</b> <span style="color:var(--warn)">довго!</span></div><div class="track"><div class="fill warn" style="width:75%"></div></div></div>
+        <div class="bar"><div class="lbl">Push в registry <b>1 min</b> <span style="color:var(--ok)">швидко</span></div><div class="track"><div class="fill ok" style="width:8%"></div></div></div>
+        <div class="bar"><div class="lbl">Reproducibility <b>~80%</b> <span style="color:var(--muted)">залежить від HF</span></div><div class="track"><div class="fill" style="width:80%"></div></div></div>
+      </div>
+      <div class="verdict"><b>✓ Беремо коли:</b> serverless deploy на Fargate/Lambda, autoscale (нові ноди підіймаються самі). Можна змінити модель через <code>MODEL_ID</code> у env var без перебілду image.<br><br><b>✗ Не беремо коли:</b> SLA на cold start &lt; 30 сек (наприклад chat UI). <b>Mitigation:</b> монтуй HF cache як volume (<code>~/.cache/huggingface</code>) — друга нода стартує за 5 сек замість 60.</div>
+    </div>
+  </div>
+
+  <hr>
+
+  <h3>Як вибрати — просто по розміру моделі</h3>
+
+  <div class="grid3" style="margin-top:14px">
+    <div class="card" style="border-color:rgba(155,227,124,0.4)">
+      <h4 style="color:var(--ok)">🪶 Маленька модель (&lt; 500 MB)</h4>
+      <p><b>→ Bake в image.</b></p>
+      <p style="margin-top:6px">Приклад: MiniLM для embeddings (90 MB), маленький tokenizer, distilled BERT.</p>
+      <p class="smallnote" style="margin-top:6px">Image все одно буде &lt; 1 GB, push швидкий, cold start миттєвий. Ускладнюватись volume-ами немає сенсу.</p>
+    </div>
+    <div class="card" style="border-color:rgba(255,209,102,0.4)">
+      <h4 style="color:var(--accent2)">⚖️ Середня модель (500 MB – 5 GB)</h4>
+      <p><b>→ Download at startup + cache volume.</b></p>
+      <p style="margin-top:6px">Приклад: Whisper-small (500 MB), CLIP, Llama 3.2 3B (квантизована).</p>
+      <p class="smallnote" style="margin-top:6px">Image лишається маленький, перший cold start ~60 сек, наступні ~5 сек з кешу. Стандартний AI-сервіс паттерн.</p>
+    </div>
+    <div class="card" style="border-color:rgba(255,118,118,0.4)">
+      <h4 style="color:var(--warn)">🐘 Велика модель (&gt; 5 GB)</h4>
+      <p><b>→ Shared volume на cluster level</b> (EFS/Filestore) <b>або dedicated model server</b> (Triton, Ray Serve, vLLM).</p>
+      <p style="margin-top:6px">Приклад: Llama 3.1 8B/70B, SDXL, Whisper-large.</p>
+      <p class="smallnote" style="margin-top:6px">Тут вже не "як деплоїти контейнер з моделлю", а "як побудувати inference сервер який обслуговує кілька клієнтів". Окрема велика тема.</p>
+    </div>
+  </div>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>На практиці для AI-інженера:</b> 90% твоїх сервісів ходять у API (OpenAI/Bedrock) — <b>ніяких ваг у твоєму контейнері взагалі немає</b>. Решта 10% — це невеликі embedder-и/класифікатори, які чудово запікаються в image. Великі моделі через API провайдерів — нехай Anthropic/AWS бавляться з 70B вагами.
+  </div>
+</section>
+
+<!-- ============================ SECTION 8: PRODUCTION ============================ -->
+<section id="prod">
+  <h2><span class="num">08 ·</span> Production patterns та pitfalls</h2>
+  <p class="lead">Що випливає на проді що не покаже жоден туторіал.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>🩺 HEALTHCHECK що дійсно перевіряє AI</h4>
+      <p>Звичайний <code>GET /health → 200</code> для AI бреше. Порт відкривається <b>до</b> завантаження моделі. Healthcheck повинен перевіряти що модель готова робити inference.</p>
+<pre style="margin-top:8px"><span class="k">HEALTHCHECK</span> --interval=10s --start-period=60s \
+  CMD python -c <span class="s">"import httpx; r=httpx.get('http://localhost:8000/health', timeout=3); exit(0 if r.json().get('status')=='ok' else 1)"</span></pre>
+      <p class="smallnote"><code>--start-period=60s</code> — критично для AI. Це grace period поки модель грузиться, без нього Docker буде вважати контейнер unhealthy після перших 30 сек і рестартити в loop.</p>
+    </div>
+    <div class="card">
+      <h4>🛑 Graceful shutdown</h4>
+      <p>GPU контейнер що отримав SIGTERM посеред inference має:<br>1. <b>Закінчити поточний запит</b> (не різати на половині)<br>2. <b>Звільнити GPU memory</b> (інакше наступний контейнер не зможе alloc)<br>3. <b>Закрити connections до downstream сервісів</b></p>
+      <p class="smallnote">У FastAPI це <code>lifespan</code> handler з proper cleanup. uvicorn чекає <code>--timeout-graceful-shutdown</code> сек.</p>
+    </div>
+    <div class="card">
+      <h4>🔒 Security minimum</h4>
+      <p>• <b>Non-root user</b> у фінальному image<br>• <b>Read-only filesystem</b> де можливо: <code>--read-only</code> + <code>--tmpfs /tmp</code><br>• <b>Secrets через env/mount</b>, ніколи у Dockerfile (вони лишаться у history!)<br>• <b>Не</b> ховай Python через chmod — Python easy to reverse</p>
+    </div>
+    <div class="card">
+      <h4>💰 Registry economics</h4>
+      <p>Image 14 GB × 100 деплоїв/день = 1.4 TB трафіку. На GHCR безкоштовно для public, ECR коштує. Зменшення з 14 GB → 1.2 GB = 92% економії.</p>
+      <p class="smallnote">Image layers <b>дедупліковані</b> на стороні registry — якщо base layer той самий, заливається тільки delta. Тому slim base гарно економить навіть для багатьох image-ів одного проєкту.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <h3>Базові образи — який обрати</h3>
+  <table>
+    <thead><tr><th>Образ</th><th>Розмір</th><th>Коли</th></tr></thead>
+    <tbody>
+      <tr><td><code>python:3.11</code></td><td>~1 GB</td><td>Швидкий старт, dev environment. Прод — ні</td></tr>
+      <tr><td><code>python:3.11-slim</code></td><td>~120 MB</td><td><b>Default для CPU сервісів</b>. Найкращий баланс</td></tr>
+      <tr><td><code>python:3.11-alpine</code></td><td>~50 MB</td><td>Спокусливо, але часто ламає numpy/torch wheels (musl libc). Обережно</td></tr>
+      <tr><td><code>nvidia/cuda:12.2-runtime</code></td><td>~3 GB</td><td>GPU inference, без компіляції</td></tr>
+      <tr><td><code>nvidia/cuda:12.2-devel</code></td><td>~6 GB</td><td>Build stage для GPU кода (flash-attn, custom CUDA kernels)</td></tr>
+      <tr><td><code>pytorch/pytorch:2.3-cuda12.1</code></td><td>~7 GB</td><td>Готовий PyTorch + CUDA. Зручно для прототипу, важко для multi-stage</td></tr>
+      <tr><td><code>gcr.io/distroless/python3</code></td><td>~50 MB</td><td>Найменший. Немає shell, не подебажиш. Для security-paranoid prod</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================ SECTION 9: AWS ============================ -->
+<section id="aws">
+  <h2><span class="num">09 ·</span> AWS для AI-інженера — куди деплоїти контейнер</h2>
+  <p class="lead">Локально <code>docker run</code> працює. У проді треба сервіс який реєструється у load balancer, скейлиться, моніториться, перезапускається. На AWS для AI-сервісів є 4 основних варіанти — кожен з трейдофами.</p>
+
+  <h3>Decision tree</h3>
+  <div class="ascii">                       Я хочу задеплоїти AI-сервіс на AWS
+                                  │
+        ┌─────────────────────────┴─────────────────────────┐
+        │                                                   │
+  Persistent service                                  Event-driven /
+  (chat, API, agent)                                  sporadic traffic
+        │                                                   │
+        ▼                                                   ▼
+   ┌────────────┐                                    ┌─────────────┐
+   │ GPU потріб?│                                    │  Lambda     │
+   └─┬──────┬───┘                                    │ (S3 trigger,│
+     │      │                                        │  webhook,   │
+   так     ні                                        │  cron job)  │
+     │      │                                        └─────────────┘
+     ▼      ▼
+ ┌──────┐  ┌─ &lt; 30 GB RAM ──┐ ┌─ Готова модель? ─┐
+ │ ECS  │  │   ▼            │ │       │           │
+ │ EC2  │  │ Fargate        │ │  Yes (Claude,     │
+ │ +GPU │  │ (serverless    │ │  Llama, Mistral)  │
+ │  OR  │  │  контейнери)   │ │       ▼           │
+ │ Sage │  ├─ &gt; 30 GB RAM ──┤ │  Bedrock          │
+ │Maker │  │   ▼            │ │  (без контейнера) │
+ │End   │  │ ECS на EC2     │ └───────────────────┘
+ │point │  │                │
+ └──────┘  └────────────────┘</div>
+
+  <h3>4 способи задеплоїти контейнер</h3>
+  <div class="grid2">
+    <div class="card">
+      <h4 style="color:var(--accent)">🚀 ECS Fargate — найпростіше</h4>
+      <p><b>Що це:</b> serverless контейнери. AWS сам менеджить ноди. Ти даєш image + task definition, AWS запускає.</p>
+      <p style="margin-top:8px"><b>Для AI:</b> ідеально для RAG-сервісу що ходить у OpenAI/Bedrock. CPU + memory only (немає GPU у Fargate).</p>
+      <p style="margin-top:8px"><b>Плюси:</b> нуль інфраструктури, autoscale з коробки, pay per second, інтеграція з ALB/CloudWatch.</p>
+      <p style="margin-top:8px"><b>Мінуси:</b> немає GPU, cold start 30-60 сек, max 16 GB RAM на task.</p>
+      <p class="smallnote" style="margin-top:8px"><b>Ціна:</b> ~$36/міс за 0.5 vCPU + 1 GB RAM 24/7.</p>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent2)">🏗️ ECS на EC2 — коли потрібен GPU або великі ноди</h4>
+      <p><b>Що це:</b> той самий ECS, але ти сам менеджиш EC2-ноди (включно з g4dn/g5 для GPU).</p>
+      <p style="margin-top:8px"><b>Для AI:</b> якщо хочеш запускати vLLM/Ollama на своєму GPU. Або потрібно &gt; 30 GB RAM.</p>
+      <p style="margin-top:8px"><b>Плюси:</b> GPU (g4dn = T4, g5 = A10G, p4d = A100), будь-який instance type, дешевше на високих utilization.</p>
+      <p style="margin-top:8px"><b>Мінуси:</b> треба патчити AMI, scaling складніший, плата за idle ноди.</p>
+      <p class="smallnote" style="margin-top:8px"><b>Ціна:</b> g4dn.xlarge (T4 GPU, 16 GB) = $0.53/год ≈ $380/міс 24/7.</p>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent3)">🎯 SageMaker Endpoint — managed inference</h4>
+      <p><b>Що це:</b> ти даєш Docker image + ваги моделі, SageMaker сам менеджить GPU instances, autoscale, multi-AZ.</p>
+      <p style="margin-top:8px"><b>Для AI:</b> деплой власної fine-tuned моделі. Підтримує real-time, async, batch, serverless inference.</p>
+      <p style="margin-top:8px"><b>Плюси:</b> GPU autoscale, A/B testing, model versions, IAM з коробки. Image формат — standard Docker.</p>
+      <p style="margin-top:8px"><b>Мінуси:</b> 20% наценка за managed, lock-in на SageMaker format (треба HEALTHCHECK endpoint <code>/ping</code> + inference <code>/invocations</code>).</p>
+      <p class="smallnote" style="margin-top:8px"><b>Ціна:</b> ml.g5.xlarge = $1.41/год ≈ $1000/міс 24/7. Або serverless = pay per request.</p>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent4)">⚡ Bedrock — без свого контейнера взагалі</h4>
+      <p><b>Що це:</b> AWS-нативний LLM API. Claude, Llama, Mistral, Titan, Cohere, Stable Diffusion — все за одним API.</p>
+      <p style="margin-top:8px"><b>Для AI:</b> 80% AI-інженерських задач закриваються Bedrock-ом. Твій FastAPI сервіс ходить у Bedrock, контейнер залишається CPU-only.</p>
+      <p style="margin-top:8px"><b>Плюси:</b> нуль операційного навантаження, IAM auth (не треба секретів API), VPC PrivateLink, pay per token.</p>
+      <p style="margin-top:8px"><b>Мінуси:</b> моделі тільки ті що AWS додав. Кастомні моделі — через Bedrock Custom Model Import (нова фіча).</p>
+      <p class="smallnote" style="margin-top:8px"><b>Ціна:</b> Claude 3.5 Haiku = $0.80/$4 per 1M tokens. Llama 3.1 8B = $0.22/$0.22.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:24px">🌙 Lambda для AI — окремий випадок</h3>
+  <div class="card" style="border-color:rgba(199,155,255,0.4);background:rgba(199,155,255,0.04)">
+    <p class="pad">Lambda <b>не</b> заміняє Fargate для основного AI-сервісу. Persistent контейнер з моделлю у памʼяті завжди буде швидшим за cold-init Lambda. Але <b>для specific event-driven задач Lambda незамінна</b> — особливо коли треба "коли подія X → виклик AI".</p>
+
+    <div class="grid2" style="margin-top:12px">
+      <div>
+        <h4 style="color:var(--accent3);font-size:13px;margin-bottom:8px">✅ Коли Lambda — правильний вибір</h4>
+        <ul style="font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;color:#cdd5de;line-height:1.7;padding-left:18px;margin:0">
+          <li><b>S3 trigger</b> → upload файлу → автоматичний OCR/transcribe/embed</li>
+          <li><b>SQS / EventBridge</b> → batch job: embed усі нові docs у Pinecone раз на годину</li>
+          <li><b>API Gateway</b> для sporadic traffic (&lt; 100k req/день нерівномірно)</li>
+          <li><b>Slack / Telegram webhook</b> → відповідь через LLM</li>
+          <li><b>Step Functions step</b> у multi-stage AI pipeline (extract → embed → enrich)</li>
+          <li><b>Async post-processing</b> — користувач вже отримав відповідь, у фоні треба зробити quality eval</li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color:var(--warn);font-size:13px;margin-bottom:8px">❌ Коли Lambda не підійде</h4>
+        <ul style="font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;color:#cdd5de;line-height:1.7;padding-left:18px;margin:0">
+          <li><b>Chat UI зі стрімінгом</b> (SSE/WebSocket) — у Lambda обмежений streaming, краще Fargate</li>
+          <li><b>Локальна модель</b> (vLLM/Ollama) — немає GPU, cold start 30+ сек</li>
+          <li><b>Agent з 10+ tool calls</b> — ризик впасти у 15-min timeout</li>
+          <li><b>Стійкий traffic</b> &gt; 100 req/sec — Fargate дешевший</li>
+          <li><b>Persistent connections</b> до vector DB/Redis — connection pool пропадає між invocations</li>
+          <li><b>Image &gt; 10 GB</b> — Lambda ліміт жорсткий</li>
+        </ul>
+      </div>
+    </div>
+
+    <hr style="margin:18px 0">
+
+    <h4 style="font-size:13px;color:#fff;margin-bottom:8px">Як деплоїти Docker image у Lambda</h4>
+<pre><span class="c"># 1. твій Dockerfile повинен мати AWS Lambda Runtime Interface Client</span>
+<span class="k">FROM</span> public.ecr.aws/lambda/python:3.11
+
+<span class="k">COPY</span> requirements.txt .
+<span class="k">RUN</span> pip install --no-cache-dir -r requirements.txt
+
+<span class="k">COPY</span> app/ ${LAMBDA_TASK_ROOT}/
+<span class="k">CMD</span> [<span class="s">"app.handler.lambda_handler"</span>]
+
+<span class="c"># 2. build, push в ECR, створити функцію</span>
+docker build -t embed-job .
+docker tag embed-job:latest 123.dkr.ecr.us-east-1.amazonaws.com/embed-job:v1
+docker push 123.dkr.ecr.us-east-1.amazonaws.com/embed-job:v1
+
+aws lambda create-function \
+  --function-name embed-job \
+  --package-type Image \
+  --code ImageUri=123.dkr.ecr.us-east-1.amazonaws.com/embed-job:v1 \
+  --role arn:aws:iam::123:role/lambda-role \
+  --memory-size 3008 --timeout 900</pre>
+
+    <p class="smallnote" style="margin-top:10px"><b>Cold start mitigation:</b> Provisioned Concurrency = $0.015/GB-hour за "теплі" instance-и. Або SnapStart (тільки для Java/Python поки що — pre-snapshot після init). Для AI workload де модель тягне 5 сек — Provisioned Concurrency окупає себе у high-traffic кейсах.</p>
+    <p class="smallnote" style="margin-top:6px"><b>Ціна:</b> $0.20 per 1M requests + $0.0000166667 per GB-second. Для 100k requests/міс × 3 GB RAM × 2s = ~$10/міс. Та сама нагрузка на Fargate 24/7 = $36/міс.</p>
+  </div>
+
+  <hr>
+
+  <h3>Container registry — ECR</h3>
+  <p class="pad">Перш ніж деплоїти куди завгодно — image має лежати в <b>registry</b>. На AWS це <b>Amazon ECR</b> (Elastic Container Registry). Альтернатива — public GHCR (GitHub) або Docker Hub, але ECR має пряму інтеграцію з IAM/ECS/Lambda і дешевий egress всередині AWS.</p>
+
+<pre><span class="c"># 1. створити ECR repo (один раз)</span>
+aws ecr create-repository --repository-name rag-service
+
+<span class="c"># 2. login</span>
+aws ecr get-login-password --region us-east-1 | \
+  docker login --username AWS --password-stdin \
+  123456789.dkr.ecr.us-east-1.amazonaws.com
+
+<span class="c"># 3. tag + push</span>
+docker tag rag:multistage \
+  123456789.dkr.ecr.us-east-1.amazonaws.com/rag-service:v1
+docker push \
+  123456789.dkr.ecr.us-east-1.amazonaws.com/rag-service:v1
+</pre>
+
+  <p class="smallnote"><b>Pricing:</b> $0.10 per GB-month storage + free transfer всередині AWS region. Для 251 MB image як з boilerplate = $0.025/міс. Залиш собі частину карвердового стейку.</p>
+
+  <hr>
+
+  <h3>Що писати у task definition (ECS Fargate приклад)</h3>
+<pre>{
+  <span class="s">"family"</span>: <span class="s">"rag-service"</span>,
+  <span class="s">"networkMode"</span>: <span class="s">"awsvpc"</span>,
+  <span class="s">"requiresCompatibilities"</span>: [<span class="s">"FARGATE"</span>],
+  <span class="s">"cpu"</span>: <span class="s">"512"</span>,
+  <span class="s">"memory"</span>: <span class="s">"1024"</span>,
+  <span class="s">"containerDefinitions"</span>: [{
+    <span class="s">"name"</span>: <span class="s">"app"</span>,
+    <span class="s">"image"</span>: <span class="s">"123.dkr.ecr.us-east-1.amazonaws.com/rag-service:v1"</span>,
+    <span class="s">"portMappings"</span>: [{<span class="s">"containerPort"</span>: 8000, <span class="s">"protocol"</span>: <span class="s">"tcp"</span>}],
+    <span class="s">"healthCheck"</span>: {
+      <span class="s">"command"</span>: [<span class="s">"CMD-SHELL"</span>, <span class="s">"python -c 'import httpx; ...'"</span>],
+      <span class="s">"startPeriod"</span>: 60
+    },
+    <span class="s">"secrets"</span>: [
+      {<span class="s">"name"</span>: <span class="s">"OPENAI_API_KEY"</span>, <span class="s">"valueFrom"</span>: <span class="s">"arn:aws:secretsmanager:..."</span>}
+    ],
+    <span class="s">"logConfiguration"</span>: {<span class="s">"logDriver"</span>: <span class="s">"awslogs"</span>, ...}
+  }]
+}</pre>
+
+  <p class="smallnote">Зверни увагу: <code>healthCheck</code> з <code>startPeriod: 60</code> (бо AI startup повільний), <code>secrets</code> через Secrets Manager — не env-vars у task definition, бо вони видно у консолі.</p>
+
+  <hr>
+
+  <h3>AWS observability для AI</h3>
+  <div class="grid3">
+    <div class="card">
+      <h4>📊 CloudWatch Logs</h4>
+      <p>Усе що твій контейнер пише у stdout/stderr → автоматично у Logs. Структуруй у JSON: trace_id, latency_ms, tokens_in/out, model. Filter патерни → metric.</p>
+    </div>
+    <div class="card">
+      <h4>📈 CloudWatch Metrics</h4>
+      <p>Кастомні метрики через <code>aws cloudwatch put-metric-data</code> або EMF. Для AI: <b>p95 latency</b>, <b>token consumption</b>, <b>error rate per model</b>, <b>cache hit rate</b>.</p>
+    </div>
+    <div class="card">
+      <h4>🔍 X-Ray traces</h4>
+      <p>Distributed tracing. FastAPI → Bedrock → Postgres = один trace. Bedrock вже інтегрований. Для OpenAI/Anthropic — manual instrumentation.</p>
+    </div>
+  </div>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>Default стек AI-інженера на AWS:</b> ECR (registry) + ECS Fargate (основний сервіс) + Lambda (event-driven jobs, S3 triggers) + Bedrock (LLM) + Secrets Manager (ключі) + CloudWatch (логи) + ALB (load balancer). GPU не потрібен. Це покриває 80% AI use-cases і коштує &lt; $100/міс на тестовому навантаженні.
+  </div>
+</section>
+
+<!-- ============================ SECTION 10: RECAP ============================ -->
+<section id="recap">
+  <h2><span class="num">10 ·</span> Recap — cheat sheet</h2>
+
+  <div class="grid2">
+    <div class="card">
+      <h4 style="color:var(--accent)">✅ Що завжди робити</h4>
+      <ul style="font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;color:#cdd5de;line-height:1.8;padding-left:18px;margin:8px 0">
+        <li>Multi-stage build з slim runtime</li>
+        <li><code>.dockerignore</code> з <code>.venv .git __pycache__</code></li>
+        <li>Закріплені версії у <code>requirements.txt</code></li>
+        <li>Non-root user (<code>useradd app</code>)</li>
+        <li>HEALTHCHECK що тестує що модель готова</li>
+        <li><code>--no-cache-dir</code> для pip</li>
+        <li>Окремий COPY для requirements і коду</li>
+        <li><code>--start-period</code> для AI healthcheck</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:rgba(255,118,118,0.3)">
+      <h4 style="color:var(--warn)">❌ Що ніколи не робити</h4>
+      <ul style="font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;color:#cdd5de;line-height:1.8;padding-left:18px;margin:8px 0">
+        <li><code>COPY . .</code> перед <code>pip install</code></li>
+        <li>Запуск від root у фінальному image</li>
+        <li>Великі моделі (&gt; 1 GB) усередині image</li>
+        <li>Секрети у Dockerfile або <code>ARG</code></li>
+        <li>Healthcheck що повертає 200 раніше за модель</li>
+        <li>Незакріплені версії dependencies</li>
+        <li>Alpine для PyTorch/numpy (musl libc)</li>
+        <li><code>FROM python:3.11</code> без slim для runtime</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="smallnote" style="margin-top:14px">📚 Корисні посилання: <a href="https://docs.docker.com/build/building/multi-stage/" style="color:var(--accent)">Docker docs · multi-stage</a> · <a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/" style="color:var(--accent)">NVIDIA Container Toolkit</a> · <a href="https://docs.vllm.ai/en/latest/serving/deploying_with_docker.html" style="color:var(--accent)">vLLM Docker guide</a> · <a href="https://github.com/GoogleContainerTools/distroless" style="color:var(--accent)">distroless images</a></p>
+</section>
+
+</div>
+
+<script>
+// ============= 1. LAYER CAKE =============
+const layers = [
+  {cls:'os',name:'OS base · ubuntu:22.04',size:'80 MB',info:'Базовий layer від Debian/Ubuntu. Це bash, coreutils, apt. Можна замінити на slim (-90%) або alpine (-95%). Для AI: alpine ламає musl libc → numpy/torch не працюють.',shrink:'Замінити на python:3.11-slim → 80 MB → ~30 MB'},
+  {cls:'runtime',name:'Python 3.11 + pip',size:'180 MB',info:'Python runtime. Pip сам по собі ~80 MB. Включає stdlib, ssl, ensurepip.',shrink:'Slim варіант = тільки те що треба для запуску Python скриптів. -150 MB'},
+  {cls:'system',name:'apt: gcc, g++, build-essential',size:'450 MB',info:'Compiler toolchain. Потрібен щоб збудувати C-розширення numpy, scipy, torch (якщо немає wheel). Залишений у фінальному image — типова помилка.',shrink:'Multi-stage: винести у builder stage, у runtime не копіювати → -450 MB одразу'},
+  {cls:'python',name:'pip cache /root/.cache/pip',size:'250 MB',info:'pip за замовчуванням кешує .whl у /root/.cache/pip. У контейнері цей кеш ніколи не використовується.',shrink:'Додай <code>--no-cache-dir</code> до pip install → -250 MB'},
+  {cls:'torch',name:'torch 2.3.0 (CUDA wheels)',size:'2.5 GB',info:'PyTorch з CUDA libraries. Найбільший single dependency у AI стеку. CUDA wheels включають libcudart, cuDNN, cuBLAS.',shrink:'CPU only: torch+cpu (1 GB замість 2.5). Або через API embeddings — без torch взагалі'},
+  {cls:'transformers',name:'transformers + tokenizers + accelerate',size:'600 MB',info:'HuggingFace transformers + його залежності. Tokenizers — Rust binary ~50 MB.',shrink:'Якщо тільки inference через vLLM — transformers не потрібен'},
+  {cls:'appdeps',name:'fastapi + uvicorn + httpx + pydantic',size:'90 MB',info:'Веб-фреймворк і утиліти. Ці мегабайти неминучі для FastAPI сервісу.',shrink:'Майже нічого не вижмеш. Це baseline для будь-якого Python API'},
+  {cls:'code',name:'твій код (app/)',size:'2 MB',info:'Твій Python код. Завжди маленький.',shrink:'Тут економити нічого. Зате через .dockerignore не пускати .venv, .git, data/'},
+  {cls:'model',name:'ваги моделі (Llama 3.1 8B Q4)',size:'4.5 GB',info:'Ваги Llama 3.1 8B квантизованої до Q4. У fp16 ця ж модель була б 16 GB. Запікати у image — погана ідея.',shrink:'Винести з image: download at startup, volume mount, або dedicated model server'},
+  {cls:'junk',name:'data/cache/, .git/, .ipynb_checkpoints/ (через COPY . .)',size:'520 MB',info:'Сміття яке потрапило бо немає .dockerignore. data/cache з прогонів, .git history, jupyter checkpoints.',shrink:'.dockerignore: .venv .git __pycache__ data/cache *.ipynb_checkpoints'},
+];
+const cakeEl = document.getElementById('cake');
+const infoEl = document.getElementById('layerInfo');
+layers.forEach((l, i) => {
+  const el = document.createElement('div');
+  el.className = 'layer ' + l.cls;
+  el.innerHTML = `<span class="name">${l.name}</span><span class="size">${l.size}</span>`;
+  el.addEventListener('click', () => {
+    infoEl.innerHTML = `<div class="title">${l.name} · ${l.size}</div>
+      <div class="meta">${l.info}</div>
+      <div style="margin-top:8px;padding:8px;background:rgba(155,227,124,0.08);border-left:3px solid var(--ok);border-radius:4px"><b style="color:var(--ok)">Як зменшити:</b> ${l.shrink}</div>`;
+  });
+  cakeEl.appendChild(el);
+});
+
+// ============= 2. MULTI-STAGE ANIMATION =============
+const buildSteps = [
+  {t:0, log:'[builder] FROM python:3.11', cls:'step'},
+  {t:200, log:'[builder] → 1.0 GB base', cls:'info', size:{builder:1000}},
+  {t:600, log:'[builder] RUN apt-get install gcc g++ build-essential', cls:'step', blk:'builder-1'},
+  {t:1200, log:'[builder] → +450 MB toolchain', cls:'info', size:{builder:1450}},
+  {t:1500, log:'[builder] COPY requirements.txt .', cls:'step'},
+  {t:1700, log:'[builder] RUN pip install --target=/deps torch transformers ...', cls:'step', blk:'builder-2'},
+  {t:3000, log:'[builder] downloading torch-2.3.0-cuda12.1.whl ...', cls:'info', blk:'builder-3'},
+  {t:4500, log:'[builder] compiling tokenizers C extension ...', cls:'info'},
+  {t:5500, log:'[builder] installed to /deps (3.2 GB)', cls:'info', blk:'builder-4', size:{builder:4650}},
+  {t:6000, log:'[runtime] FROM python:3.11-slim', cls:'step'},
+  {t:6300, log:'[runtime] → 130 MB slim base', cls:'info', size:{runtime:130}},
+  {t:6800, log:'[runtime] RUN useradd app && USER app', cls:'step', blk:'runtime-5'},
+  {t:7300, log:'[runtime] COPY --from=builder /deps /deps', cls:'cache', blk:'runtime-6'},
+  {t:8000, log:'[runtime] → +1.0 GB deps (тільки installed packages, без apt-cache, без compiler-ів)', cls:'info', size:{runtime:1130}},
+  {t:8500, log:'[runtime] COPY app/ ./app/', cls:'step', blk:'runtime-7'},
+  {t:8800, log:'[runtime] HEALTHCHECK ...', cls:'step', blk:'runtime-8'},
+  {t:9200, log:'[final] tag image rag:multistage', cls:'step'},
+  {t:9500, log:'✅ Builder DROPPED. Final image = runtime only.', cls:'cache', dropBuilder:true},
+  {t:10000, log:'📦 Final image size: 1.13 GB (замість 4.65 GB якщо б копіювали все)', cls:'info', size:{final:1130}, showFinal:true},
+];
+
+const buildBtn = document.getElementById('buildBtn');
+const resetBuildBtn = document.getElementById('resetBuildBtn');
+const buildLog = document.getElementById('buildLog');
+const szBuilder = document.getElementById('szBuilder');
+const szRuntime = document.getElementById('szRuntime');
+const szFinal = document.getElementById('szFinal');
+const stBuilder = document.getElementById('stBuilder');
+const finalBlocks = document.getElementById('finalBlocks');
+
+let buildTimeouts = [];
+function resetBuild(){
+  buildTimeouts.forEach(t=>clearTimeout(t));
+  buildTimeouts = [];
+  buildLog.innerHTML = '';
+  szBuilder.textContent = '— MB';
+  szRuntime.textContent = '— MB';
+  szFinal.textContent = '— MB';
+  stBuilder.classList.remove('dropped');
+  finalBlocks.innerHTML = '<div class="blk" style="opacity:.3">очікую завершення build...</div>';
+  document.querySelectorAll('.stage .blk').forEach(b => b.classList.remove('on'));
+  buildBtn.disabled = false;
+}
+function runBuild(){
+  resetBuild();
+  buildBtn.disabled = true;
+  buildSteps.forEach((s) => {
+    buildTimeouts.push(setTimeout(() => {
+      const row = document.createElement('div');
+      row.className = 'row ' + (s.cls||'');
+      row.innerHTML = `<span class="ms">+${(s.t/1000).toFixed(1)}s</span>${s.log}`;
+      buildLog.appendChild(row);
+      buildLog.scrollTop = buildLog.scrollHeight;
+      if(s.size){
+        if(s.size.builder) szBuilder.textContent = (s.size.builder).toLocaleString()+' MB';
+        if(s.size.runtime) szRuntime.textContent = (s.size.runtime).toLocaleString()+' MB';
+        if(s.size.final) szFinal.textContent = (s.size.final).toLocaleString()+' MB';
+      }
+      if(s.blk){
+        const [stage, step] = s.blk.split('-');
+        document.querySelectorAll(`.blk[data-stage="${stage}"][data-step="${step}"]`).forEach(b=>b.classList.add('on'));
+      }
+      if(s.dropBuilder){
+        stBuilder.classList.add('dropped');
+        document.getElementById('arrow1').classList.add('active');
+      }
+      if(s.showFinal){
+        finalBlocks.innerHTML = `
+          <div class="blk runtime on">👤 non-root user app</div>
+          <div class="blk deps on">📦 /deps (python packages)</div>
+          <div class="blk code on">📄 app/ code</div>
+          <div class="blk runtime on">⚙️ healthcheck</div>
+        `;
+        document.getElementById('arrow2').classList.add('active');
+      }
+      if(s.t === buildSteps[buildSteps.length-1].t) buildBtn.disabled = false;
+    }, s.t));
+  });
+}
+buildBtn.addEventListener('click', runBuild);
+resetBuildBtn.addEventListener('click', resetBuild);
+
+// ============= 3. CACHE SIMULATOR =============
+const lines = ['from','workdir','reqcopy','pip','codecopy','cmd'];
+const lineTimings = {from:0.2, workdir:0.1, reqcopy:0.5, pip:240, codecopy:0.3, cmd:0.1};
+function setCacheState(state) {
+  // state = {from:'hit'|'miss', ...}
+  lines.forEach(k => {
+    const el = document.querySelector(`.line[data-key="${k}"]`);
+    el.classList.remove('hit','miss');
+    el.classList.add(state[k]);
+    const tag = el.querySelector('.tag');
+    tag.className = 'tag ' + state[k];
+    tag.textContent = state[k];
+  });
+  const misses = lines.filter(k => state[k] === 'miss').length;
+  const time = lines.reduce((s, k) => s + (state[k] === 'miss' ? lineTimings[k] : 0.05), 0);
+  document.getElementById('cacheMisses').textContent = `${misses} / 6`;
+  document.getElementById('cacheMisses').className = misses === 0 ? 'v ok' : misses >= 3 ? 'v warn' : 'v';
+  document.getElementById('cacheTime').textContent = time < 1 ? '~0.5 s' : `~${time.toFixed(0)} s`;
+  document.getElementById('cacheTime').className = time < 5 ? 'v ok' : time < 60 ? 'v' : 'v warn';
+}
+document.getElementById('cacheReset').addEventListener('click', () => {
+  setCacheState({from:'hit',workdir:'hit',reqcopy:'hit',pip:'hit',codecopy:'hit',cmd:'hit'});
+  document.getElementById('cacheExplain').textContent = 'Все з кеша. Білд миттєвий.';
+});
+document.getElementById('cacheCodeChange').addEventListener('click', () => {
+  setCacheState({from:'hit',workdir:'hit',reqcopy:'hit',pip:'hit',codecopy:'miss',cmd:'miss'});
+  document.getElementById('cacheExplain').textContent = 'Змінив тільки код у app/. requirements.txt не зачеплений → pip install з кеша. ✅ Це правильна структура.';
+});
+document.getElementById('cacheDepsChange').addEventListener('click', () => {
+  setCacheState({from:'hit',workdir:'hit',reqcopy:'miss',pip:'miss',codecopy:'miss',cmd:'miss'});
+  document.getElementById('cacheExplain').textContent = 'Додав одну бібліотеку у requirements.txt → інвалідує COPY requirements.txt → і всі наступні layers. pip install іде з нуля (~4 хв).';
+});
+
+// ============= 4. GPU DEMO =============
+const gpuScenario = [
+  {t:0, prompt:'docker run --gpus all --rm vllm/vllm-openai --model llama-3.1-8b', cls:'prompt'},
+  {t:300, log:'[NVIDIA] driver version 535.x detected on host', cls:'info'},
+  {t:600, log:'[NVIDIA] mounting /usr/lib/x86_64-linux-gnu/libcuda.so → container', cls:'info'},
+  {t:900, log:'[NVIDIA] mounting libnvidia-ml.so, libnvidia-fatbinaryloader.so ...', cls:'info'},
+  {t:1300, log:'[container] CUDA 12.2 runtime detected', cls:''},
+  {t:1700, log:'[container] PyTorch 2.3.0+cu121 importing ...', cls:''},
+  {t:2200, log:'[container] torch.cuda.is_available() = True ✓', cls:''},
+  {t:2600, log:'[container] torch.cuda.device_count() = 1', cls:''},
+  {t:3000, log:'[container] torch.cuda.get_device_name(0) = NVIDIA A100-SXM4-40GB', cls:''},
+  {t:3500, log:'[vllm] loading model meta-llama/Llama-3.1-8B ...', cls:'info'},
+  {t:5500, log:'[vllm] downloading shards 1/4 ... 4/4 (15 GB)', cls:'info'},
+  {t:8500, log:'[vllm] allocating GPU memory: 28.5 / 40 GB', cls:''},
+  {t:9500, log:'[vllm] warming up CUDA kernels ...', cls:''},
+  {t:10500, log:'[vllm] ready · serving on port 8000', cls:''},
+  {t:11200, log:'$ curl http://localhost:8000/v1/completions -d {...}', cls:'prompt'},
+  {t:12000, log:'< HTTP/1.1 200 OK · response time 142 ms', cls:''},
+];
+const gpuKillScenario = [
+  {t:0, prompt:'# симулюємо kill NVIDIA Container Toolkit на хості', cls:'prompt'},
+  {t:400, log:'$ sudo systemctl stop nvidia-container-toolkit.service', cls:'prompt'},
+  {t:1200, prompt:'docker run --gpus all --rm vllm/vllm-openai --model llama-3.1-8b', cls:'prompt'},
+  {t:1800, log:'docker: Error response from daemon:', cls:'err'},
+  {t:2100, log:'  could not select device driver "" with capabilities: [[gpu]]', cls:'err'},
+  {t:2500, log:'# і це після того як ти витратив годину на CUDA версії 😩', cls:'warn'},
+  {t:3000, log:'$ sudo systemctl start nvidia-container-toolkit.service', cls:'prompt'},
+  {t:3500, log:'# fixed. Без NVIDIA Container Toolkit твій --gpus all не побачить нічого.', cls:'info'},
+];
+
+const gpuLog = document.getElementById('gpuLog');
+let gpuTimeouts = [];
+function resetGpu(){
+  gpuTimeouts.forEach(t=>clearTimeout(t));
+  gpuTimeouts=[];
+  gpuLog.innerHTML='<div class="line"><span class="prompt">$</span> _</div>';
+}
+function playGpu(scenario){
+  resetGpu();
+  scenario.forEach(s => {
+    gpuTimeouts.push(setTimeout(() => {
+      const row = document.createElement('div');
+      row.className = 'line ' + (s.cls||'');
+      if(s.prompt) row.innerHTML = `<span class="prompt">$</span> ${s.prompt}`;
+      else row.textContent = s.log;
+      gpuLog.appendChild(row);
+      gpuLog.scrollTop = gpuLog.scrollHeight;
+    }, s.t));
+  });
+}
+document.getElementById('gpuRun').addEventListener('click', () => playGpu(gpuScenario));
+document.getElementById('gpuKill').addEventListener('click', () => playGpu(gpuKillScenario));
+document.getElementById('gpuReset').addEventListener('click', resetGpu);
+
+</script>
+</body>
+</html>
