@@ -1,0 +1,45 @@
+# values.yaml — Streamlit chat UI chart
+#
+# UI крутиться на CPU-ноді, ходить до Ollama по cluster-internal DNS:
+# http://ollama.<namespace>.svc.cluster.local:11434
+# Це показує учням як frontend → Service → backend pod працює всередині кластера.
+
+image:
+  # Будується локально через `eval $(minikube docker-env -p k8s-ai-demo) && docker build`
+  # Тому imagePullPolicy: Never — image живе ВСЕРЕДИНІ minikube daemon
+  repository: ollama-ui
+  tag: "latest"
+  pullPolicy: Never
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8501
+
+# Куди UI стукає за inference
+ollama:
+  url: "http://ollama.ai.svc.cluster.local:11434"
+  defaultModel: "phi3:mini"
+
+appTitle: "K8s AI Demo — Chat"
+
+# Streamlit на CPU достатньо мінімального
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+probes:
+  readiness:
+    path: /_stcore/health
+    initialDelaySeconds: 5
+    periodSeconds: 5
+  liveness:
+    path: /_stcore/health
+    initialDelaySeconds: 15
+    periodSeconds: 15

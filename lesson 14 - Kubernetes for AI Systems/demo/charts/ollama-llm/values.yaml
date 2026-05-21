@@ -1,0 +1,70 @@
+# values.yaml — крути ці значення і дивись як змінюється deployment
+# helm upgrade ollama ./charts/ollama-llm --set replicaCount=2 --reuse-values
+
+image:
+  repository: ollama/ollama
+  tag: "0.3.12"
+  pullPolicy: IfNotPresent
+
+# Скільки реплік стартує одразу. KEDA може це перевизначати.
+replicaCount: 1
+
+# Модель, яку Ollama підтягує при старті pod (init container).
+# Маленька щоб залізти у 16 GB Mac.
+# Альтернативи: tinyllama (640 MB), phi3:mini (2 GB), llama3.2:1b (1.3 GB)
+model:
+  name: "phi3:mini"
+  # У проді тут був би dtype / quantization config
+  contextLength: 2048
+
+# Service: ClusterIP, port 11434 (Ollama default)
+service:
+  type: ClusterIP
+  port: 11434
+
+# Ресурси — без GPU, на CPU. Apple Silicon Metal через Ollama сам користує.
+resources:
+  requests:
+    cpu: "1"
+    memory: "3Gi"
+  limits:
+    cpu: "4"
+    memory: "6Gi"
+
+# Storage: PVC для кешу моделей. Без нього модель тягнеться при кожному рестарті.
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: "standard"
+
+# Probes — критично для AI: модель грузиться 20-60 сек
+probes:
+  readiness:
+    # бʼємо реальний endpoint — /api/tags повертає список завантажених моделей
+    path: /api/tags
+    initialDelaySeconds: 30
+    periodSeconds: 5
+    failureThreshold: 30   # 30 × 5s = 150 сек на завантаження
+    successThreshold: 1
+    timeoutSeconds: 3
+  liveness:
+    path: /
+    initialDelaySeconds: 120
+    periodSeconds: 30      # довгий період — не вбивай під час inference
+    failureThreshold: 5
+    timeoutSeconds: 5
+
+# Rolling update — головне правило: maxUnavailable: 0
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Graceful shutdown — дати завершити inference у польоті
+terminationGracePeriodSeconds: 60
+
+# ConfigMap для рантайм-параметрів (system prompt, env tuning)
+config:
+  systemPrompt: "You are a concise assistant. Answer in 1-2 sentences."
+  numParallel: "2"   # OLLAMA_NUM_PARALLEL — скільки паралельних запитів на pod

@@ -1,0 +1,80 @@
+# KEDA ScaledObject — scale-to-zero для Ollama inference
+#
+# Логіка: KEDA дивиться на середній CPU усіх pod-ів через Prometheus.
+# Для справжнього LLM сюди вписали б `vllm_request_queue_size` або `gpu_util`,
+# але у Ollama (без GPU) — CPU добре корелює з навантаженням.
+#
+# Поведінка:
+#   - 60 сек простою → replicas=0 (pod вимикається повністю)
+#   - перший запит при replicas=0 → KEDA робить scale-up через `idleReplicaCount` логіку
+#   - queue > threshold → scale up до maxReplicaCount
+#
+# Перевірка:  kubectl describe scaledobject ollama-scaler -n ai
+# Видалення:  kubectl delete -f k8s/scaledobject.yaml
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ollama-scaler
+  namespace: ai
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ollama
+
+  # Скільки реплік тримаємо коли немає трафіку. 0 = scale-to-zero.
+  # ⚠ Для прод-LLM ставлять 1, бо cold start 30+ сек неприйнятний для users.
+  minReplicaCount: 0
+  maxReplicaCount: 3
+
+  # Як часто KEDA опитує метрики
+  pollingInterval: 15
+
+  # Скільки секунд після останнього "scale-up signal" чекати перш ніж scale-down
+  # 60 сек — для демки. У проді ставлять 300-600 сек.
+  cooldownPeriod: 60
+
+  # Якщо немає триггерів — fallback на цю кількість реплік
+  fallback:
+    failureThreshold: 3
+    replicas: 1
+
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        # Скейл-ап швидкий: миттєво подвоюємо replicas коли queue росте
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 15
+        # Скейл-даун обережний: чекаємо 60 сек що навантаження дійсно стихло
+        scaleDown:
+          stabilizationWindowSeconds: 60
+          policies:
+            - type: Pods
+              value: 1
+              periodSeconds: 30
+
+  triggers:
+    # Триггер 1: Prometheus — кількість active requests на pod
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus-server.monitoring.svc.cluster.local:80
+        metricName: ollama_active_requests
+        # У реальному vLLM було б `avg(vllm_request_queue_size)`.
+        # Для демки використовуємо HTTP requests rate з Ollama metrics endpoint
+        # (або просто CPU avg, якщо метрик нема — KEDA fallback на CPU).
+        query: |
+          sum(rate(http_requests_total{namespace="ai",app="ollama"}[1m]))
+        threshold: "2"
+        activationThreshold: "0.5"
+
+    # Триггер 2: CPU — резервний триггер на випадок якщо Prometheus метрика недоступна
+    # (KEDA "OR" логіка — будь-який тригер може викликати scale-up)
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "70"

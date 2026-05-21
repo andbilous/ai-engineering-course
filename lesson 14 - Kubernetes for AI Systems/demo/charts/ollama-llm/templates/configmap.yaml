@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ollama-config
+  labels:
+    app: ollama
+data:
+  systemPrompt: {{ .Values.config.systemPrompt | quote }}
+  numParallel: {{ .Values.config.numParallel | quote }}
+  modelName: {{ .Values.model.name | quote }}
+  contextLength: {{ .Values.model.contextLength | quote }}

@@ -1,0 +1,11 @@
+apiVersion: v2
+name: ollama-ui
+description: Streamlit chat UI for K8s AI demo (lesson 14)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - streamlit
+  - ui
+  - chat
+  - llm
