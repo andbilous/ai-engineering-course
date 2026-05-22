@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
+.env
+tests/
+*.md
+Dockerfile*
+.dockerignore
+.gitignore
+Makefile
+pyproject.toml
