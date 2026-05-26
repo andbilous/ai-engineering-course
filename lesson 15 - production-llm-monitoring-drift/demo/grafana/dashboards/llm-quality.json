@@ -1,0 +1,312 @@
+{
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    { "title": "Overview", "url": "/d/llm-drift-demo", "type": "link", "icon": "external link", "targetBlank": false },
+    { "title": "On-Call", "url": "/d/llm-oncall", "type": "link", "icon": "external link", "targetBlank": false }
+  ],
+  "liveNow": true,
+  "panels": [
+    {
+      "type": "row",
+      "title": "RAGAS triad — overall",
+      "id": 100,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "type": "gauge",
+      "title": "Faithfulness (avg)",
+      "id": 1,
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "orange", "value": 0.7 },
+            { "color": "green", "value": 0.85 }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showThresholdLabels": false, "showThresholdMarkers": true },
+      "targets": [{ "expr": "avg(avg_over_time(llm_judge_score[1m]))", "refId": "A" }]
+    },
+    {
+      "type": "gauge",
+      "title": "Answer relevancy (avg)",
+      "id": 2,
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "orange", "value": 0.75 },
+            { "color": "green", "value": 0.88 }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showThresholdMarkers": true },
+      "targets": [{ "expr": "avg(avg_over_time(llm_judge_relevancy[1m]))", "refId": "A" }]
+    },
+    {
+      "type": "gauge",
+      "title": "Context precision (avg)",
+      "id": 3,
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "orange", "value": 0.7 },
+            { "color": "green", "value": 0.85 }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showThresholdMarkers": true },
+      "targets": [{ "expr": "avg(avg_over_time(llm_judge_context_precision[1m]))", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Judge pass rate",
+      "id": 4,
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 1 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "orange", "value": 0.8 },
+            { "color": "green", "value": 0.95 }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "area" },
+      "targets": [{
+        "expr": "sum(rate(llm_judge_samples_total{verdict=\"pass\"}[2m])) / clamp_min(sum(rate(llm_judge_samples_total[2m])), 0.001)",
+        "refId": "A"
+      }]
+    },
+    {
+      "type": "row",
+      "title": "Per-intent RAGAS breakdown",
+      "id": 101,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Faithfulness per intent",
+      "id": 5,
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "custom": { "lineWidth": 2, "fillOpacity": 8, "drawStyle": "line", "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull"] } },
+      "targets": [{
+        "expr": "avg by (intent) (avg_over_time(llm_judge_score[30s]))",
+        "legendFormat": "{{intent}}",
+        "refId": "A"
+      }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Relevancy per intent",
+      "id": 6,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "custom": { "lineWidth": 2, "fillOpacity": 8, "drawStyle": "line", "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull"] } },
+      "targets": [{
+        "expr": "avg by (intent) (avg_over_time(llm_judge_relevancy[30s]))",
+        "legendFormat": "{{intent}}",
+        "refId": "A"
+      }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Context precision per intent",
+      "id": 7,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "custom": { "lineWidth": 2, "fillOpacity": 8, "drawStyle": "line", "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull"] } },
+      "targets": [{
+        "expr": "avg by (intent) (avg_over_time(llm_judge_context_precision[30s]))",
+        "legendFormat": "{{intent}}",
+        "refId": "A"
+      }]
+    },
+    {
+      "type": "row",
+      "title": "Drift signature",
+      "id": 102,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "collapsed": false
+    },
+    {
+      "type": "bargauge",
+      "title": "Faithfulness — drift signature by intent (red = degraded)",
+      "id": 8,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "orange", "value": 0.7 },
+            { "color": "green", "value": 0.85 }
+          ]}
+        }
+      },
+      "options": { "orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true, "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [{
+        "expr": "avg by (intent) (avg_over_time(llm_judge_score[1m]))",
+        "legendFormat": "{{intent}}",
+        "refId": "A"
+      }]
+    },
+    {
+      "type": "bargauge",
+      "title": "Refusal rate by intent",
+      "id": 9,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "orange", "value": 0.1 },
+            { "color": "red", "value": 0.2 }
+          ]}
+        }
+      },
+      "options": { "orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true, "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [{
+        "expr": "sum by (intent) (rate(llm_refusals_total[1m])) / clamp_min(sum by (intent) (rate(llm_requests_total[1m])), 0.001)",
+        "legendFormat": "{{intent}}",
+        "refId": "A"
+      }]
+    },
+    {
+      "type": "row",
+      "title": "Sampling economics",
+      "id": 103,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
+      "collapsed": false
+    },
+    {
+      "type": "stat",
+      "title": "Judge calls / minute",
+      "id": 10,
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 26 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 1 } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "area" },
+      "targets": [{ "expr": "sum(rate(llm_judge_samples_total[1m])) * 60", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Judge sampling rate (%)",
+      "id": 11,
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 26 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "decimals": 1, "min": 0, "max": 1 } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "area" },
+      "targets": [{
+        "expr": "sum(rate(llm_judge_samples_total[2m])) / clamp_min(sum(rate(llm_requests_total[2m])), 0.001)",
+        "refId": "A"
+      }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Judge verdict mix (pass vs fail/min)",
+      "id": 12,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 1, "fillOpacity": 25, "drawStyle": "line", "stacking": { "mode": "normal", "group": "A" } }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull"] } },
+      "targets": [{
+        "expr": "sum by (verdict) (rate(llm_judge_samples_total[1m])) * 60",
+        "legendFormat": "{{verdict}}",
+        "refId": "A"
+      }]
+    },
+    {
+      "type": "gauge",
+      "title": "Golden dataset coverage",
+      "id": 13,
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 31 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "orange", "value": 0.75 },
+            { "color": "green", "value": 0.9 }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showThresholdMarkers": true },
+      "targets": [{ "expr": "llm_golden_dataset_coverage", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Failed judge cases (last 5m)",
+      "id": 14,
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 31 },
+      "datasource": { "type": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [
+        { "color": "green", "value": null },
+        { "color": "orange", "value": 5 },
+        { "color": "red", "value": 20 }
+      ]}}},
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none" },
+      "targets": [{
+        "expr": "sum(increase(llm_judge_samples_total{verdict=\"fail\"}[5m]))",
+        "refId": "A"
+      }]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": ["llm", "ragas", "quality", "lesson-15"],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "LLM Quality — RAGAS Deep-Dive",
+  "uid": "llm-quality",
+  "version": 1,
+  "weekStart": ""
+}

@@ -1,0 +1,43 @@
+groups:
+  - name: llm-content-drift
+    interval: 10s
+    rules:
+      - alert: JudgeScoreDrop
+        expr: avg(avg_over_time(llm_judge_score[1m])) by (model) < 0.7
+        for: 30s
+        labels:
+          severity: page
+          channel: pagerduty
+        annotations:
+          summary: "LLM faithfulness dropped below 0.7"
+          description: "judge_score 1m-avg = {{ $value | printf \"%.2f\" }} — likely model/content drift, APM will not catch this."
+
+      - alert: RefusalRateSpike
+        expr: sum(rate(llm_refusals_total[1m])) / sum(rate(llm_requests_total[1m])) > 0.15
+        for: 30s
+        labels:
+          severity: warn
+          channel: slack
+        annotations:
+          summary: "Refusal rate above 15%"
+          description: "Model started refusing {{ $value | humanizePercentage }} of requests."
+
+      - alert: CostPerRequestSpike
+        expr: rate(llm_cost_usd_total[2m]) / rate(llm_requests_total[2m]) > 0.003
+        for: 1m
+        labels:
+          severity: warn
+          channel: slack
+        annotations:
+          summary: "Cost per request spiked"
+          description: "Average cost per request is {{ $value | printf \"%.4f\" }} USD — provider may have switched to a more expensive variant."
+
+      - alert: APMLooksFine
+        expr: histogram_quantile(0.95, rate(llm_request_duration_seconds_bucket[2m])) < 1.5
+        for: 5m
+        labels:
+          severity: info
+          channel: none
+        annotations:
+          summary: "APM healthy — but check content metrics"
+          description: "p95 latency = {{ $value | printf \"%.2fs\" }}. Latency-only monitoring will not detect content drift."

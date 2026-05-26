@@ -1,0 +1,2678 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Production LLM Monitoring & Drift — заняття 15</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#15181d; --panel2:#1d2127; --line:#2a2f37;
+    --text:#e6e8ec; --muted:#9aa3ad;
+    --accent:#7cd1ff; --accent2:#ffd166; --accent3:#9be37c; --accent4:#c79bff; --accent5:#ff7eb6;
+    --warn:#ff7676; --ok:#9be37c;
+    --apm:#e6522c; --trace:#a855f7; --eval:#10b981;
+    --slack:#ecb22e; --pager:#ff4757; --email:#5dade2;
+    --aws:#ff9900; --aws2:#232f3e; --awsCw:#e7157b; --awsBr:#01a88d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .wrap{max-width:1320px;margin:0 auto;padding:24px}
+  h1{font-size:30px;letter-spacing:.5px;margin:0 0 6px}
+  h1 small{color:var(--muted);font-weight:400;font-size:14px;display:block;margin-top:6px}
+  .sub{color:var(--muted);margin-bottom:24px;font-size:14px;line-height:1.6;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+
+  section{margin:36px 0;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px;scroll-margin-top:20px}
+  section h2{font-size:20px;margin:0 0 8px;color:#fff;letter-spacing:.5px}
+  section h2 .num{color:var(--accent);font-weight:400}
+  section .lead{color:var(--muted);margin:0 0 18px;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.6}
+  section h3{font-size:13px;margin:18px 0 8px;color:#fff;text-transform:uppercase;letter-spacing:1.2px}
+
+  .pad{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;line-height:1.65;color:#cdd5de}
+  .pad b{color:#fff}
+  .pad code{background:#11151a;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+  @media(max-width:980px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .card h4{margin:0 0 8px;font-size:13px;color:#fff;letter-spacing:.5px}
+  .card p{margin:0;color:#cdd5de;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:13px}
+
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:13px}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px;background:var(--panel2)}
+  td b{color:#fff}
+  td code{background:#11151a;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
+
+  pre{background:#0a0c0f;border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;font-size:12px;line-height:1.5;color:#cdd5de;margin:8px 0}
+  pre .k{color:#ff7eb6}
+  pre .s{color:#9be37c}
+  pre .c{color:#6a737d;font-style:italic}
+  pre .n{color:#7cd1ff}
+  pre .f{color:#ffd166}
+
+  .demo{margin-top:14px;padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:10px}
+  .demo .demoHead{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .demo .demoHead .tag{padding:3px 10px;border-radius:999px;background:var(--accent);color:#0b0d10;font-weight:700;font-size:11px;letter-spacing:.5px;text-transform:uppercase}
+  .demo .demoHead h4{margin:0;font-size:13px;color:#fff}
+  .btn{background:#26303b;color:#fff;border:1px solid #3a4654;border-radius:8px;padding:7px 14px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;transition:all .15s}
+  .btn:hover{border-color:#57667a;background:#2d3845}
+  .btn.primary{background:var(--accent);color:#0b0d10;border-color:var(--accent)}
+  .btn.primary:hover{background:#a4dfff;border-color:#a4dfff}
+  .btn.warn{background:var(--warn);color:#fff;border-color:var(--warn)}
+  .btn.ok{background:var(--ok);color:#0b0d10;border-color:var(--ok)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:11px;color:var(--muted)}
+  .pill.ok{background:rgba(155,227,124,0.15);border-color:var(--ok);color:var(--ok)}
+  .pill.warn{background:rgba(255,118,118,0.15);border-color:var(--warn);color:var(--warn)}
+  .pill.apm{background:rgba(230,82,44,0.15);border-color:var(--apm);color:#f08862}
+  .pill.trace{background:rgba(168,85,247,0.15);border-color:var(--trace);color:#c79bff}
+  .pill.eval{background:rgba(16,185,129,0.15);border-color:var(--eval);color:#3dd4a3}
+
+  .keypoint{padding:12px 14px;background:rgba(124,209,255,0.08);border:1px solid rgba(124,209,255,0.3);border-left:3px solid var(--accent);border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;line-height:1.6;color:#cdd5de}
+  .keypoint b{color:#fff}
+  .smallnote{margin-top:10px;font-size:11px;color:var(--muted);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+
+  .checklist{list-style:none;padding:0;margin:0}
+  .checklist li{padding:9px 12px 9px 36px;margin:5px 0;background:var(--panel2);border:1px solid var(--line);border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#cdd5de;position:relative}
+  .checklist li:before{content:"✓";position:absolute;left:12px;top:9px;color:var(--ok);font-weight:700}
+  .checklist li.warn:before{content:"⚠";color:var(--warn)}
+  .checklist li b{color:#fff}
+
+  /* === PAIN ANIMATION === */
+  .painAnim{background:linear-gradient(135deg,#1a0e0e 0%,#1d1517 100%);border:1px solid rgba(255,118,118,0.3);border-radius:14px;padding:18px;margin:0 0 18px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .painAnim .heroHdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .painAnim .heroHdr h3{margin:0;color:#fff;font-size:14px;letter-spacing:.5px;text-transform:uppercase}
+  .painAnim .heroHdr h3 .skull{color:var(--warn)}
+  .painAnim .stepLbl{margin-left:auto;color:var(--warn);font-family:ui-monospace,Menlo,monospace;font-size:12px;font-weight:700;padding:4px 10px;background:rgba(255,118,118,0.1);border:1px solid var(--warn);border-radius:6px}
+  .painSvgWrap{background:#0a0c0f;border:1px solid #3a1f1f;border-radius:10px;padding:14px;overflow:hidden}
+  .painSvgWrap svg{width:100%;height:auto;display:block}
+  .painCaption{margin-top:12px;padding:12px 14px;background:#0a0c0f;border:1px solid #3a1f1f;border-radius:8px;min-height:56px;color:#cdd5de;font-size:13px;line-height:1.6}
+  .painCaption .step{color:var(--warn);font-weight:700;margin-right:8px}
+  .painCaption b{color:#fff}
+  .painCaption .death{color:var(--warn);font-weight:700}
+  .painCaption code{background:#11151a;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#f08862}
+  .painErr{opacity:0;font-family:ui-monospace,Menlo,monospace;transition:opacity .4s}
+  .painErr.show{opacity:1;animation:painErrBlink 1s ease-in-out infinite}
+  @keyframes painErrBlink{0%,100%{opacity:1}50%{opacity:.5}}
+  .painBox{transition:stroke .4s,opacity .4s}
+  .painBox.dead{opacity:.3;stroke:var(--warn)!important}
+
+  /* === HERO ANIMATION === */
+  .heroAnim{background:linear-gradient(135deg,#0f1419 0%,#15181d 100%);border:1px solid var(--line);border-radius:14px;padding:18px;margin:0 0 30px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .heroAnim .heroHdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .heroAnim .heroHdr h3{margin:0;color:#fff;font-size:14px;letter-spacing:.5px;text-transform:uppercase}
+  .heroAnim .heroHdr .stepLbl{margin-left:auto;color:var(--accent);font-family:ui-monospace,Menlo,monospace;font-size:12px;font-weight:700;padding:4px 10px;background:rgba(124,209,255,0.1);border:1px solid var(--accent);border-radius:6px}
+  .heroAnim .heroBtns{display:flex;gap:6px;flex-wrap:wrap}
+  .heroSvgWrap{background:#0a0c0f;border:1px solid var(--line);border-radius:10px;padding:14px;overflow:hidden}
+  .heroSvgWrap svg{width:100%;height:auto;display:block}
+  .heroCaption{margin-top:12px;padding:12px 14px;background:#0a0c0f;border:1px solid var(--line);border-radius:8px;min-height:56px;color:#cdd5de;font-size:13px;line-height:1.6;transition:background .3s}
+  .heroCaption .step{color:var(--accent);font-weight:700;margin-right:8px}
+  .heroCaption b{color:#fff}
+  .heroCaption code{background:#11151a;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--accent)}
+  .heroBox{transition:stroke .4s,fill .4s,filter .4s,opacity .4s}
+  .heroBox.active{filter:drop-shadow(0 0 8px currentColor)}
+  .heroBox.dim{opacity:.3}
+  .heroPath{stroke-dasharray:6 4;transition:stroke-opacity .4s}
+  .heroPath.active{animation:flowDash 1.2s linear infinite}
+  @keyframes flowDash{to{stroke-dashoffset:-30}}
+
+  /* === DEMO 1: Drift tabs === */
+  .driftDemo{margin-top:14px}
+  .driftTabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .driftTab{padding:8px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:12px;color:#cdd5de;font-weight:600;transition:all .2s}
+  .driftTab:hover{border-color:var(--accent)}
+  .driftTab.active{background:var(--accent);color:#0b0d10;border-color:var(--accent)}
+  .driftTab .num{opacity:.6;margin-right:6px}
+  .driftStage{background:#0a0c0f;border:1px solid var(--line);border-radius:10px;padding:18px;min-height:380px}
+  .driftStage svg{width:100%;height:auto;display:block;max-height:340px}
+  .driftBox{transition:opacity .3s,stroke .3s,fill .3s}
+  .driftStageHdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+  .driftStageHdr .stepInfo{font-size:11px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .driftDesc{margin-top:14px;padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.65;color:#cdd5de;min-height:90px}
+  .driftDesc .title{font-weight:700;color:#fff;margin-bottom:6px;font-size:13px;text-transform:uppercase;letter-spacing:1px}
+  .driftDesc .bad{color:var(--warn);font-weight:700}
+  .driftDesc .good{color:var(--ok);font-weight:700}
+  .driftDesc code{background:#11151a;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--accent)}
+
+  /* Per-drift animations */
+  .dEl{transition:opacity .5s,transform .5s,fill .5s,stroke .5s}
+  .dHide{opacity:0}
+  .dShow{opacity:1}
+
+  /* Model drift: JSON schema diff slide */
+  @keyframes mdReveal{0%{opacity:0;transform:translateY(-6px)}100%{opacity:1;transform:translateY(0)}}
+  .mdBox{animation:mdReveal .6s ease-out both}
+  .mdShake{animation:mdShake .35s ease-in-out 3 both}
+  @keyframes mdShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+  /* Embedding drift: cosine similarity drop */
+  @keyframes edDropBar{0%{height:100px}100%{height:42px}}
+  .edBar.drop{animation:edDropBar 1.4s cubic-bezier(.4,.0,.2,1) both}
+  @keyframes edPulse{0%,100%{opacity:1}50%{opacity:.45}}
+  .edPulse{animation:edPulse 1s ease-in-out infinite}
+
+  /* Document drift: timestamp tick → outdated badge */
+  @keyframes docTick{0%{opacity:0;transform:scale(.6)}50%{transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}
+  .docTick{animation:docTick .7s ease-out both}
+
+  /* Data drift: bars grow/shrink */
+  @keyframes dBarGrow{from{width:0}to{width:var(--dbar-w,100px)}}
+  .dBar{animation:dBarGrow 1s ease-out both;transform-origin:left center}
+
+  /* Concept drift: text crossfade */
+  @keyframes ccFade{0%{opacity:0}100%{opacity:1}}
+  .ccTextOld{animation:ccFade .5s ease-out both}
+  .ccTextNew{animation:ccFade .5s ease-out .8s both;opacity:0}
+  .ccTextNew.show{opacity:1}
+  @keyframes ccStrike{0%{stroke-dashoffset:200}100%{stroke-dashoffset:0}}
+  .ccStrike{stroke-dasharray:200;stroke-dashoffset:200;animation:ccStrike 1s ease-out 1.4s forwards}
+
+  /* Common drift element fade-in cascade */
+  .dCascade{opacity:0;animation:dCascadeIn .5s ease-out forwards}
+  @keyframes dCascadeIn{to{opacity:1}}
+
+  /* === DEMO 2: 3 layers cumulative === */
+  .layerDemo{margin-top:14px}
+  .layerControls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .layerStage{background:#0a0c0f;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .layerStage svg{width:100%;height:auto;display:block}
+  .layerCard{transition:opacity .5s,filter .5s}
+  .layerCard.off{opacity:.15;filter:grayscale(80%)}
+  .layerCard.on{opacity:1}
+  .layerLegend{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+  @media(max-width:980px){.layerLegend{grid-template-columns:1fr}}
+  .layerLegItem{padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:12px;color:#cdd5de;transition:all .3s}
+  .layerLegItem.active.apm{border-color:var(--apm);background:rgba(230,82,44,0.1)}
+  .layerLegItem.active.trace{border-color:var(--trace);background:rgba(168,85,247,0.1)}
+  .layerLegItem.active.eval{border-color:var(--eval);background:rgba(16,185,129,0.1)}
+  .layerLegItem b{color:#fff}
+  .layerVerdict{margin-top:14px;padding:12px 14px;background:#0a0c0f;border:1px solid var(--line);border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#cdd5de;min-height:60px}
+  .layerVerdict .step{color:var(--accent);font-weight:700;margin-right:8px}
+  .layerVerdict b{color:#fff}
+  .layerVerdict .bad{color:var(--warn);font-weight:700}
+
+  /* === DEMO 3: Judge simulator === */
+  .judgeDemo{margin-top:14px;display:grid;grid-template-columns:1fr;gap:12px}
+  .judgePanel{background:#0a0c0f;border:1px solid var(--line);border-radius:10px;padding:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .judgePanel h4{margin:0 0 8px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700}
+  .judgePanel .content{color:#cdd5de;font-size:13px;line-height:1.6}
+  .judgePanel .content .ctx{padding:8px 10px;margin:4px 0;background:var(--panel2);border:1px solid var(--line);border-radius:6px;font-size:12px}
+  .judgePanel .content .ctx .src{color:var(--muted);font-size:10px;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+  .judgePanel.user{border-color:rgba(124,209,255,0.4)}
+  .judgePanel.ctx{border-color:rgba(199,155,255,0.4)}
+  .judgePanel.answer{border-color:rgba(255,209,102,0.4)}
+  .judgePanel.verdict{border-color:rgba(16,185,129,0.4)}
+  .judgeControls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+  .judgeControls select{background:#0a0c0f;border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:#fff;font:inherit;font-size:12px}
+  .judgeControls .rateBlock{display:flex;align-items:center;gap:8px;margin-left:auto}
+  .judgeControls input[type=range]{accent-color:var(--accent);width:120px}
+  .judgeBar{margin:8px 0}
+  .judgeBar .bLbl{display:flex;justify-content:space-between;font-size:12px;color:#cdd5de;margin-bottom:4px}
+  .judgeBar .bLbl b{color:#fff;font-family:ui-monospace,Menlo,monospace}
+  .judgeBar .bTrack{height:8px;background:#1d2127;border-radius:4px;overflow:hidden}
+  .judgeBar .bFill{height:100%;border-radius:4px;transition:width .8s ease-out}
+  .judgeBar .bExpl{margin-top:4px;font-size:11px;color:var(--muted);font-style:italic}
+  .judgeBar.good .bFill{background:linear-gradient(90deg,#9be37c,#5dade2)}
+  .judgeBar.mid .bFill{background:linear-gradient(90deg,#ffd166,#e6522c)}
+  .judgeBar.bad .bFill{background:linear-gradient(90deg,#ff7676,#ff7eb6)}
+  .judgeCost{padding:10px 12px;background:rgba(124,209,255,0.08);border:1px solid rgba(124,209,255,0.3);border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:12px;color:#cdd5de;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .judgeCost b{color:#fff}
+
+  /* === DEMO 4: Alert dashboard === */
+  .dashDemo{margin-top:14px}
+  .dashPanels{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+  @media(max-width:980px){.dashPanels{grid-template-columns:1fr 1fr}}
+  .dashPanel{background:#0a0c0f;border:1px solid var(--line);border-radius:10px;padding:12px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;transition:all .35s;position:relative}
+  .dashPanel.alert{border-color:var(--warn);background:rgba(255,118,118,0.05);box-shadow:0 0 10px rgba(255,118,118,0.3)}
+  .dashPanel.page{border-color:var(--pager);background:rgba(255,71,87,0.08);box-shadow:0 0 14px rgba(255,71,87,0.4);animation:dashPulse 1.5s ease-in-out infinite}
+  @keyframes dashPulse{0%,100%{box-shadow:0 0 14px rgba(255,71,87,0.4)}50%{box-shadow:0 0 22px rgba(255,71,87,0.7)}}
+  .dashPanel .pTitle{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:4px}
+  .dashPanel .pNow{font-size:24px;color:#fff;font-family:ui-monospace,Menlo,monospace;font-weight:700;margin:6px 0 2px}
+  .dashPanel.alert .pNow{color:var(--warn)}
+  .dashPanel.page .pNow{color:var(--pager)}
+  .dashPanel .pBase{font-size:11px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .dashPanel .pDelta{font-size:11px;color:var(--muted);margin-top:4px;font-family:ui-monospace,Menlo,monospace}
+  .dashPanel .pDelta.up{color:var(--warn)}
+  .dashPanel .pDelta.down{color:var(--warn)}
+  .dashPanel .pSeverity{position:absolute;top:8px;right:8px;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;display:none}
+  .dashPanel.alert .pSeverity{display:inline-block;background:var(--slack);color:#0b0d10}
+  .dashPanel.page .pSeverity{display:inline-block;background:var(--pager);color:#fff}
+
+  .dashSliders{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px}
+  @media(max-width:980px){.dashSliders{grid-template-columns:1fr}}
+  .dashSlider .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0}
+  .dashSlider label{font-size:12px;color:#cdd5de;min-width:160px}
+  .dashSlider input[type=range]{flex:1;accent-color:var(--accent)}
+  .dashSlider .v{min-width:70px;text-align:right;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent2);font-weight:700}
+  .dashPresets{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+  .alertFeed{margin-top:12px;padding:12px;background:#0a0c0f;border:1px solid var(--line);border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:11px;min-height:120px;max-height:200px;overflow-y:auto}
+  .alertFeed .line{padding:3px 6px;margin:2px 0;border-radius:4px;color:#cdd5de}
+  .alertFeed .line.ok{color:var(--ok)}
+  .alertFeed .line.warn{color:var(--slack)}
+  .alertFeed .line.page{color:var(--pager);background:rgba(255,71,87,0.08);font-weight:700}
+  .alertFeed .line.info{color:var(--email)}
+
+  /* === Tools cards === */
+  .toolGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  @media(max-width:980px){.toolGrid{grid-template-columns:1fr}}
+  .toolCard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .toolCard.apm{border-color:rgba(230,82,44,0.4)}
+  .toolCard.trace{border-color:rgba(168,85,247,0.4)}
+  .toolCard.eval{border-color:rgba(16,185,129,0.4)}
+  .toolCard h4{margin:0 0 6px;font-size:13px;color:#fff;display:flex;align-items:center;gap:8px}
+  .toolCard h4 .pillSm{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+  .toolCard.apm h4 .pillSm{background:var(--apm);color:#fff}
+  .toolCard.trace h4 .pillSm{background:var(--trace);color:#fff}
+  .toolCard.eval h4 .pillSm{background:var(--eval);color:#0b0d10}
+  .toolCard p{margin:0;color:#cdd5de;font-size:12px;line-height:1.6}
+  .toolCard ul{margin:6px 0 0;padding-left:18px;color:#cdd5de;font-size:12px;line-height:1.65}
+  .toolCard ul li b{color:#fff}
+
+  /* === AWS CloudWatch flow demo === */
+  .toolCard.aws{border-color:rgba(255,153,0,0.45);background:linear-gradient(180deg,rgba(255,153,0,0.05),var(--panel2))}
+  .toolCard.aws h4 .pillSm{background:var(--aws);color:var(--aws2)}
+  .awsFlow{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px;margin-top:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .awsFlow .demoHead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .awsFlow .demoTitle{font-size:13px;color:#fff;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .awsFlow .demoTitle::before{content:"";display:inline-block;width:14px;height:14px;background:var(--aws);border-radius:3px;box-shadow:0 0 12px rgba(255,153,0,.5)}
+  .awsFlow .demoCtrl{display:flex;gap:6px;align-items:center}
+  .awsFlow .demoCtrl button{background:var(--panel);border:1px solid var(--line);color:#cdd5de;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:11px;letter-spacing:.3px;font-family:inherit;transition:all .15s}
+  .awsFlow .demoCtrl button:hover{border-color:var(--aws);color:#fff}
+  .awsFlow .demoCtrl button.primary{background:var(--aws);color:var(--aws2);border-color:var(--aws);font-weight:600}
+  .awsFlow .demoCtrl .stepLbl{font-size:11px;color:var(--muted);padding:0 8px}
+  .awsStage{position:relative;background:#0a0d12;border:1px solid var(--line);border-radius:8px;padding:16px;min-height:360px}
+  .awsNode{position:absolute;background:var(--aws2);border:1.5px solid #3b4859;border-radius:8px;padding:8px 10px;color:#fff;font-size:11px;line-height:1.3;min-width:130px;opacity:.25;transition:all .5s ease}
+  .awsNode.on{opacity:1;border-color:var(--aws);box-shadow:0 0 14px rgba(255,153,0,.35)}
+  .awsNode .nTitle{font-weight:600;font-size:11px;color:#fff;display:flex;align-items:center;gap:6px;margin-bottom:3px}
+  .awsNode .nTitle::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--aws)}
+  .awsNode .nSub{font-size:10px;color:#9aa6b2;font-family:ui-monospace,monospace}
+  .awsNode.metric.on{border-color:var(--awsCw);box-shadow:0 0 14px rgba(231,21,123,.35)}
+  .awsNode.metric .nTitle::before{background:var(--awsCw)}
+  .awsNode.bedrock.on{border-color:var(--awsBr);box-shadow:0 0 14px rgba(1,168,141,.35)}
+  .awsNode.bedrock .nTitle::before{background:var(--awsBr)}
+  .awsNode.alert.on{border-color:var(--pager);box-shadow:0 0 16px rgba(255,71,87,.5)}
+  .awsNode.alert .nTitle::before{background:var(--pager)}
+  .awsArrow{position:absolute;height:2px;background:linear-gradient(90deg,transparent,var(--aws),transparent);opacity:0;transform-origin:left center;transition:opacity .4s ease}
+  .awsArrow.on{opacity:.7;animation:awsFlowPulse 1.6s ease-in-out infinite}
+  @keyframes awsFlowPulse{0%,100%{opacity:.4}50%{opacity:.95}}
+  .awsCaption{margin-top:12px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:6px;font-size:12px;color:#cdd5de;line-height:1.6;min-height:42px}
+  .awsCaption b{color:#fff}
+  .awsCaption .step{display:inline-block;background:var(--aws);color:var(--aws2);padding:1px 7px;border-radius:3px;font-weight:600;font-size:10px;margin-right:6px;letter-spacing:.3px;text-transform:uppercase}
+  .awsCaption .bad{color:var(--warn)}
+  .awsCaption .good{color:var(--ok)}
+
+  /* === Context Window Drift animation === */
+  .cwFlow{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px;margin-top:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .cwFlow .demoHead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .cwFlow .demoTitle{font-size:13px;color:#fff;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .cwFlow .demoTitle::before{content:"";display:inline-block;width:14px;height:14px;background:var(--accent4);border-radius:3px;box-shadow:0 0 12px rgba(199,155,255,.5)}
+  .cwFlow .demoCtrl{display:flex;gap:6px;align-items:center}
+  .cwFlow .demoCtrl button{background:var(--panel);border:1px solid var(--line);color:#cdd5de;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:11px;letter-spacing:.3px;font-family:inherit;transition:all .15s}
+  .cwFlow .demoCtrl button:hover{border-color:var(--accent4);color:#fff}
+  .cwFlow .demoCtrl button.primary{background:var(--accent4);color:#0b0d10;border-color:var(--accent4);font-weight:600}
+  .cwFlow .demoCtrl .stepLbl{font-size:11px;color:var(--muted);padding:0 8px}
+  .cwStage{display:grid;grid-template-columns:1fr 1fr;gap:14px;background:#0a0d12;border:1px solid var(--line);border-radius:8px;padding:16px;min-height:360px}
+  .cwLeft,.cwRight{display:flex;flex-direction:column;gap:10px}
+  .cwPhase{padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:6px;font-size:11px;color:#cdd5de;line-height:1.5}
+  .cwPhase b{color:#fff}
+  .cwPhase .ph{display:inline-block;background:var(--accent4);color:#0b0d10;padding:1px 7px;border-radius:3px;font-weight:600;font-size:10px;margin-right:6px;letter-spacing:.3px;text-transform:uppercase}
+  .cwChat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;height:220px;overflow:hidden;position:relative;font-family:ui-monospace,Menlo,monospace;font-size:10px}
+  .cwTurn{padding:4px 7px;margin:2px 0;border-radius:3px;color:#cdd5de;border-left:2px solid var(--accent4);background:rgba(199,155,255,0.06);opacity:0;animation:cwTurnIn .3s ease forwards}
+  .cwTurn.user{border-left-color:var(--accent);background:rgba(124,209,255,0.06)}
+  @keyframes cwTurnIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+  .cwChatMask{position:absolute;left:0;right:0;bottom:0;height:60px;background:linear-gradient(180deg,transparent,#15181d);pointer-events:none}
+  .cwContextBar{position:relative;height:38px;background:#15181d;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .cwContextFill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--ok),var(--accent2) 60%,var(--warn));width:0%;transition:width 1s ease}
+  .cwContextLabel{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:10px;color:#fff;font-family:ui-monospace,Menlo,monospace;font-weight:700;letter-spacing:.3px;z-index:2;text-shadow:0 0 4px rgba(0,0,0,0.7)}
+  .cwContextMarker{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--warn);box-shadow:0 0 6px rgba(255,118,118,.7)}
+  .cwContextMarker::after{content:"efficient zone limit";position:absolute;top:-14px;left:-50px;width:100px;font-size:9px;color:var(--warn);text-align:center;font-family:-apple-system,Helvetica,sans-serif}
+  .cwMetric{display:flex;flex-direction:column;gap:4px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;font-size:11px}
+  .cwMetric .mTop{display:flex;align-items:center;justify-content:space-between}
+  .cwMetric .lbl{color:#cdd5de;font-family:ui-monospace,Menlo,monospace}
+  .cwMetric .val{font-weight:700;font-family:ui-monospace,Menlo,monospace;transition:color .4s ease, transform .3s ease}
+  .cwMetric .desc{font-size:10px;color:var(--muted);font-family:-apple-system,Helvetica,Arial,sans-serif;line-height:1.4;border-top:1px dashed var(--line);padding-top:4px;margin-top:2px}
+  .cwMetric .desc b{color:#cdd5de;font-weight:600}
+  .cwMetric.bad .val{color:var(--warn);transform:scale(1.08)}
+  .cwMetric.warn .val{color:var(--accent2)}
+  .cwMetric.ok .val{color:var(--ok)}
+  .cwBucketBars{display:flex;gap:4px;align-items:flex-end;height:90px;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+  .cwBucket{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .cwBucket .bar{width:100%;background:var(--eval);border-radius:2px 2px 0 0;transition:height .6s ease, background .6s ease;min-height:2px}
+  .cwBucket.warn .bar{background:var(--accent2)}
+  .cwBucket.bad .bar{background:var(--warn)}
+  .cwBucket .lbl{font-size:9px;color:var(--muted);font-family:ui-monospace,monospace}
+  .cwBucket .scr{font-size:9px;color:#cdd5de;font-family:ui-monospace,monospace;font-weight:700}
+  .cwCaption{margin-top:12px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:6px;font-size:12px;color:#cdd5de;line-height:1.6;min-height:42px}
+  .cwCaption b{color:#fff}
+  .cwCaption .step{display:inline-block;background:var(--accent4);color:#0b0d10;padding:1px 7px;border-radius:3px;font-weight:600;font-size:10px;margin-right:6px;letter-spacing:.3px;text-transform:uppercase}
+  .cwCaption .bad{color:var(--warn)}
+  .cwCaption .good{color:var(--ok)}
+  @media (max-width:760px){ .cwStage{grid-template-columns:1fr} }
+
+  /* === Prompt Regression animation === */
+  .prFlow{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px;margin-top:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .prFlow .demoHead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .prFlow .demoTitle{font-size:13px;color:#fff;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .prFlow .demoTitle::before{content:"";display:inline-block;width:14px;height:14px;background:var(--accent5);border-radius:3px;box-shadow:0 0 12px rgba(255,126,182,.5)}
+  .prFlow .demoCtrl{display:flex;gap:6px;align-items:center}
+  .prFlow .demoCtrl button{background:var(--panel);border:1px solid var(--line);color:#cdd5de;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:11px;letter-spacing:.3px;font-family:inherit;transition:all .15s}
+  .prFlow .demoCtrl button:hover{border-color:var(--accent5);color:#fff}
+  .prFlow .demoCtrl button.primary{background:var(--accent5);color:#0b0d10;border-color:var(--accent5);font-weight:600}
+  .prFlow .demoCtrl .stepLbl{font-size:11px;color:var(--muted);padding:0 8px}
+  .prStage{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;background:#0a0d12;border:1px solid var(--line);border-radius:8px;padding:16px;min-height:420px}
+  .prCol{display:flex;flex-direction:column;gap:10px}
+  .prColHdr{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:ui-monospace,monospace;font-weight:700}
+  .prFile{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;font-family:ui-monospace,Menlo,monospace;font-size:11px}
+  .prFileHdr{padding:6px 10px;background:#15181d;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#cdd5de}
+  .prFileHdr .branch{color:var(--accent4);font-weight:700}
+  .prFileHdr .author{color:var(--muted)}
+  .prFileBody{padding:10px 12px;color:#cdd5de;line-height:1.65;white-space:pre-wrap;min-height:120px;max-height:200px;overflow-y:auto}
+  .prLine{display:block;padding:1px 4px;margin:0 -4px;border-radius:2px}
+  .prLine.add{background:rgba(155,227,124,0.15);color:#c6f1b6;border-left:3px solid var(--ok);padding-left:6px}
+  .prLine.rem{background:rgba(255,118,118,0.15);color:#ffb8b8;border-left:3px solid var(--warn);padding-left:6px;text-decoration:line-through;text-decoration-color:rgba(255,118,118,0.6)}
+  .prLine.add::before{content:"+ ";color:var(--ok);font-weight:700}
+  .prLine.rem::before{content:"- ";color:var(--warn);font-weight:700}
+  .prCi{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .prCiHdr{padding:7px 10px;background:#15181d;border-bottom:1px solid var(--line);font-size:11px;color:#fff;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .prCiHdr .ciStatus{font-size:10px;font-family:ui-monospace,monospace;padding:2px 8px;border-radius:3px;font-weight:700;letter-spacing:.5px}
+  .prCiHdr .ciStatus.ok{background:var(--ok);color:#0b0d10}
+  .prCiHdr .ciStatus.fail{background:var(--warn);color:#fff}
+  .prCiHdr .ciStatus.pending{background:var(--accent2);color:#0b0d10}
+  .prCiBody{padding:8px 10px;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#cdd5de}
+  .prCiStep{display:flex;align-items:center;gap:8px;padding:3px 0;opacity:.35;transition:opacity .3s}
+  .prCiStep.active{opacity:1}
+  .prCiStep.active.fail{color:var(--warn)}
+  .prCiStep.active.ok{color:var(--ok)}
+  .prCiStep .icon{display:inline-block;width:14px;text-align:center}
+  .prEvalGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px}
+  .prEvalCase{background:#15181d;border:1px solid var(--line);border-radius:4px;padding:6px 8px;font-size:10px;font-family:ui-monospace,monospace;transition:all .3s ease}
+  .prEvalCase .caseLbl{color:#cdd5de;font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:3px}
+  .prEvalCase .caseSc{display:flex;justify-content:space-between;align-items:center;color:#cdd5de}
+  .prEvalCase .caseSc .v{font-weight:700;font-size:11px}
+  .prEvalCase.pass{border-color:var(--ok)}
+  .prEvalCase.pass .v{color:var(--ok)}
+  .prEvalCase.fail{border-color:var(--warn);background:rgba(255,118,118,0.06);animation:prFailPulse 1.5s ease-in-out infinite}
+  .prEvalCase.fail .v{color:var(--warn)}
+  @keyframes prFailPulse{0%,100%{box-shadow:0 0 0 rgba(255,118,118,0)}50%{box-shadow:0 0 10px rgba(255,118,118,0.4)}}
+  .prTickets{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px}
+  .prTicket{display:flex;align-items:center;gap:8px;padding:5px 8px;margin:3px 0;background:#15181d;border-left:3px solid var(--warn);border-radius:3px;font-size:10px;font-family:ui-monospace,monospace;color:#cdd5de;opacity:0;animation:prTicketIn .3s ease forwards}
+  @keyframes prTicketIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+  .prTicket .tT{color:var(--muted);font-size:9px;width:38px}
+  .prCaption{margin-top:12px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:6px;font-size:12px;color:#cdd5de;line-height:1.6;min-height:42px}
+  .prCaption b{color:#fff}
+  .prCaption .step{display:inline-block;background:var(--accent5);color:#0b0d10;padding:1px 7px;border-radius:3px;font-weight:600;font-size:10px;margin-right:6px;letter-spacing:.3px;text-transform:uppercase}
+  .prCaption .step.good{background:var(--ok)}
+  .prCaption .step.bad{background:var(--warn);color:#fff}
+  .prCaption .bad{color:var(--warn)}
+  .prCaption .good{color:var(--ok)}
+  @media (max-width:760px){ .prStage{grid-template-columns:1fr} .prEvalGrid{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Production LLM Monitoring & Drift</h1>
+<div class="sub">Системний огляд практик моніторингу production LLM-сервісів. Пʼять типів дрифту з позиції AI Engineer (не ML Engineer), три обовʼязкові шари observability (APM + Tracing + Quality Evals), LLM-as-a-Judge для якісного моніторингу, content-based alerting, управління релізами промптів і моделей. Чотири інтерактивні симулятори для емпіричної перевірки концепцій.</div>
+
+<!-- =============== PAIN ANIMATION =============== -->
+<div class="painAnim">
+  <div class="heroHdr">
+    <h3><span class="skull">💀</span> Що відбувається без моніторингу LLM-сервісу</h3>
+    <div class="heroBtns">
+      <button class="btn warn" id="painPlay">▶ Play incident</button>
+      <button class="btn" id="painReset">↺ Reset</button>
+    </div>
+    <div class="stepLbl" id="painStepLbl">step 0 / 4</div>
+  </div>
+
+  <div class="painSvgWrap">
+    <svg viewBox="0 0 1000 320" xmlns="http://www.w3.org/2000/svg">
+      <!-- App -->
+      <g id="painApp">
+        <rect class="painBox" id="painAppBox" x="40" y="120" width="180" height="80" rx="10" fill="#15181d" stroke="#9be37c" stroke-width="2"/>
+        <text x="130" y="148" text-anchor="middle" fill="#9be37c" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">LLM SERVICE</text>
+        <text x="130" y="166" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">FastAPI · gpt-4o · RAG</text>
+        <text x="130" y="184" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,Menlo,monospace">200 OK · 480ms</text>
+      </g>
+
+      <!-- API Provider -->
+      <g id="painProv">
+        <rect class="painBox" id="painProvBox" x="280" y="40" width="200" height="70" rx="10" fill="#15181d" stroke="#7cd1ff" stroke-width="2"/>
+        <text x="380" y="64" text-anchor="middle" fill="#7cd1ff" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">OpenAI API</text>
+        <text x="380" y="82" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,Menlo,monospace">model: gpt-4o</text>
+        <text x="380" y="98" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">(silent update on Aug 6)</text>
+      </g>
+
+      <!-- Vector DB -->
+      <g id="painVDB">
+        <rect class="painBox" id="painVDBBox" x="280" y="210" width="200" height="70" rx="10" fill="#15181d" stroke="#c79bff" stroke-width="2"/>
+        <text x="380" y="234" text-anchor="middle" fill="#c79bff" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">Vector DB · RAG</text>
+        <text x="380" y="252" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">last sync: 2024-Q2</text>
+        <text x="380" y="268" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">embedding: v1 (frozen)</text>
+      </g>
+
+      <!-- Users -->
+      <g id="painUsers">
+        <text x="80" y="40" text-anchor="middle" fill="#9aa3ad" font-size="11" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">USERS</text>
+        <text x="50" y="70" font-size="22" font-family="-apple-system,Helvetica,Arial,sans-serif">🙂</text>
+        <text x="80" y="70" font-size="22" font-family="-apple-system,Helvetica,Arial,sans-serif">🙂</text>
+        <text x="110" y="70" font-size="22" font-family="-apple-system,Helvetica,Arial,sans-serif">🙂</text>
+        <g id="painAngry" opacity="0">
+          <rect x="40" y="50" width="90" height="28" fill="#0a0c0f"/>
+          <text x="50" y="70" font-size="22" font-family="-apple-system,Helvetica,Arial,sans-serif">😡</text>
+          <text x="80" y="70" font-size="22" font-family="-apple-system,Helvetica,Arial,sans-serif">😡</text>
+          <text x="110" y="70" font-size="22" font-family="-apple-system,Helvetica,Arial,sans-serif">😡</text>
+        </g>
+      </g>
+
+      <!-- Errors column -->
+      <g id="painErrors">
+        <text x="730" y="35" text-anchor="middle" fill="#9aa3ad" font-size="11" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">WHAT BREAKS · SILENTLY</text>
+
+        <g class="painErr" id="painErr1">
+          <rect x="500" y="45" width="480" height="40" rx="6" fill="rgba(255,118,118,0.1)" stroke="#ff7676"/>
+          <text x="514" y="62" fill="#ff7676" font-size="11" font-weight="700" font-family="ui-monospace,Menlo,monospace">[MODEL DRIFT] gpt-4o silently updated</text>
+          <text x="514" y="77" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">JSON schema field "reasoning" no longer present · downstream parsing fails</text>
+        </g>
+
+        <g class="painErr" id="painErr2">
+          <rect x="500" y="95" width="480" height="40" rx="6" fill="rgba(255,118,118,0.1)" stroke="#ff7676"/>
+          <text x="514" y="112" fill="#ff7676" font-size="11" font-weight="700" font-family="ui-monospace,Menlo,monospace">[EMBEDDING DRIFT] new query embedding ≠ index embedding</text>
+          <text x="514" y="127" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">cosine similarity drops 0.91 → 0.42 · RAG returns irrelevant chunks</text>
+        </g>
+
+        <g class="painErr" id="painErr3">
+          <rect x="500" y="145" width="480" height="40" rx="6" fill="rgba(255,118,118,0.1)" stroke="#ff7676"/>
+          <text x="514" y="162" fill="#ff7676" font-size="11" font-weight="700" font-family="ui-monospace,Menlo,monospace">[QUALITY DROP] hallucination rate +18% week-over-week</text>
+          <text x="514" y="177" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">APM still shows 200 OK · no signal in Grafana · alerts silent</text>
+        </g>
+
+        <g class="painErr" id="painErr4">
+          <rect x="500" y="195" width="480" height="40" rx="6" fill="rgba(255,118,118,0.1)" stroke="#ff7676"/>
+          <text x="514" y="212" fill="#ff7676" font-size="11" font-weight="700" font-family="ui-monospace,Menlo,monospace">[USER TICKETS] 47 complaints in support inbox</text>
+          <text x="514" y="227" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">"wrong pricing", "fabricated link", "refused legitimate request"</text>
+        </g>
+
+      </g>
+    </svg>
+  </div>
+
+  <div class="painCaption" id="painCaption">
+    <span class="step">▶ Натисни Play</span> — побачите 5 типових інцидентів, які трапляються у LLM-сервісі без правильного моніторингу. APM показує 200 OK, юзери скаржаться, інженер дізнається останнім.
+  </div>
+</div>
+
+<!-- =============== HERO ANIMATION =============== -->
+<div class="heroAnim">
+  <div class="heroHdr">
+    <h3>🎬 Як працює LLM Observability за 60 секунд</h3>
+    <div class="heroBtns">
+      <button class="btn primary" id="heroPlay">▶ Play</button>
+      <button class="btn" id="heroReset">↺ Reset</button>
+    </div>
+    <div class="stepLbl" id="heroStepLbl">step 0 / 6</div>
+  </div>
+
+  <div class="heroSvgWrap">
+    <svg viewBox="0 0 1000 380" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="heroArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#7cd1ff"/>
+        </marker>
+      </defs>
+
+      <!-- User -->
+      <g id="heroUser">
+        <rect class="heroBox" id="heroUserBox" x="20" y="160" width="130" height="60" rx="10" fill="#15181d" stroke="#9aa3ad" stroke-width="2"/>
+        <text x="85" y="185" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">👤 User</text>
+        <text x="85" y="205" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,Menlo,monospace">POST /chat</text>
+      </g>
+
+      <!-- App -->
+      <g id="heroApp">
+        <rect class="heroBox" id="heroAppBox" x="210" y="160" width="160" height="60" rx="10" fill="#15181d" stroke="#7cd1ff" stroke-width="2"/>
+        <text x="290" y="185" text-anchor="middle" fill="#7cd1ff" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">LLM APP</text>
+        <text x="290" y="203" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">RAG + chat completion</text>
+      </g>
+
+      <!-- APM layer -->
+      <g id="heroAPM">
+        <rect class="heroBox" id="heroAPMBox" x="440" y="20" width="220" height="80" rx="10" fill="#15181d" stroke="#e6522c" stroke-width="2"/>
+        <text x="550" y="44" text-anchor="middle" fill="#e6522c" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">LAYER 1 · APM</text>
+        <text x="550" y="62" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">Prometheus + Grafana</text>
+        <text x="550" y="78" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,Menlo,monospace">latency · errors · cost</text>
+        <text x="550" y="93" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">does NOT see content</text>
+      </g>
+
+      <!-- Tracing layer -->
+      <g id="heroTrace">
+        <rect class="heroBox" id="heroTraceBox" x="440" y="150" width="220" height="80" rx="10" fill="#15181d" stroke="#a855f7" stroke-width="2"/>
+        <text x="550" y="174" text-anchor="middle" fill="#a855f7" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">LAYER 2 · TRACING</text>
+        <text x="550" y="192" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">Langfuse / Helicone / Phoenix</text>
+        <text x="550" y="208" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,Menlo,monospace">prompt · retrieval · tokens</text>
+        <text x="550" y="223" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">sees what · not whether correct</text>
+      </g>
+
+      <!-- Evals layer -->
+      <g id="heroEval">
+        <rect class="heroBox" id="heroEvalBox" x="440" y="280" width="220" height="80" rx="10" fill="#15181d" stroke="#10b981" stroke-width="2"/>
+        <text x="550" y="304" text-anchor="middle" fill="#10b981" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">LAYER 3 · EVALS</text>
+        <text x="550" y="322" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">LLM-as-a-Judge · RAGAS</text>
+        <text x="550" y="338" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,Menlo,monospace">faithfulness · relevancy</text>
+        <text x="550" y="353" text-anchor="middle" fill="#10b981" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="700">ONLY layer that catches hallucinations</text>
+      </g>
+
+      <!-- Alerts -->
+      <g id="heroAlert">
+        <rect class="heroBox" id="heroAlertBox" x="720" y="160" width="240" height="60" rx="10" fill="#15181d" stroke="#ffd166" stroke-width="2"/>
+        <text x="840" y="185" text-anchor="middle" fill="#ffd166" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">🚨 ALERTING</text>
+        <text x="840" y="203" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">Slack · PagerDuty · email</text>
+      </g>
+
+      <!-- Paths -->
+      <line class="heroPath" id="heroP1" x1="150" y1="190" x2="210" y2="190" stroke="#7cd1ff" stroke-width="2" stroke-opacity="0.2" marker-end="url(#heroArrow)"/>
+      <line class="heroPath" id="heroP2" x1="370" y1="180" x2="440" y2="60" stroke="#e6522c" stroke-width="2" stroke-opacity="0.2" marker-end="url(#heroArrow)"/>
+      <line class="heroPath" id="heroP3" x1="370" y1="190" x2="440" y2="190" stroke="#a855f7" stroke-width="2" stroke-opacity="0.2" marker-end="url(#heroArrow)"/>
+      <line class="heroPath" id="heroP4" x1="370" y1="200" x2="440" y2="320" stroke="#10b981" stroke-width="2" stroke-opacity="0.2" marker-end="url(#heroArrow)"/>
+      <line class="heroPath" id="heroP5" x1="660" y1="60" x2="720" y2="180" stroke="#ffd166" stroke-width="2" stroke-opacity="0.2" marker-end="url(#heroArrow)"/>
+      <line class="heroPath" id="heroP6" x1="660" y1="190" x2="720" y2="190" stroke="#ffd166" stroke-width="2" stroke-opacity="0.2" marker-end="url(#heroArrow)"/>
+      <line class="heroPath" id="heroP7" x1="660" y1="320" x2="720" y2="200" stroke="#ffd166" stroke-width="2" stroke-opacity="0.2" marker-end="url(#heroArrow)"/>
+    </svg>
+  </div>
+
+  <div class="heroCaption" id="heroCaption">
+    <span class="step">▶ Натисни Play</span> — анімація показує як кожен з трьох шарів observability (APM → Tracing → Evals) бачить різні аспекти роботи LLM-сервісу, і чому усі три потрібні разом для повної картини.
+  </div>
+
+  <div class="pad" style="margin-top:18px;padding:18px 20px;background:var(--panel2);border:1px solid var(--line);border-radius:12px">
+    <p style="margin:0 0 14px;font-size:13px;color:#cdd5de;line-height:1.7">
+      <b style="color:#fff">Чому саме три шари, а не один універсальний інструмент?</b><br>
+      Кожен шар бачить LLM-сервіс <b>через свою лінзу</b> і ловить <b>свій клас проблем</b>. Жоден з них не покриває всю картину — і це не баг, а архітектурний принцип. Спроба зробити "усе в одному" завжди закінчується інструментом який добре робить лише одну річ.
+    </p>
+
+    <div class="grid grid3" style="gap:14px">
+      <div style="padding:14px;background:var(--panel);border-left:3px solid var(--apm);border-radius:6px">
+        <div style="font-size:11px;color:var(--apm);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">📊 Шар 1 · APM</div>
+        <p style="margin:0 0 8px;font-size:12px;color:#cdd5de;line-height:1.6"><b style="color:#fff">Що бачить:</b> інфраструктурні метрики — latency, error rate, throughput, cost per request, GPU utilization.</p>
+        <p style="margin:0 0 8px;font-size:12px;color:#cdd5de;line-height:1.6"><b style="color:#fff">Що ловить:</b> падіння провайдера, timeout vector DB, OOM на embedding-сервісі, 5xx-сплеск.</p>
+        <p style="margin:0;font-size:12px;color:var(--warn);line-height:1.6"><b>Сліпий до:</b> галюцинацій, refusal, контенту відповіді — для нього <code>200 OK 500ms</code> з брехнею всередині виглядає ідеально здоровим.</p>
+      </div>
+
+      <div style="padding:14px;background:var(--panel);border-left:3px solid var(--trace);border-radius:6px">
+        <div style="font-size:11px;color:var(--trace);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">🔭 Шар 2 · Tracing</div>
+        <p style="margin:0 0 8px;font-size:12px;color:#cdd5de;line-height:1.6"><b style="color:#fff">Що бачить:</b> повний шлях <b>одного</b> запиту — prompt → retrieved contexts → tool calls → final answer + токени і тривалість кожного кроку.</p>
+        <p style="margin:0 0 8px;font-size:12px;color:#cdd5de;line-height:1.6"><b style="color:#fff">Що ловить:</b> який context модель отримала, який prompt згенерувався, де згоріли токени, чи спрацював retrieval.</p>
+        <p style="margin:0;font-size:12px;color:var(--warn);line-height:1.6"><b>Сліпий до:</b> якості відповіді — показує <b>що</b> модель отримала і <b>що</b> повернула, але не оцінює <b>чи правильно</b> вона відповіла.</p>
+      </div>
+
+      <div style="padding:14px;background:var(--panel);border-left:3px solid var(--eval);border-radius:6px">
+        <div style="font-size:11px;color:var(--eval);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">⚖ Шар 3 · Evals</div>
+        <p style="margin:0 0 8px;font-size:12px;color:#cdd5de;line-height:1.6"><b style="color:#fff">Що бачить:</b> якісну оцінку відповіді — faithfulness (чи факти підкріплені context), answer relevancy (чи на питання), context precision (чи retrieval релевантний).</p>
+        <p style="margin:0 0 8px;font-size:12px;color:#cdd5de;line-height:1.6"><b style="color:#fff">Що ловить:</b> галюцинації, регресії після зміни prompt, model drift, концептуальний дрифт у конкретних інтентах.</p>
+        <p style="margin:0;font-size:12px;color:var(--ok);line-height:1.6"><b>Єдиний шар</b> який бачить що модель <b>бреше</b> при ідеальних APM-метриках. Без нього content drift залишається невидимим.</p>
+      </div>
+    </div>
+
+    <p style="margin:14px 0 0;padding:12px 14px;background:rgba(124,209,255,0.08);border-left:3px solid var(--accent);border-radius:6px;font-size:12px;color:#cdd5de;line-height:1.6">
+      <b style="color:#fff">Практичне правило:</b> якщо у тебе тільки <b style="color:var(--apm)">APM</b> — ти не знаєш чому система деградує. Якщо тільки <b style="color:var(--trace)">Tracing</b> — можеш дебажити одиничні запити, але не бачиш тренди. Якщо тільки <b style="color:var(--eval)">Evals</b> — бачиш що щось погіршало, але не знаєш на якому шарі pipeline шукати причину. <b style="color:#fff">Production-grade observability вимагає всіх трьох.</b>
+    </p>
+  </div>
+</div>
+
+<!-- ============================ SECTION 1: WHY ============================ -->
+<section id="why">
+  <h2><span class="num">01 ·</span> Чому AI Engineer ≠ ML Engineer у контексті дрифту</h2>
+  <p class="lead">Класична література про моніторинг моделей написана для ML Engineers, які тренують власні моделі і слідкують за деградацією через distribution shift у training/serving data. AI Engineer працює інакше: модель — це API провайдера, який оновлюється без вашого відома. Тому категорії дрифту, метрики, інструменти та реакції — інші.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>🔬 ML Engineer (класичний)</h4>
+      <p style="margin-top:8px">Тренує власну модель (XGBoost, fine-tuned BERT). Контролює training data, hyperparameters, deployment pipeline. Дрифт = "вхідні дані відрізняються від тренувальних". Інструменти: Evidently AI, WhyLogs, MLflow. Метрика: PSI, KS-test, KL-divergence.</p>
+    </div>
+    <div class="card" style="border-color:rgba(255,118,118,0.3)">
+      <h4 style="color:var(--warn)">🤖 AI Engineer</h4>
+      <p style="margin-top:8px">Викликає API провайдера (OpenAI, Anthropic, Mistral). Не контролює модель — провайдер оновлює її silent. RAG indexes, prompt templates, evaluation criteria — все це теж може дрифтувати. Інструменти: Langfuse, RAGAS, LLM-as-a-Judge. Метрика: faithfulness, answer relevancy, refusal rate.</p>
+    </div>
+  </div>
+
+  <h3>4 фундаментальні відмінності</h3>
+  <div class="grid4">
+    <div class="card">
+      <h4 style="color:var(--accent)">🔐 Контроль над моделлю</h4>
+      <p><b>ML Engineer:</b> повний — ваги, версія, retraining. <b>AI Engineer:</b> нуль — провайдер може зробити silent update і нічого не сказати.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent2)">📦 Що дрифтує</h4>
+      <p><b>ML:</b> розподіл features у inference data. <b>AI:</b> API contract, embedding model, retrieval corpus, prompt template, ground truth.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent3)">📏 Як міряти</h4>
+      <p><b>ML:</b> статистичні тести на feature distributions. <b>AI:</b> LLM-as-a-Judge на sample of production traffic + golden dataset.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent4)">⚡ Швидкість реакції</h4>
+      <p><b>ML:</b> дні-тижні (retraining pipeline). <b>AI:</b> години (поміняти модель/prompt і rollout через registry).</p>
+    </div>
+  </div>
+
+  <div class="keypoint" style="margin-top:18px">
+    <b>Головна ідея уроку:</b> дрифт для AI Engineer — це не "модель зістарілась", а <b>"API-контракт із провайдером змінився без твого відома"</b>. Через це класичні підходи моніторингу (data drift detection через statistical tests) працюють лише частково. Основний інструмент — content-based evaluation на real production traffic через LLM-as-a-Judge.
+  </div>
+</section>
+
+<!-- ============================ SECTION 2: DRIFT TYPES ============================ -->
+<section id="drift-types">
+  <h2><span class="num">02 ·</span> Пʼять типів дрифту для AI Engineer</h2>
+  <p class="lead">Дрифт у AI-системах — це не один феномен, а пʼять різних типів, які проявляються по-різному, мають різні симптоми і лікуються різними інструментами. Класифікація допомагає розпізнати тип за симптомом і одразу знати правильний фікс. Клікніть на таб, щоб побачити приклад і механізм зламу.</p>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag">interactive</span>
+      <h4>Візуалізатор 5 типів дрифту — клікайте таби</h4>
+    </div>
+
+    <div class="driftDemo">
+      <div class="driftTabs" id="driftTabs">
+        <div class="driftTab active" data-type="model"><span class="num">1.</span>Model drift</div>
+        <div class="driftTab" data-type="embedding"><span class="num">2.</span>Embedding drift</div>
+        <div class="driftTab" data-type="document"><span class="num">3.</span>Document drift</div>
+        <div class="driftTab" data-type="data"><span class="num">4.</span>Data drift</div>
+        <div class="driftTab" data-type="concept"><span class="num">5.</span>Concept drift</div>
+      </div>
+
+      <div class="driftStageHdr">
+        <div class="stepInfo" id="driftStepInfo"></div>
+        <button class="btn primary" id="driftReplay">▶ Replay animation</button>
+      </div>
+      <div class="driftStage" id="driftStage"></div>
+
+      <div class="driftDesc" id="driftDesc"></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">Quick reference — пʼять типів на одному екрані</h3>
+  <table>
+    <tr><th>Тип</th><th>Що змінюється</th><th>Симптом</th><th>Хто помічає першим</th></tr>
+    <tr><td><b>1. Model drift</b></td><td>Провайдер оновив модель під тим самим alias</td><td>Зламана JSON-схема, інший tone, нові refusals</td><td>Downstream parsing / structured output</td></tr>
+    <tr><td><b>2. Embedding drift</b></td><td>Оновили embedding-модель, індекс лишився старим</td><td>RAG retrieve неправильний context, cosine similarity падає</td><td>Faithfulness eval падає, answer quality знижується</td></tr>
+    <tr><td><b>3. Document drift</b></td><td>Документи у knowledge base застаріли</td><td>Модель повертає стару інформацію (price, API, policy)</td><td>Customer support (тикети про неактуальну інформацію)</td></tr>
+    <tr><td><b>4. Data drift</b></td><td>Користувачі питають інші речі (intent distribution)</td><td>Розподіл prompts shift, нові intents у топ-10</td><td>Product analytics, дашборд топ-intents</td></tr>
+    <tr><td><b>5. Concept drift</b></td><td>Правильна відповідь змінилася (зовнішній world)</td><td>Eval scores падають на тих самих питаннях</td><td>Golden dataset regression, customer escalations</td></tr>
+  </table>
+
+  <h3 style="margin-top:22px">💬 Bonus — Context Window drift (production-кейс conversational AI)</h3>
+  <p class="pad" style="margin:0 0 12px;font-size:13px">Шостий тип дрифту, специфічний для <b>conversational AI</b> — не входить у 5 базових, але зустрічається в кожному chat-сервісі що працює довше за місяць. Природа: чати <b>ростуть</b> разом з retention. Quality падає <b>на довгих чатах</b>, generic dashboard цього не покаже бо aggregated метрики розмиті.</p>
+
+  <div class="cwFlow">
+    <div class="demoHead">
+      <div class="demoTitle">Live demo · Чат росте → context перевищує efficient zone → quality падає</div>
+      <div class="demoCtrl">
+        <span class="stepLbl" id="cwStepLbl">step 0 / 5</span>
+        <button id="cwPrev">‹ Prev</button>
+        <button id="cwNext">Next ›</button>
+        <button id="cwPlay" class="primary">▶ Play sequence</button>
+        <button id="cwReset">Reset</button>
+      </div>
+    </div>
+
+    <div class="cwStage">
+      <!-- LEFT: Chat history + context bar -->
+      <div class="cwLeft">
+        <div class="cwPhase" id="cwPhase"><span class="ph" id="cwPhaseTag">DAY 0</span><span id="cwPhaseText">Натисни Play. Покажемо як conversation з 5 turn-ів виростає до 200 за місяць, і що відбувається з context window та quality.</span></div>
+        <div class="cwChat" id="cwChat"></div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:4px;font-family:ui-monospace,monospace">
+            <span>Context window usage</span>
+            <span id="cwCtxLabel">0 / 128k tokens</span>
+          </div>
+          <div class="cwContextBar">
+            <div class="cwContextFill" id="cwContextFill"></div>
+            <div class="cwContextMarker" id="cwContextMarker" style="left:60%"></div>
+            <div class="cwContextLabel" id="cwContextPct">0%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Metrics that move -->
+      <div class="cwRight">
+        <div class="cwMetric ok" id="cwTurnsM">
+          <div class="mTop"><span class="lbl">conversation_turns</span><span class="val" id="cwTurnsV">5</span></div>
+          <div class="desc">Кількість обмінів user↔bot у поточному чаті. <b>Що міняє:</b> росте з retention. <b>Сигнал:</b> &gt;80 turns — увага, &gt;150 — context risk.</div>
+        </div>
+        <div class="cwMetric ok" id="cwTokensM">
+          <div class="mTop"><span class="lbl">avg_tokens_per_request</span><span class="val" id="cwTokensV">2.4k</span></div>
+          <div class="desc">Скільки токенів модель приймає на вхід (history + system prompt + new message). <b>Що міняє:</b> росте лінійно з turns. <b>Сигнал:</b> наближення до efficient zone моделі (для gpt-4o ~60-80k з 128k).</div>
+        </div>
+        <div class="cwMetric ok" id="cwLatencyM">
+          <div class="mTop"><span class="lbl">p95_latency</span><span class="val" id="cwLatencyV">420ms</span></div>
+          <div class="desc">95-й перцентиль часу відповіді (95% запитів швидші за це). <b>Що міняє:</b> росте з input size — більше токенів = довша prefill-фаза. <b>Сигнал:</b> &gt;1с — UX страждає.</div>
+        </div>
+        <div class="cwMetric ok" id="cwCostM">
+          <div class="mTop"><span class="lbl">cost_per_request</span><span class="val" id="cwCostV">$0.008</span></div>
+          <div class="desc">Вартість одного виклику. <b>Що міняє:</b> росте пропорційно input tokens × ціна моделі. <b>Сигнал:</b> 4× від baseline — час перевіряти cache hit rate і обрізання history.</div>
+        </div>
+        <div class="cwMetric ok" id="cwOverallM">
+          <div class="mTop"><span class="lbl">judge_score (overall)</span><span class="val" id="cwOverallV">0.89</span></div>
+          <div class="desc">Середня faithfulness від LLM-judge через всі buckets. <b>Проблема:</b> приховує деградацію довгих чатів — короткі тягнуть avg догори. <b>Сигнал:</b> &lt;SLO — alert, але <b>per-bucket</b> розріз ловить раніше.</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:ui-monospace,monospace">judge_score <b>by conversation_length_bucket</b></div>
+          <div class="cwBucketBars" id="cwBuckets">
+            <div class="cwBucket" data-b="0"><div class="bar" style="height:88%"></div><div class="scr">.91</div><div class="lbl">1-10</div></div>
+            <div class="cwBucket" data-b="1"><div class="bar" style="height:86%"></div><div class="scr">.89</div><div class="lbl">11-30</div></div>
+            <div class="cwBucket" data-b="2"><div class="bar" style="height:85%"></div><div class="scr">.88</div><div class="lbl">31-60</div></div>
+            <div class="cwBucket" data-b="3"><div class="bar" style="height:84%"></div><div class="scr">.87</div><div class="lbl">61-100</div></div>
+            <div class="cwBucket" data-b="4"><div class="bar" style="height:83%"></div><div class="scr">.86</div><div class="lbl">101-150</div></div>
+            <div class="cwBucket" data-b="5"><div class="bar" style="height:82%"></div><div class="scr">.85</div><div class="lbl">150+</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cwCaption" id="cwCaption">
+      <span class="step">▶ Press Play</span> Покажемо як conversational AI деградує <b>невидимо</b> для aggregated метрик: overall judge_score лишається ~0.85+, але bucket-розріз показує що довгі чати <b class="bad">провалюються</b> до 0.52.
+    </div>
+  </div>
+
+  <h3 style="margin-top:22px">🔁 Bonus — Prompt regression (надмірне правилотворення)</h3>
+  <p class="pad" style="margin:0 0 12px;font-size:13px">Сьомий тип — <b>самоінфлікційний</b> дрифт, який AI Engineer створює <b>сам</b>, перевантажуючи system prompt інструкціями. Класичний паттерн: продакт-менеджер після кожного incident-у каже "додай правило щоб бот не..." — за місяць простий prompt на 5 рядків розростається до <b>30+ конфліктних інструкцій</b>. Модель починає <b>галюцинувати правила</b>, забуває частину, плутає пріоритети. Без CI eval-gate цей дрифт неможливо зловити до production.</p>
+
+  <div class="prFlow">
+    <div class="demoHead">
+      <div class="demoTitle">Live demo · 4 правила → 30 правил за 6 тижнів → модель забуває половину</div>
+      <div class="demoCtrl">
+        <span class="stepLbl" id="prStepLbl">step 0 / 5</span>
+        <button id="prPrev">‹ Prev</button>
+        <button id="prNext">Next ›</button>
+        <button id="prPlay" class="primary">▶ Play sequence</button>
+        <button id="prReset">Reset</button>
+      </div>
+    </div>
+
+    <div class="prStage">
+      <!-- LEFT: Code diff + CI pipeline -->
+      <div class="prCol">
+        <div class="prColHdr">① Pull request</div>
+        <div class="prFile">
+          <div class="prFileHdr">
+            <span>support_qa_prompt.yaml &nbsp; <span class="branch" id="prBranch">main</span></span>
+            <span class="author" id="prAuthor">last edit: 3 weeks ago</span>
+          </div>
+          <div class="prFileBody" id="prDiff">
+<span class="prLine">system: |</span>
+<span class="prLine">  You are a customer support assistant for Acme Inc.</span>
+<span class="prLine">  Answer questions about pricing, refunds, and features.</span>
+<span class="prLine">  Always cite the relevant policy document.</span>
+<span class="prLine">  Refuse politely if a question is outside our scope.</span>
+          </div>
+        </div>
+
+        <div class="prColHdr">② CI pipeline</div>
+        <div class="prCi">
+          <div class="prCiHdr">
+            <span id="prCiTitle">GitHub Actions · #847</span>
+            <span class="ciStatus pending" id="prCiStatus">PENDING</span>
+          </div>
+          <div class="prCiBody" id="prCiSteps">
+            <div class="prCiStep" id="prCi1"><span class="icon">○</span> lint · prompts.yaml</div>
+            <div class="prCiStep" id="prCi2"><span class="icon">○</span> unit tests · prompt-renderer</div>
+            <div class="prCiStep" id="prCi3"><span class="icon">○</span> integration · deploy to staging</div>
+            <div class="prCiStep" id="prCi4"><span class="icon">○</span> <b>eval gate · golden dataset</b></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Eval results + production tickets -->
+      <div class="prCol">
+        <div class="prColHdr">③ Golden dataset · 8 cases</div>
+        <div class="prEvalGrid" id="prEvals">
+          <div class="prEvalCase" id="prE1"><div class="caseLbl">refund_pro_plan_user</div><div class="caseSc"><span>rule_recall</span><span class="v">—</span></div></div>
+          <div class="prEvalCase" id="prE2"><div class="caseLbl">pricing_question_basic</div><div class="caseSc"><span>faithfulness</span><span class="v">—</span></div></div>
+          <div class="prEvalCase" id="prE3"><div class="caseLbl">cancellation_annual_user</div><div class="caseSc"><span>rule_recall</span><span class="v">—</span></div></div>
+          <div class="prEvalCase" id="prE4"><div class="caseLbl">competitor_mention</div><div class="caseSc"><span>compliance</span><span class="v">—</span></div></div>
+          <div class="prEvalCase" id="prE5"><div class="caseLbl">eu_customer_refund</div><div class="caseSc"><span>rule_recall</span><span class="v">—</span></div></div>
+          <div class="prEvalCase" id="prE6"><div class="caseLbl">policy_citation</div><div class="caseSc"><span>citation</span><span class="v">—</span></div></div>
+          <div class="prEvalCase" id="prE7"><div class="caseLbl">trial_enterprise_lead</div><div class="caseSc"><span>compliance</span><span class="v">—</span></div></div>
+          <div class="prEvalCase" id="prE8"><div class="caseLbl">multi_rule_conflict</div><div class="caseSc"><span>consistency</span><span class="v">—</span></div></div>
+        </div>
+
+        <div class="prColHdr">④ Production · support tickets за 48h</div>
+        <div class="prTickets" id="prTickets">
+          <div class="prTicket" style="border-left-color:var(--muted);opacity:.5;animation:none"><span class="tT">—</span><span>baseline: 2 тікети / день, normal</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="prCaption" id="prCaption">
+      <span class="step">▶ Press Play</span> Покажемо як прості 4 правила за 6 тижнів перетворюються на 30 конфліктних інструкцій, модель починає галюцинувати правила, і чому overall judge_score цього не показує.
+    </div>
+  </div>
+</section>
+
+<!-- ============================ SECTION 3: API CONTRACT ============================ -->
+<section id="api-contract">
+  <h2><span class="num">03 ·</span> Головна думка — drift = API contract break</h2>
+  <p class="lead">Якщо стиснути всі п'ять типів до однієї моделі мислення — дрифт для AI Engineer це <b>порушення неявного API-контракту</b>. Контракту, який ніхто не підписував формально, але на якому тримається вся ваша система. Кожен тип дрифту — це інший рівень цього контракту, що зламався мовчки.</p>
+
+  <h3>📜 Чотири рівні неявного контракту</h3>
+  <div class="grid2">
+    <div class="card">
+      <h4 style="color:var(--accent)">1. Provider ↔ Your app</h4>
+      <p><b>Контракт:</b> "alias <code>gpt-4o</code> дає мені детерміновану модель з відомою поведінкою, JSON schema, tone". <b>Зламано → Model drift.</b> OpenAI оновлює модель silent, ваш function-calling парсер падає.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent2)">2. Embedding model ↔ Vector index</h4>
+      <p><b>Контракт:</b> "вектори у моєму індексі побудовані тією самою embedding-моделлю, що й query-вектор". <b>Зламано → Embedding drift.</b> Ви оновили embedding-модель у production, не переіндексували → RAG ламається.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent3)">3. Knowledge base ↔ Real world</h4>
+      <p><b>Контракт:</b> "документи в моєму RAG актуальні". <b>Зламано → Document drift.</b> Pricing змінилось у Q3, документ у knowledge base — з Q1. RAG чесно повертає документ, відповідь застаріла.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent4)">4. Training cutoff ↔ Current world</h4>
+      <p><b>Контракт:</b> "правильна відповідь на питання X залишається правильною". <b>Зламано → Concept drift.</b> Модель тренована до 2024-04, ви питаєте про подію 2024-09 — отримуєте впевнено-неправильну відповідь.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">💡 Реальний кейс — GPT-4 silent update</h3>
+  <div class="pad">
+    <p><b>Серпень 2024.</b> OpenAI оновлює <code>gpt-4o</code> alias з версії <code>gpt-4o-2024-05-13</code> на <code>gpt-4o-2024-08-06</code>. Анонс — у release notes, але інженери, що пінять <code>gpt-4o</code>, не отримують direct сповіщення.</p>
+    <p style="margin-top:8px"><b>Що ламається на наступний день:</b></p>
+    <ul style="margin:6px 0 0;padding-left:22px;line-height:1.7">
+      <li>Structured output: нова версія повертає <code>"reasoning"</code> поле у відповіді на function call, ваш Pydantic-схема падає з <code>extra fields not allowed</code></li>
+      <li>Refusal rate: нова версія "обережніша" з фінансовими порадами — refusal rate стрибає 2% → 11% за день</li>
+      <li>Tone shift: відповіді стають довшими, більше "as an AI assistant" — користувачі скаржаться на UX</li>
+      <li>Cost: у новій версії інший tokenizer behavior — middle output tokens +8%, рахунок місяця зростає на $4 200</li>
+    </ul>
+    <p style="margin-top:10px"><b>Як це детектується БЕЗ моніторингу:</b> через support tickets за 3-7 днів. <b>З моніторингом:</b> алерт на refusal rate spike о 03:00 ночі того ж дня, коли upstream rollout достигає вашого регіону.</p>
+  </div>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>🎯 Принцип:</b> кожна залежність вашої LLM-системи — це неявний контракт. Production моніторинг — це <b>контракт-тестування у production</b>. Що більше залежностей (provider, embeddings, KB, training cutoff) — то більше контрактів треба перевіряти автоматично.
+  </div>
+</section>
+
+<!-- ============================ SECTION 4: THREE LAYERS ============================ -->
+<section id="three-layers">
+  <h2><span class="num">04 ·</span> Три шари observability — і чому всі три обовʼязкові</h2>
+  <p class="lead">Production LLM-моніторинг не зводиться до одного інструменту. Це три ортогональні шари, кожен з яких бачить власний аспект системи. Жоден з шарів окремо не дає повної картини. APM знає, що сервіс відповідає швидко. Tracing знає, що саме сервіс відповідає. Evals знають, чи відповідь правильна. Без третього шару деградація відома спочатку юзерам, потім — інженерам.</p>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag" style="background:var(--eval);color:#0b0d10">layered</span>
+      <h4>Що бачить кожен шар — cumulative reveal</h4>
+      <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn" id="layerToggleAPM">📊 APM</button>
+        <button class="btn" id="layerToggleTrace">🔭 Tracing</button>
+        <button class="btn" id="layerToggleEval">⚖ Evals</button>
+        <button class="btn primary" id="layerPlayAll">▶ Play sequence</button>
+        <button class="btn" id="layerReset">↺ Reset</button>
+      </span>
+    </div>
+
+    <div class="layerDemo">
+      <div class="layerStage">
+        <svg viewBox="0 0 1000 360" xmlns="http://www.w3.org/2000/svg">
+          <!-- Request trace timeline -->
+          <text x="20" y="30" fill="#9aa3ad" font-size="11" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">REQUEST · POST /chat (user_id=12345)</text>
+
+          <!-- APM layer (top) -->
+          <g class="layerCard off" id="layerAPM">
+            <rect x="20" y="50" width="960" height="70" rx="8" fill="rgba(230,82,44,0.08)" stroke="#e6522c" stroke-width="2"/>
+            <text x="35" y="72" fill="#e6522c" font-size="11" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">📊 LAYER 1 · APM (Prometheus + Grafana)</text>
+            <text x="35" y="92" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo,monospace">HTTP 200 OK · latency: 480ms · cost: $0.0023 · errors: 0</text>
+            <text x="35" y="110" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">Бачить: timing, error rate, throughput, $$. Не бачить: prompt, відповідь, чи правильна.</text>
+          </g>
+
+          <!-- Tracing layer (middle) -->
+          <g class="layerCard off" id="layerTrace">
+            <rect x="20" y="135" width="960" height="100" rx="8" fill="rgba(168,85,247,0.08)" stroke="#a855f7" stroke-width="2"/>
+            <text x="35" y="157" fill="#a855f7" font-size="11" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">🔭 LAYER 2 · TRACING (Langfuse)</text>
+            <text x="35" y="177" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo,monospace">prompt: "What is our refund policy?"</text>
+            <text x="35" y="193" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo,monospace">retrieval: 3 chunks · top-1: refund-policy-2022.md (score: 0.73)</text>
+            <text x="35" y="209" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo,monospace">model: gpt-4o · in=450 tok · out=120 tok · model_latency: 410ms</text>
+            <text x="35" y="227" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">Бачить: що відбулося. Не бачить: чи відповідь коректна (тільки людина читає трейси).</text>
+          </g>
+
+          <!-- Evals layer (bottom) -->
+          <g class="layerCard off" id="layerEval">
+            <rect x="20" y="250" width="960" height="100" rx="8" fill="rgba(16,185,129,0.08)" stroke="#10b981" stroke-width="2"/>
+            <text x="35" y="272" fill="#10b981" font-size="11" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif" letter-spacing="1">⚖ LAYER 3 · EVALS (LLM-as-a-Judge + RAGAS)</text>
+            <text x="35" y="292" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo,monospace">faithfulness: 0.42 ⚠ · answer_relevancy: 0.88 · context_precision: 0.50</text>
+            <text x="35" y="310" fill="#ff7676" font-size="11" font-weight="700" font-family="ui-monospace,Menlo,monospace">⚠ HALLUCINATION DETECTED: "30-day refund" not in retrieved context</text>
+            <text x="35" y="326" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo,monospace">context shows: "14-day refund only" → model fabricated longer window</text>
+            <text x="35" y="344" fill="#10b981" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="700">Єдиний шар що ловить галюцинації. Інші шари показують 200 OK.</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="layerLegend">
+        <div class="layerLegItem apm" id="layerLegAPM"><b style="color:var(--apm)">📊 APM</b> — latency, error rate, cost. Не бачить контенту.</div>
+        <div class="layerLegItem trace" id="layerLegTrace"><b style="color:var(--trace)">🔭 Tracing</b> — повний prompt + retrieval + tokens. Не оцінює якість.</div>
+        <div class="layerLegItem eval" id="layerLegEval"><b style="color:var(--eval)">⚖ Evals</b> — RAGAS scores. Єдиний шар що ловить hallucinations.</div>
+      </div>
+
+      <div class="layerVerdict" id="layerVerdict">
+        <span class="step">▶ Натисни Play sequence</span> — побачите, як одна й та сама проблема (галюцинація про refund policy) видима по-різному в кожному шарі. APM скаже "все ОК", Tracing покаже що саме сталося, Evals видасть вердикт "це галюцинація".
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">Чому всі три шари обовʼязкові</h3>
+  <div class="grid3">
+    <div class="card" style="border-color:rgba(230,82,44,0.4)">
+      <h4 style="color:#f08862">Тільки APM</h4>
+      <p>Бачите latency-spikes, але не знаєте чи модель повертає правильні відповіді. <b>Юзери дізнаються про дегра­да­цію першими.</b></p>
+    </div>
+    <div class="card" style="border-color:rgba(168,85,247,0.4)">
+      <h4 style="color:var(--accent4)">APM + Tracing</h4>
+      <p>Можете дебажити конкретні incidents (відкрив trace → прочитав prompt+response), але не отримуєте автоматичних сигналів про якість.</p>
+    </div>
+    <div class="card" style="border-color:rgba(16,185,129,0.4)">
+      <h4 style="color:#3dd4a3">APM + Tracing + Evals</h4>
+      <p>Повна картина: <b>швидко</b> (APM) + <b>що</b> (Tracing) + <b>правильно</b> (Evals). Можете алертувати на content metrics, а не лише infra.</p>
+    </div>
+  </div>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>🎯 Ключова інтуїція:</b> модель може повертати <code>200 OK</code> за 500ms і при цьому галюцинувати. APM і tracing цього не побачать — вони не оцінюють контент. <b>Без третього шару ви дізнаєтесь про деградацію від юзерів, не від алертів.</b> Це причина, чому Evals-шар не можна "пропустити" як necessary evil — це єдине джерело сигналу про якість.
+  </div>
+</section>
+
+<!-- ============================ SECTION 5: TOOLS STACK ============================ -->
+<section id="tools-stack">
+  <h2><span class="num">05 ·</span> Інструменти — Prometheus, Langfuse, RAGAS і друзі</h2>
+  <p class="lead">Екосистема LLM-observability у 2026 розкладається на три категорії, що відповідають трьом шарам. У кожній — кілька зрілих опцій. Нижче — практичний guide, який інструмент брати під який use case.</p>
+
+  <div class="toolGrid">
+    <!-- APM tools -->
+    <div class="toolCard apm">
+      <h4>📊 Prometheus + Grafana <span class="pillSm">APM</span></h4>
+      <p>Стандарт-де-факто для infrastructure metrics. Працює з будь-яким HTTP-сервісом через <code>/metrics</code> endpoint.</p>
+      <ul>
+        <li><b>Бере:</b> latency, throughput, error rate, GPU util, cost per request</li>
+        <li><b>Дає:</b> dashboards, alerting через Alertmanager</li>
+        <li><b>Коли брати:</b> завжди — це базовий шар, без альтернатив</li>
+      </ul>
+    </div>
+    <div class="toolCard apm">
+      <h4>📊 Datadog / New Relic <span class="pillSm">APM</span></h4>
+      <p>Managed APM з вбудованими LLM integrations (Datadog має нативний vLLM monitoring).</p>
+      <ul>
+        <li><b>Бере:</b> те саме що Prometheus + traces + logs в одному UI</li>
+        <li><b>Дає:</b> SaaS dashboard, AI Insights, anomaly detection</li>
+        <li><b>Коли брати:</b> якщо у компанії вже стек Datadog для всього іншого</li>
+      </ul>
+    </div>
+    <div class="toolCard apm">
+      <h4>📊 OpenTelemetry <span class="pillSm">APM</span></h4>
+      <p>Vendor-agnostic стандарт інструментації. Експортує metrics/traces/logs у будь-який backend.</p>
+      <ul>
+        <li><b>Бере:</b> OTLP traces через SDK у Python/JS/Go</li>
+        <li><b>Дає:</b> переносимість — можете міняти backend без зміни коду</li>
+        <li><b>Коли брати:</b> якщо хочете уникнути vendor lock-in</li>
+      </ul>
+    </div>
+
+    <!-- Tracing tools -->
+    <div class="toolCard trace">
+      <h4>🔭 Langfuse <span class="pillSm">Tracing</span></h4>
+      <p>Open-source LLM observability. Self-hosted або SaaS. Best-in-class для prompt management + tracing разом.</p>
+      <ul>
+        <li><b>Бере:</b> декоратор <code>@observe</code>, autotrace для LangChain/OpenAI SDK</li>
+        <li><b>Дає:</b> trace tree, prompt registry, eval integration, datasets</li>
+        <li><b>Коли брати:</b> прод-grade, потрібна повна exterior observability</li>
+      </ul>
+    </div>
+    <div class="toolCard trace">
+      <h4>🔭 Helicone <span class="pillSm">Tracing</span></h4>
+      <p>Proxy-based observability — не треба інструментувати код, просто змінюється base_url у OpenAI client.</p>
+      <ul>
+        <li><b>Бере:</b> усі OpenAI API calls автоматично</li>
+        <li><b>Дає:</b> cost breakdown, latency, caching, retry tracking</li>
+        <li><b>Коли брати:</b> швидкий старт без зміни коду, OpenAI-centric стек</li>
+      </ul>
+    </div>
+    <div class="toolCard trace">
+      <h4>🔭 Phoenix (Arize) <span class="pillSm">Tracing</span></h4>
+      <p>OSS observability від Arize. Сильна сторона — embedding visualization і drift detection.</p>
+      <ul>
+        <li><b>Бере:</b> OTel traces + embeddings + datasets</li>
+        <li><b>Дає:</b> UMAP/t-SNE visualization, cluster analysis</li>
+        <li><b>Коли брати:</b> RAG-heavy системи, потрібно бачити drift у embedding space</li>
+      </ul>
+    </div>
+
+    <!-- Eval tools -->
+    <div class="toolCard eval">
+      <h4>⚖ RAGAS <span class="pillSm">Evals</span></h4>
+      <p>Python-бібліотека з готовими метриками для RAG: faithfulness, answer relevancy, context precision/recall.</p>
+      <ul>
+        <li><b>Бере:</b> {question, contexts, answer, ground_truth}</li>
+        <li><b>Дає:</b> 4-6 RAG-метрик через LLM-as-a-Judge під капотом</li>
+        <li><b>Коли брати:</b> будь-яка RAG-система — стандарт-де-факто</li>
+      </ul>
+    </div>
+    <div class="toolCard eval">
+      <h4>⚖ DeepEval <span class="pillSm">Evals</span></h4>
+      <p>pytest-style фреймворк для LLM-тестів. Запускається у CI як unit tests.</p>
+      <ul>
+        <li><b>Бере:</b> декоратори <code>@assert_test</code> з заданими метриками</li>
+        <li><b>Дає:</b> integration з GitHub Actions, regression gating</li>
+        <li><b>Коли брати:</b> хочете блокувати PR-и через якість моделі</li>
+      </ul>
+    </div>
+    <div class="toolCard eval">
+      <h4>⚖ LangSmith / Braintrust <span class="pillSm">Evals</span></h4>
+      <p>SaaS-платформи з UI для evals + datasets + traces в одному місці.</p>
+      <ul>
+        <li><b>Бере:</b> integration з LangChain (LangSmith) або agnostic (Braintrust)</li>
+        <li><b>Дає:</b> UI для перегляду eval results, A/B порівняння версій</li>
+        <li><b>Коли брати:</b> команда без сильних DevOps, хочете "просто працює"</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">🎯 Decision tree — що брати під ваш кейс</h3>
+  <div class="pad" style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px 18px">
+    <p style="margin:0"><b>Стартап, MVP, "просто запустити":</b></p>
+    <p style="margin:4px 0 12px 18px">→ <b style="color:var(--accent)">Helicone</b> (5 хв setup) + <b style="color:var(--ok)">RAGAS</b> (для weekly evals на golden dataset).</p>
+
+    <p style="margin:0"><b>Prod-grade, self-hosted, RAG-система:</b></p>
+    <p style="margin:4px 0 12px 18px">→ <b style="color:var(--accent4)">Langfuse</b> (tracing + prompt registry) + <b style="color:var(--ok)">RAGAS</b> + <b style="color:var(--apm)">Prometheus</b>.</p>
+
+    <p style="margin:0"><b>Multi-team enterprise:</b></p>
+    <p style="margin:4px 0 12px 18px">→ <b style="color:var(--apm)">Datadog</b> (APM) + <b style="color:var(--accent4)">Langfuse</b> (LLM observability) + <b style="color:var(--ok)">DeepEval</b> у CI.</p>
+
+    <p style="margin:0"><b>RAG з великим knowledge base, потрібен drift detection в embedding space:</b></p>
+    <p style="margin:4px 0 0 18px">→ <b style="color:var(--accent4)">Phoenix</b> (Arize) — у нього unique cluster visualization.</p>
+  </div>
+
+  <h3 style="margin-top:22px">☁ AWS-варіант стека — той самий патерн, нативні сервіси</h3>
+  <p class="pad" style="margin:0 0 12px;font-size:13px">Якщо компанія вже на AWS, observability збирається з нативних сервісів. Концептуально це <b>той самий 3-шаровий патерн</b> (APM + Tracing + Evals), просто з іншими назвами і vendor lock-in.</p>
+
+  <div class="toolGrid">
+    <div class="toolCard aws">
+      <h4>📊 CloudWatch Metrics + Alarms <span class="pillSm">APM</span></h4>
+      <p>AWS-аналог Prometheus + Alertmanager. Bedrock автоматично експортує <code>InvocationLatency</code>, <code>InputTokenCount</code>, <code>OutputTokenCount</code> у namespace <code>AWS/Bedrock</code>.</p>
+      <ul>
+        <li><b>Бере:</b> вбудовані Bedrock-метрики + custom через <code>PutMetricData</code></li>
+        <li><b>Дає:</b> Alarms з маршрутизацією через SNS → Slack/PagerDuty/Lambda</li>
+        <li><b>Коли брати:</b> весь стек на AWS, не хочете окремий Prometheus</li>
+      </ul>
+    </div>
+    <div class="toolCard aws">
+      <h4>🔭 Bedrock Model Invocation Logging <span class="pillSm">Tracing</span></h4>
+      <p>Аналог Langfuse "з коробки". Вмикається галочкою в Bedrock console — кожен виклик пишеться у S3 або CloudWatch Logs.</p>
+      <ul>
+        <li><b>Бере:</b> input messages, output, model ID, latency, token usage, guardrail intervention</li>
+        <li><b>Дає:</b> повний replay будь-якого запиту, query через CloudWatch Logs Insights</li>
+        <li><b>Коли брати:</b> Bedrock-only стек, не треба окремий tracing-tool</li>
+      </ul>
+    </div>
+    <div class="toolCard aws">
+      <h4>🛡 Bedrock Guardrails <span class="pillSm">APM</span></h4>
+      <p>Runtime safety-layer перед моделлю. Блокує PII leak, prompt injection, harmful content. Кожне спрацювання → метрика <code>GuardrailIntervention</code> у CloudWatch.</p>
+      <ul>
+        <li><b>Бере:</b> request + response через managed filter</li>
+        <li><b>Дає:</b> blocked/passed verdict + автоматичні метрики для алертів</li>
+        <li><b>Коли брати:</b> regulated industries, public-facing бот, потрібен compliance audit trail</li>
+      </ul>
+    </div>
+    <div class="toolCard aws">
+      <h4>⚖ Bedrock Evaluations <span class="pillSm">Evals</span></h4>
+      <p>Managed eval-framework з готовими LLM-judges на тих самих RAGAS-метриках. Запускається як ad-hoc job або у CI через AWS CLI.</p>
+      <ul>
+        <li><b>Бере:</b> golden dataset + prompt template + target model</li>
+        <li><b>Дає:</b> faithfulness, robustness, toxicity scores → push у CloudWatch як custom metric</li>
+        <li><b>Коли брати:</b> Bedrock-стек, потрібно автоматизувати regression evals без коду</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== AWS CloudWatch flow animation ===== -->
+  <div class="awsFlow">
+    <div class="demoHead">
+      <div class="demoTitle">Live demo · AWS production flow на одному запиті</div>
+      <div class="demoCtrl">
+        <span class="stepLbl" id="awsStepLbl">step 0 / 7</span>
+        <button id="awsPrev">‹ Prev</button>
+        <button id="awsNext">Next ›</button>
+        <button id="awsPlay" class="primary">▶ Play sequence</button>
+        <button id="awsReset">Reset</button>
+      </div>
+    </div>
+    <div class="awsStage" id="awsStage">
+      <svg width="100%" height="360" viewBox="0 0 920 360" style="position:absolute;inset:0">
+        <defs>
+          <marker id="awsArr" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#ff9900" opacity="0.7"/>
+          </marker>
+        </defs>
+        <!-- arrow lines, controlled via .on class -->
+        <line class="awsLine" id="awsL1" x1="120" y1="50"  x2="265" y2="50"  stroke="#ff9900" stroke-width="2" marker-end="url(#awsArr)" opacity="0"/>
+        <line class="awsLine" id="awsL2" x1="395" y1="50"  x2="540" y2="50"  stroke="#ff9900" stroke-width="2" marker-end="url(#awsArr)" opacity="0"/>
+        <line class="awsLine" id="awsL3" x1="670" y1="50"  x2="815" y2="50"  stroke="#ff9900" stroke-width="2" marker-end="url(#awsArr)" opacity="0"/>
+        <line class="awsLine" id="awsL4" x1="600" y1="80"  x2="600" y2="155" stroke="#01a88d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#awsArr)" opacity="0"/>
+        <line class="awsLine" id="awsL5" x1="600" y1="225" x2="600" y2="290" stroke="#e7157b" stroke-width="2" marker-end="url(#awsArr)" opacity="0"/>
+        <line class="awsLine" id="awsL6" x1="540" y1="320" x2="265" y2="320" stroke="#e7157b" stroke-width="2" marker-end="url(#awsArr)" opacity="0"/>
+        <line class="awsLine" id="awsL7" x1="190" y1="290" x2="190" y2="85"  stroke="#ff4757" stroke-width="2" marker-end="url(#awsArr)" opacity="0"/>
+      </svg>
+      <!-- Top row: request path -->
+      <div class="awsNode" id="awsN1" style="left:10px;top:20px;width:110px"><div class="nTitle">User</div><div class="nSub">support chat</div></div>
+      <div class="awsNode" id="awsN2" style="left:265px;top:20px;width:130px"><div class="nTitle">API Gateway</div><div class="nSub">X-Ray trace start</div></div>
+      <div class="awsNode" id="awsN3" style="left:540px;top:20px;width:130px"><div class="nTitle">Lambda handler</div><div class="nSub">→ PutMetricData</div></div>
+      <div class="awsNode bedrock" id="awsN4" style="left:815px;top:20px;width:100px"><div class="nTitle">Bedrock</div><div class="nSub">InvokeModel</div></div>
+      <!-- Middle row: Bedrock side-effects -->
+      <div class="awsNode bedrock" id="awsN5" style="left:520px;top:160px;width:170px"><div class="nTitle">Guardrails</div><div class="nSub">PII / injection check</div></div>
+      <div class="awsNode bedrock" id="awsN6" style="left:700px;top:160px;width:200px"><div class="nTitle">Model Invocation Logging</div><div class="nSub">→ S3 (prompt + response)</div></div>
+      <!-- Bottom row: CloudWatch + alerting -->
+      <div class="awsNode metric" id="awsN7" style="left:540px;top:285px;width:170px"><div class="nTitle">CloudWatch Metrics</div><div class="nSub">judge_score, cost, refusals</div></div>
+      <div class="awsNode metric" id="awsN8" style="left:200px;top:285px;width:170px"><div class="nTitle">CloudWatch Alarm</div><div class="nSub">judge_score &lt; 0.7</div></div>
+      <div class="awsNode alert" id="awsN9" style="left:10px;top:285px;width:140px"><div class="nTitle">SNS → PagerDuty</div><div class="nSub">page on-call</div></div>
+    </div>
+    <div class="awsCaption" id="awsCaption">
+      <span class="step">▶ Press Play</span> Покажемо як один LLM-запит проходить через AWS-стек і як content drift спрацьовує алертом, не зачіпаючи infrastructure-метрики.
+    </div>
+  </div>
+</section>
+
+<!-- ============================ SECTION 6: LLM-as-Judge ============================ -->
+<section id="llm-judge">
+  <h2><span class="num">06 ·</span> LLM-as-a-Judge — основний інструмент якісного моніторингу</h2>
+  <p class="lead">LLM-as-a-Judge — це техніка, де другий LLM (judge) оцінює відповідь першого LLM (production model) за заданими критеріями. Це наразі єдиний практичний спосіб масово оцінювати якість на production traffic. RAGAS — найпопулярніша обгортка з готовими метриками для RAG-сценаріїв. Нижче — інтерактивний симулятор.</p>
+
+  <h3>📐 Основні RAGAS-метрики для RAG</h3>
+  <div class="grid3">
+    <div class="card" style="border-color:rgba(155,227,124,0.4)">
+      <h4 style="color:var(--ok)">✓ Faithfulness</h4>
+      <p>Чи всі факти у відповіді підтверджуються retrieved context? Якщо модель вигадала факт, якого немає у context — це hallucination. <b>Найважливіша метрика для RAG.</b></p>
+    </div>
+    <div class="card" style="border-color:rgba(124,209,255,0.4)">
+      <h4 style="color:var(--accent)">🎯 Answer Relevancy</h4>
+      <p>Чи відповідь дійсно відповідає на питання користувача? Низький score = модель "пливе" або відповідає на щось інше.</p>
+    </div>
+    <div class="card" style="border-color:rgba(199,155,255,0.4)">
+      <h4 style="color:var(--accent4)">📚 Context Precision</h4>
+      <p>Чи retrieved chunks справді relevant до питання? Низький score = retrieval повертає шум, треба тюнити embedding/k.</p>
+    </div>
+  </div>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag" style="background:var(--eval);color:#0b0d10">judge sim</span>
+      <h4>LLM-as-a-Judge живий симулятор</h4>
+    </div>
+
+    <div class="judgeControls">
+      <label style="font-size:12px;color:#cdd5de">Сценарій:</label>
+      <select id="judgeCase">
+        <option value="good">good answer — все ок</option>
+        <option value="hallucination" selected>subtle hallucination</option>
+        <option value="offtopic">off-topic answer</option>
+        <option value="bad-retrieval">bad retrieval</option>
+      </select>
+      <div class="rateBlock">
+        <label style="font-size:12px;color:#cdd5de">Sampling rate:</label>
+        <input type="range" id="judgeRate" min="1" max="100" value="10" step="1">
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent2);font-weight:700" id="judgeRateV">10%</span>
+      </div>
+    </div>
+
+    <div class="judgeDemo">
+      <div class="judgePanel user">
+        <h4>👤 User prompt</h4>
+        <div class="content" id="judgeUser"></div>
+      </div>
+      <div class="judgePanel ctx">
+        <h4>📚 Retrieved contexts (RAG)</h4>
+        <div class="content" id="judgeCtx"></div>
+      </div>
+      <div class="judgePanel answer">
+        <h4>🤖 Model answer</h4>
+        <div class="content" id="judgeAnswer"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn primary" id="judgeRun" style="flex:1">⚖ Run Judge (RAGAS)</button>
+        <button class="btn" id="judgeClear">↺ Clear verdict</button>
+      </div>
+      <div class="judgePanel verdict" id="judgeVerdictPanel" style="display:none">
+        <h4>⚖ Judge verdict (RAGAS scores)</h4>
+        <div class="content" id="judgeVerdict"></div>
+      </div>
+      <div class="judgeCost">
+        <div>📊 At <b id="judgeRateLbl">10%</b> sampling on 1M requests/day:</div>
+        <div>💰 Eval cost/day: <b id="judgeCost">$5.00</b></div>
+        <div>🎯 Edge case coverage: <b id="judgeCoverage">~78%</b></div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">⚙ Як запускати на production traffic</h3>
+  <div class="pad">
+    <p><b>Базовий патерн (async sampling):</b></p>
+<pre style="margin-top:6px"><span class="c"># у вашому API endpoint</span>
+<span class="k">async def</span> <span class="f">chat_endpoint</span>(request):
+    answer = <span class="k">await</span> rag_pipeline(request.prompt)
+    <span class="c"># 5-10% requests → async eval queue (не блокує response)</span>
+    <span class="k">if</span> random.random() &lt; <span class="n">0.10</span>:
+        eval_queue.send({
+            <span class="s">"question"</span>: request.prompt,
+            <span class="s">"contexts"</span>: answer.contexts,
+            <span class="s">"answer"</span>: answer.text,
+            <span class="s">"trace_id"</span>: answer.trace_id,
+        })
+    <span class="k">return</span> answer
+
+<span class="c"># окремий worker</span>
+<span class="k">async def</span> <span class="f">eval_worker</span>():
+    <span class="k">while</span> task := <span class="k">await</span> eval_queue.recv():
+        scores = ragas.evaluate(
+            dataset=Dataset.from_dict({k: [v] <span class="k">for</span> k, v <span class="k">in</span> task.items()}),
+            metrics=[faithfulness, answer_relevancy, context_precision],
+        )
+        langfuse.score(trace_id=task[<span class="s">"trace_id"</span>], scores=scores)</pre>
+  </div>
+
+  <h3 style="margin-top:14px">💡 Trade-off — sampling rate vs cost</h3>
+  <div class="pad">
+    <p>RAGAS eval = 1-3 LLM calls на метрику × 3-6 метрик = 5-15 LLM calls per evaluated request. На 1M requests/day:</p>
+    <ul style="margin:6px 0 0;padding-left:22px;line-height:1.7">
+      <li><b>100% sampling:</b> ~$50-150/day, повне покриття, але дорого</li>
+      <li><b>10% sampling:</b> ~$5-15/day, ловите більшість regression-ів через статистику</li>
+      <li><b>1% sampling:</b> ~$0.50/day, дешево, але edge-cases пропускаєте</li>
+    </ul>
+    <p style="margin-top:8px"><b>Прод-рецепт:</b> 5-10% sampling на random traffic + 100% на новій версії промпту/моделі під час canary (детально у секції 09).</p>
+  </div>
+</section>
+
+<!-- ============================ SECTION 7: GOLDEN DATASET ============================ -->
+<section id="golden-dataset">
+  <h2><span class="num">07 ·</span> Golden dataset — основа eval-pipeline</h2>
+  <p class="lead">Sampling production traffic ловить regression-и через статистику, але не дає детермінованого тесту. Для CI-gate, для регресій між версіями моделі, для смоук-тестів промптів — потрібен <b>golden dataset</b>: фіксований набір кейсів з ground-truth-відповідями, версіонований у git.</p>
+
+  <h3>📋 Чек-лист хорошого golden dataset</h3>
+  <ul class="checklist">
+    <li><b>Розмір:</b> 200-500 кейсів. Менше — не статистично значуще. Більше — дорого ганяти на кожному PR.</li>
+    <li><b>Розподіл:</b> покриває реальні intents (топ-10 з product analytics) + edge cases + adversarial.</li>
+    <li><b>Ground truth:</b> або експертна анотація (для critical responses), або синтетична з reference model (cheaper).</li>
+    <li><b>Version-controlled:</b> у git разом з кодом. Зміни через PR з justification.</li>
+    <li><b>Регулярне поповнення:</b> incidents у production → новий кейс у dataset (regression test).</li>
+    <li><b>Сегментація:</b> теги по intent / difficulty / category — щоб бачити деградацію по групам.</li>
+    <li class="warn"><b>Анти-патерн:</b> NEVER використовуйте production user data без anonymization (GDPR/PII).</li>
+    <li><b>Schema:</b> {id, question, contexts, expected_answer, ground_truth_facts[], tags[], created_at}.</li>
+  </ul>
+
+  <h3 style="margin-top:18px">📁 Приклад структури</h3>
+<pre><span class="c"># golden-dataset/refund-policy/v3.yaml</span>
+<span class="k">version</span>: <span class="s">"3.2.1"</span>
+<span class="k">created_at</span>: <span class="s">"2026-04-12"</span>
+<span class="k">last_review</span>: <span class="s">"2026-05-20"</span>
+<span class="k">size</span>: <span class="n">347</span>
+<span class="k">cases</span>:
+  - <span class="k">id</span>: rp-001
+    <span class="k">tags</span>: [refund, basic, top-10-intent]
+    <span class="k">question</span>: <span class="s">"How many days do I have to request a refund?"</span>
+    <span class="k">expected_answer</span>: <span class="s">"14 days from purchase date"</span>
+    <span class="k">ground_truth_facts</span>:
+      - <span class="s">"refund window is 14 days"</span>
+      - <span class="s">"counted from purchase date, not delivery"</span>
+    <span class="k">forbidden_claims</span>:
+      - <span class="s">"30 days"</span>            <span class="c"># common hallucination</span>
+      - <span class="s">"unconditional refund"</span>
+
+  - <span class="k">id</span>: rp-047
+    <span class="k">tags</span>: [refund, edge-case, regression]
+    <span class="k">question</span>: <span class="s">"Can I get refund if I used the product?"</span>
+    <span class="k">expected_answer</span>: <span class="s">"Yes if within 14 days AND product undamaged"</span>
+    <span class="k">added_after_incident</span>: <span class="s">"INC-2026-03-15"</span></pre>
+
+  <h3 style="margin-top:14px">🔄 Як поповнювати golden dataset</h3>
+  <div class="grid3">
+    <div class="card">
+      <h4 style="color:var(--accent)">📥 Із production incidents</h4>
+      <p>Кожен зловлений баг (через user ticket або judge alert) → один новий case у golden dataset з тегом <code>regression</code>. Це запобігає тому самому багу у майбутньому.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent2)">🎲 Із синтетичної генерації</h4>
+      <p>Використовуйте reference LLM (GPT-4 / Claude) для генерації варіацій існуючих кейсів — paraphrasing, adversarial rewrites, multilingual. Manual review обовʼязковий.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent3)">📊 Із product analytics</h4>
+      <p>Раз на місяць — топ-100 prompts з production за частотою. Експерт відбирає 10-20, додає expected answers, тегує intent.</p>
+    </div>
+  </div>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>🎯 Principle:</b> golden dataset — це <b>контракт між AI-командою і моделлю</b>. Будь-яка зміна моделі/промпту → проганяємо golden dataset → якщо score падає більше ніж на X% → блокуємо merge. Це аналог unit tests для коду, але для LLM поведінки.
+  </div>
+</section>
+
+<!-- ============================ SECTION 8: ALERTING ============================ -->
+<section id="alerting">
+  <h2><span class="num">08 ·</span> Alerting — контентний, а не лише інфраструктурний</h2>
+  <p class="lead">Класичні алерти (CPU 90%, error rate &gt; 1%, p99 latency &gt; 2s) для LLM-сервісу недостатні. Модель може видавати погані відповіді з нормальною latency і 0% errors. Потрібні content-based alerts на основі judge scores, refusal rate, cost spikes, safety violations. Нижче — інтерактивна дошка, де можна "симулювати" інцидент і побачити, які алерти спрацьовують.</p>
+
+  <div class="demo">
+    <div class="demoHead">
+      <span class="tag" style="background:var(--warn);color:#fff">live dash</span>
+      <h4>Alert dashboard — крутіть повзунки, дивіться як загораються панелі</h4>
+    </div>
+
+    <div class="dashDemo">
+      <div class="dashPanels" id="dashPanels">
+        <div class="dashPanel" id="dashP1">
+          <span class="pSeverity" id="dashP1Sev"></span>
+          <div class="pTitle">⚖ Judge score</div>
+          <div class="pNow" id="dashP1Now">0.87</div>
+          <div class="pBase">baseline 7d: 0.86</div>
+          <div class="pDelta" id="dashP1Delta">+1.2%</div>
+        </div>
+        <div class="dashPanel" id="dashP2">
+          <span class="pSeverity" id="dashP2Sev"></span>
+          <div class="pTitle">💰 Cost / 1K tokens</div>
+          <div class="pNow" id="dashP2Now">$0.32</div>
+          <div class="pBase">baseline 7d: $0.30</div>
+          <div class="pDelta" id="dashP2Delta">+6.7%</div>
+        </div>
+        <div class="dashPanel" id="dashP3">
+          <span class="pSeverity" id="dashP3Sev"></span>
+          <div class="pTitle">🚫 Refusal rate</div>
+          <div class="pNow" id="dashP3Now">3%</div>
+          <div class="pBase">baseline 7d: 2.5%</div>
+          <div class="pDelta" id="dashP3Delta">+20%</div>
+        </div>
+        <div class="dashPanel" id="dashP4">
+          <span class="pSeverity" id="dashP4Sev"></span>
+          <div class="pTitle">🚨 Safety hits / hr</div>
+          <div class="pNow" id="dashP4Now">0</div>
+          <div class="pBase">baseline 7d: 0.2</div>
+          <div class="pDelta" id="dashP4Delta">—</div>
+        </div>
+      </div>
+
+      <div class="dashSliders">
+        <div class="dashSlider">
+          <div class="row">
+            <label>Judge score (current)</label>
+            <input type="range" id="sJudge" min="0" max="100" value="87" step="1">
+            <span class="v" id="sJudgeV">0.87</span>
+          </div>
+          <div class="row">
+            <label>Cost / 1K tokens ($)</label>
+            <input type="range" id="sCost" min="0" max="200" value="32" step="1">
+            <span class="v" id="sCostV">$0.32</span>
+          </div>
+        </div>
+        <div class="dashSlider">
+          <div class="row">
+            <label>Refusal rate (%)</label>
+            <input type="range" id="sRefusal" min="0" max="50" value="3" step="1">
+            <span class="v" id="sRefusalV">3%</span>
+          </div>
+          <div class="row">
+            <label>Safety hits / hour</label>
+            <input type="range" id="sSafety" min="0" max="20" value="0" step="1">
+            <span class="v" id="sSafetyV">0</span>
+          </div>
+        </div>
+
+        <div class="dashPresets" style="grid-column:1/-1">
+          <button class="btn" id="dashReset">↺ Reset baselines</button>
+          <button class="btn warn" id="dashCostSpike">💸 Simulate cost spike</button>
+          <button class="btn warn" id="dashJudgeDrop">⚖ Simulate judge drop</button>
+          <button class="btn warn" id="dashRefusalFlood">🚫 Simulate refusal flood</button>
+          <button class="btn warn" id="dashSafetyHit">🚨 Simulate safety incident</button>
+        </div>
+      </div>
+
+      <div class="alertFeed" id="dashFeed"></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">📋 Практична таблиця — що алертувати</h3>
+  <table>
+    <tr><th>Метрика</th><th>Поріг</th><th>Severity</th><th>Канал</th><th>Чому</th></tr>
+    <tr><td><b>Judge score падіння</b></td><td>&gt; 10% від 7d baseline</td><td>warn</td><td>Slack #ai-alerts</td><td>Прихована regression, не блокує юзерів негайно, але треба розслідувати</td></tr>
+    <tr><td><b>Safety eval hit</b></td><td>≥ 1 hit/hour</td><td>page</td><td>PagerDuty oncall</td><td>Може бути PR/legal risk, треба реакція негайно</td></tr>
+    <tr><td><b>Cost spike</b></td><td>&gt; 20% за тиждень</td><td>warn</td><td>Slack + finance email</td><td>Bug у retry logic / новий expensive prompt / upstream pricing</td></tr>
+    <tr><td><b>Refusal rate</b></td><td>зріс × 2 від baseline</td><td>warn</td><td>Slack #ai-alerts</td><td>Можливий upstream model drift або новий safety filter</td></tr>
+    <tr><td><b>p95 latency</b></td><td>&gt; 5s</td><td>warn</td><td>Slack #ai-alerts</td><td>Інфра проблема або довгі промпти</td></tr>
+    <tr><td><b>5xx error rate</b></td><td>&gt; 1%</td><td>page</td><td>PagerDuty oncall</td><td>Inference сервіс падає, треба rollback або scale-up</td></tr>
+    <tr><td><b>Faithfulness floor</b></td><td>будь-який окремий запит &lt; 0.3</td><td>info</td><td>Langfuse trace tag</td><td>Не алерт, а маркування для подальшого аналізу</td></tr>
+    <tr><td><b>Golden dataset regression</b></td><td>score впав &gt; 5% на CI</td><td>block</td><td>GitHub PR check</td><td>Не алерт у проді, а CI-gate: блокує merge</td></tr>
+  </table>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>🎯 Принцип:</b> алерт без runbook = шум. Кожен алерт у production повинен мати документ "що робити коли спрацював": перевірити X dashboard → подивитись Y trace → можливі дії A/B/C. Без runbook on-call інженер витратить 30 хв на debug, який міг бути 3 хв.
+  </div>
+</section>
+
+<!-- ============================ SECTION 9: RELEASE MANAGEMENT ============================ -->
+<section id="release-mgmt">
+  <h2><span class="num">09 ·</span> Управління релізами промптів і моделей</h2>
+  <p class="lead">Зміна промпту або моделі у production — це <b>деплой</b>, такий самий як зміна коду. Має проходити CI, мати rollback-механізм, gradually rollout-итись. Класичні DevOps-практики (canary, shadow mode, feature flags) переносяться на LLM-світ один-в-один, але мають свої особливості.</p>
+
+  <h3>🔒 Принцип 1 — завжди пінити snapshot</h3>
+  <div class="pad">
+    <p><b>Ніколи у production:</b> <code>model="gpt-4o"</code>, <code>model="gpt-4o-latest"</code></p>
+    <p style="margin-top:6px"><b>Завжди у production:</b> <code>model="gpt-4o-2024-08-06"</code> (точний snapshot)</p>
+    <p style="margin-top:10px">Провайдери (OpenAI, Anthropic) пропонують dated snapshots саме для цього — щоб ваша поведінка не змінювалася непередбачено. Latest alias корисний у dev/staging для тестування нових версій, але <b>не у проді</b>.</p>
+  </div>
+
+  <h3 style="margin-top:14px">🚀 Принцип 2 — Shadow → Canary → Rollout</h3>
+  <div class="grid3">
+    <div class="card" style="border-color:rgba(124,209,255,0.4)">
+      <h4 style="color:var(--accent)">1. Shadow mode</h4>
+      <p>Нова версія промпту/моделі викликається <b>паралельно</b> зі старою на 100% трафіку, але відповідь нової НЕ показується юзеру. Збираємо traces і evals для порівняння. Старий = source of truth.</p>
+      <p style="margin-top:6px;font-size:11px;color:var(--muted)">Тривалість: 1-3 дні. Cost: 2× LLM calls.</p>
+    </div>
+    <div class="card" style="border-color:rgba(255,209,102,0.4)">
+      <h4 style="color:var(--accent2)">2. Canary 1-10%</h4>
+      <p>Якщо shadow показав ОК, переключаємо невеликий % реального трафіку (1% → 5% → 10%) на нову версію. Моніторимо judge scores, error rate, user feedback у real-time.</p>
+      <p style="margin-top:6px;font-size:11px;color:var(--muted)">Тривалість: 2-7 днів. Auto-rollback на алерт.</p>
+    </div>
+    <div class="card" style="border-color:rgba(155,227,124,0.4)">
+      <h4 style="color:var(--ok)">3. Full rollout</h4>
+      <p>100% трафіку. Стара версія залишається у registry для миттєвого rollback. Через 1-2 тижні — depreкейтимо стару.</p>
+      <p style="margin-top:6px;font-size:11px;color:var(--muted)">Rollback: 5 секунд через feature flag.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">📚 Принцип 3 — Prompt registry</h3>
+  <div class="pad">
+    <p>Промпти — це <b>конфігурація</b>, не код. Тримати їх у Python-strings всередині сервісу = неможливість rollback без deploy. Тримати їх у Langfuse/LangSmith prompt registry = rollback за 5 секунд через UI або API.</p>
+<pre style="margin-top:6px"><span class="c"># замість hardcoded:</span>
+prompt = <span class="s">"You are a helpful assistant. ..."</span>
+
+<span class="c"># через registry:</span>
+prompt = langfuse.get_prompt(<span class="s">"customer-support"</span>, version=<span class="s">"production"</span>)
+<span class="c"># version="production" — це alias на конкретну версію, керується через UI</span>
+<span class="c"># rollback = змінити alias на попередню версію, deploy не потрібен</span></pre>
+  </div>
+
+  <h3 style="margin-top:14px">⚙ Принцип 4 — CI/CD для промптів</h3>
+  <div class="pad">
+    <p><b>Кожна зміна промпту → запуск eval suite на golden dataset → gate перед merge.</b> Це аналог unit tests для коду.</p>
+<pre style="margin-top:6px"><span class="c"># .github/workflows/prompt-eval.yml</span>
+<span class="k">name</span>: Prompt Evaluation
+<span class="k">on</span>:
+  <span class="k">pull_request</span>:
+    <span class="k">paths</span>: [<span class="s">"prompts/**"</span>, <span class="s">"golden-dataset/**"</span>]
+<span class="k">jobs</span>:
+  <span class="k">eval</span>:
+    <span class="k">runs-on</span>: ubuntu-latest
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: actions/checkout@v4
+      - <span class="k">run</span>: pip install ragas openai langfuse
+      - <span class="k">run</span>: python scripts/run_evals.py --dataset golden-dataset/ --baseline main
+      - <span class="k">run</span>: python scripts/check_regression.py --threshold 0.05
+        <span class="c"># exit 1 якщо score впав &gt; 5%</span>
+      - <span class="k">uses</span>: actions/upload-artifact@v4
+        <span class="k">with</span>:
+          <span class="k">name</span>: eval-report
+          <span class="k">path</span>: reports/</pre>
+  </div>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>🎯 Підсумок section 09:</b> зміна промпту = деплой коду. Same rigor: pinning, CI gating, gradual rollout, instant rollback. Без цього кожна "невинна" зміна промпту = risk регресії у production без можливості швидкого відкату.
+  </div>
+</section>
+
+<!-- ============================ SECTION 10: RECAP ============================ -->
+<section id="recap">
+  <h2><span class="num">10 ·</span> Recap — симптом → шар → дія</h2>
+  <p class="lead">Швидка матриця "що бачу → де шукати → що робити". Тримайте на видному місці у runbook чи Notion.</p>
+
+  <table>
+    <tr><th>Симптом</th><th>Шар що ловить</th><th>Перша дія</th></tr>
+    <tr><td>JSON-схема ламається у downstream</td><td>APM (5xx errors) + Tracing (response diff)</td><td>Перевірити model snapshot, відкотити на попередній</td></tr>
+    <tr><td>RAG повертає неактуальні чанки</td><td>Evals (faithfulness floor) + Tracing (retrieval span)</td><td>Перевірити чи переіндексували після embedding update</td></tr>
+    <tr><td>Користувачі скаржаться на застарілу інформацію</td><td>Evals + Tracing + manual review</td><td>Reindex knowledge base, додати TTL на документи</td></tr>
+    <tr><td>Refusal rate × 2 за день</td><td>APM (custom metric) → alert → Tracing</td><td>Перевірити чи провайдер не update моделі, прочитати release notes</td></tr>
+    <tr><td>Cost spike +20%</td><td>APM (cost panel) → alert</td><td>Перевірити retry logic, длину prompts, нові expensive features</td></tr>
+    <tr><td>Galyуцинації на specific topic</td><td>Evals (faithfulness regression на golden subset)</td><td>Додати negative examples у golden dataset, тюнити prompt</td></tr>
+    <tr><td>Latency p95 росте</td><td>APM (latency panel)</td><td>Перевірити інфра (GPU util), розмір контексту, retry logic</td></tr>
+    <tr><td>Юзери знаходять regression раніше за алерти</td><td>(жоден шар не ловить)</td><td>Збільшити sampling rate evals, додати golden cases на цей сценарій</td></tr>
+  </table>
+
+  <div class="keypoint" style="margin-top:18px">
+    <b>Головна думка уроку:</b> production-моніторинг LLM — це <b>три ортогональні шари</b> (APM + Tracing + Evals), а не один інструмент. Дрифт для AI Engineer — це <b>порушення неявних API-контрактів</b> з провайдерами, embedding-моделями, knowledge base, training cutoff. Основний інструмент якісного моніторингу — <b>LLM-as-a-Judge на 5-10% production traffic</b> + golden dataset як CI-gate. Alerting має бути content-based, не лише infra-based. Зміна промпту = деплой коду, той самий rigor.
+  </div>
+</section>
+
+</div>
+
+<script>
+// === PAIN ANIMATION: without monitoring ===
+const painSteps = [
+  { caption: '<span class="step">Day 0 · спокій</span> <b>Ваш LLM-сервіс у проді.</b> APM показує <code>200 OK · 480ms · errors 0</code>. Графік зелений. Все добре. Ви йдете на вихідні.', errors: [], angry: false },
+  { caption: '<span class="step">Day 1 · ніч</span> <span class="death">OpenAI оновив gpt-4o silent.</span> Нова snapshot повертає інший JSON. Downstream парсер падає на <code>extra fields not allowed</code>. <b>APM нічого не показує</b> — модель повертає 200 OK, fail — у вашому коді.', errors: ['painErr1'], angry: false },
+  { caption: '<span class="step">Day 2 · ранок</span> <span class="death">Embedding ламається.</span> Хтось у команді оновив embedding-модель у нових chunks. Старий vector index не переіндексували. Cosine similarity 0.91 → 0.42. RAG повертає irrelevant chunks. <b>APM мовчить.</b>', errors: ['painErr1','painErr2'], angry: false },
+  { caption: '<span class="step">Day 3 · день</span> <span class="death">Hallucination rate +18%.</span> Модель починає вигадувати "30-day refund" замість реальних "14-day". Faithfulness впав з 0.85 до 0.62. <b>Жоден інструмент моніторингу цього не бачить</b> — у вас лише APM + Tracing, але не Evals.', errors: ['painErr1','painErr2','painErr3'], angry: true },
+  { caption: '<span class="step">Day 4 · вечір</span> <span class="death">47 customer tickets за добу.</span> Support команда у паніці. Юзери скаржаться на неактуальну інформацію, неправильні посилання, відмови у легітимних запитах. <b>Ви дізнаєтесь про деградацію від користувачів, не від алертів.</b>', errors: ['painErr1','painErr2','painErr3','painErr4'], angry: true, dead: true }
+];
+
+const pain = { stepIdx: -1, timer: null, playing: false };
+
+function painSetStep(idx) {
+  pain.stepIdx = idx;
+  document.getElementById('painStepLbl').textContent = `step ${idx+1} / ${painSteps.length}`;
+  const step = painSteps[idx];
+  ['painErr1','painErr2','painErr3','painErr4'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  });
+  (step.errors||[]).forEach(eid=>{
+    const el = document.getElementById(eid);
+    if (el) el.classList.add('show');
+  });
+  const angry = document.getElementById('painAngry');
+  if (angry) angry.setAttribute('opacity', step.angry ? '1' : '0');
+  const appBox = document.getElementById('painAppBox');
+  if (appBox) appBox.classList.toggle('dead', !!step.dead);
+  document.getElementById('painCaption').innerHTML = step.caption;
+}
+
+function painPlay() {
+  if (pain.playing) return;
+  pain.playing = true;
+  if (pain.stepIdx >= painSteps.length-1) pain.stepIdx = -1;
+  const tick = ()=>{
+    if (!pain.playing) return;
+    pain.stepIdx++;
+    if (pain.stepIdx >= painSteps.length) { pain.playing = false; return; }
+    painSetStep(pain.stepIdx);
+    pain.timer = setTimeout(tick, 3800);
+  };
+  tick();
+}
+
+function painReset() {
+  pain.playing = false;
+  if (pain.timer) { clearTimeout(pain.timer); pain.timer = null; }
+  pain.stepIdx = -1;
+  ['painErr1','painErr2','painErr3','painErr4'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  });
+  const angry = document.getElementById('painAngry');
+  if (angry) angry.setAttribute('opacity','0');
+  const appBox = document.getElementById('painAppBox');
+  if (appBox) appBox.classList.remove('dead');
+  document.getElementById('painStepLbl').textContent = `step 0 / ${painSteps.length}`;
+  document.getElementById('painCaption').innerHTML = '<span class="step">▶ Натисни Play</span> — побачите 5 типових інцидентів, які трапляються у LLM-сервісі без правильного моніторингу. APM показує 200 OK, юзери скаржаться, інженер дізнається останнім.';
+}
+
+document.getElementById('painPlay').addEventListener('click', painPlay);
+document.getElementById('painReset').addEventListener('click', painReset);
+painReset();
+
+// === HERO ANIMATION: 3 layers in 60s ===
+const heroSteps = [
+  { caption: '<span class="step">Step 1/6</span> <b>Користувач шле POST /chat.</b> Запит проходить через ваш LLM-додаток (FastAPI з RAG-pipeline всередині).', boxes:['heroUserBox','heroAppBox'], paths:['heroP1'] },
+  { caption: '<span class="step">Step 2/6 · APM layer</span> <b>Prometheus збирає infrastructure metrics:</b> latency 480ms, HTTP 200, cost $0.0023. Бачить що сервіс відповідає. <b>Не бачить що саме відповідає.</b>', boxes:['heroAppBox','heroAPMBox'], paths:['heroP1','heroP2'] },
+  { caption: '<span class="step">Step 3/6 · Tracing layer</span> <b>Langfuse логує повний trace:</b> prompt, retrieved chunks з vector DB, token counts, model latency. Тепер ви можете відкрити trace і прочитати що саме сталось у конкретному request.', boxes:['heroAppBox','heroTraceBox'], paths:['heroP1','heroP3'] },
+  { caption: '<span class="step">Step 4/6 · Evals layer</span> <b>RAGAS асинхронно оцінює sample:</b> faithfulness, answer relevancy, context precision. Якщо faithfulness &lt; 0.5 → це <b>галюцинація</b>. Єдиний шар, що ловить семантичні баги.', boxes:['heroAppBox','heroEvalBox'], paths:['heroP1','heroP4'] },
+  { caption: '<span class="step">Step 5/6 · Alerting</span> <b>На кожному шарі — свої алерти.</b> APM → "latency p95 &gt; 5s". Tracing → "refusal rate × 2". Evals → "faithfulness впала &gt; 10%". Кожен сигнал летить у Slack/PagerDuty/email з різним severity.', boxes:['heroAPMBox','heroTraceBox','heroEvalBox','heroAlertBox'], paths:['heroP5','heroP6','heroP7'] },
+  { caption: '<span class="step">Step 6/6 · Full picture</span> <b>Усі три шари активні.</b> APM знає <i>швидко</i>. Tracing знає <i>що</i>. Evals знають <i>чи правильно</i>. Без будь-якого з трьох — у вас сліпа пляма. Жоден інструмент не замінює інші.', boxes:['heroUserBox','heroAppBox','heroAPMBox','heroTraceBox','heroEvalBox','heroAlertBox'], paths:['heroP1','heroP2','heroP3','heroP4','heroP5','heroP6','heroP7'] }
+];
+
+const hero = { stepIdx: -1, timer: null, playing: false };
+
+function heroSetStep(idx) {
+  hero.stepIdx = idx;
+  document.getElementById('heroStepLbl').textContent = `step ${idx+1} / ${heroSteps.length}`;
+  const step = heroSteps[idx];
+  ['heroUserBox','heroAppBox','heroAPMBox','heroTraceBox','heroEvalBox','heroAlertBox'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('active'); el.classList.add('dim'); }
+  });
+  ['heroP1','heroP2','heroP3','heroP4','heroP5','heroP6','heroP7'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('active'); el.setAttribute('stroke-opacity','0.15'); }
+  });
+  (step.boxes||[]).forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) { el.classList.add('active'); el.classList.remove('dim'); }
+  });
+  (step.paths||[]).forEach(pid=>{
+    const p = document.getElementById(pid);
+    if (p) { p.setAttribute('stroke-opacity','1'); p.classList.add('active'); }
+  });
+  document.getElementById('heroCaption').innerHTML = step.caption;
+}
+
+function heroPlay() {
+  if (hero.playing) return;
+  hero.playing = true;
+  if (hero.stepIdx >= heroSteps.length-1) hero.stepIdx = -1;
+  const tick = ()=>{
+    if (!hero.playing) return;
+    hero.stepIdx++;
+    if (hero.stepIdx >= heroSteps.length) { hero.playing = false; return; }
+    heroSetStep(hero.stepIdx);
+    hero.timer = setTimeout(tick, 3500);
+  };
+  tick();
+}
+
+function heroReset() {
+  hero.playing = false;
+  if (hero.timer) { clearTimeout(hero.timer); hero.timer = null; }
+  hero.stepIdx = -1;
+  ['heroUserBox','heroAppBox','heroAPMBox','heroTraceBox','heroEvalBox','heroAlertBox'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active','dim');
+  });
+  ['heroP1','heroP2','heroP3','heroP4','heroP5','heroP6','heroP7'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('active'); el.setAttribute('stroke-opacity','0.2'); }
+  });
+  document.getElementById('heroStepLbl').textContent = `step 0 / ${heroSteps.length}`;
+  document.getElementById('heroCaption').innerHTML = '<span class="step">▶ Натисни Play</span> — анімація показує як кожен з трьох шарів observability (APM → Tracing → Evals) бачить різні аспекти роботи LLM-сервісу, і чому усі три потрібні разом для повної картини.';
+}
+
+document.getElementById('heroPlay').addEventListener('click', heroPlay);
+document.getElementById('heroReset').addEventListener('click', heroReset);
+heroReset();
+
+// === DEMO 1: Drift tabs ===
+const driftScenes = {
+  model: {
+    title: 'MODEL DRIFT — провайдер оновив модель silent',
+    desc: '<span class="bad">Що зламалось:</span> JSON-схема відповіді змінилась. Поле <code>reasoning</code> зʼявилось у нових версіях, ваш Pydantic парсер падає з <code>extra fields not allowed</code>. <br><br><span class="good">Як виявити:</span> structured output validation errors + tracing diff між version A і B.<br><br><span class="good">Як виправити:</span> пінити snapshot <code>gpt-4o-2024-05-13</code>, не alias <code>gpt-4o</code>. Регулярно тестувати нові snapshots у staging.',
+    steps: [
+      { label: 'Day 1 · stable contract', desc: 'OpenAI повертає JSON що відповідає вашій Pydantic схемі. Все парситься OK.' },
+      { label: 'Day 2 · silent rollout', desc: 'OpenAI promotes new snapshot до alias <code>gpt-4o</code>. Ваш код не змінився, але відповідь — інша.' },
+      { label: 'Day 2 · downstream fail', desc: 'Pydantic <code>extra fields not allowed</code>. Сервіс відповідає 500. APM показує errors spike, але не пояснює <i>чому</i>.' }
+    ],
+    render: function(stepIdx) {
+      const stages = ['', '', ''];
+      stages[0] = `<g class="mdBox"><rect x="40" y="50" width="280" height="170" rx="10" fill="#15181d" stroke="#7cd1ff" stroke-width="2"/>
+        <text x="180" y="75" text-anchor="middle" fill="#7cd1ff" font-size="12" font-weight="700">OpenAI · "gpt-4o"</text>
+        <text x="180" y="95" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,Menlo">snapshot: 2024-05-13</text>
+        <rect x="60" y="115" width="240" height="90" rx="6" fill="#0a0c0f" stroke="#9be37c"/>
+        <text x="72" y="135" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo">{</text>
+        <text x="84" y="153" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo">"answer": "..."</text>
+        <text x="72" y="171" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo">}</text>
+        <text x="180" y="195" text-anchor="middle" fill="#9be37c" font-size="10" font-weight="700">✓ matches Pydantic schema</text></g>`;
+
+      stages[1] = stages[0] + `<g class="mdBox" style="animation-delay:.3s">
+        <rect x="380" y="50" width="280" height="170" rx="10" fill="#15181d" stroke="#ffd166" stroke-width="2"/>
+        <text x="520" y="75" text-anchor="middle" fill="#ffd166" font-size="12" font-weight="700">OpenAI · "gpt-4o" (SAME alias)</text>
+        <text x="520" y="95" text-anchor="middle" fill="#ff7676" font-size="10" font-family="ui-monospace,Menlo">snapshot: 2024-08-06 ⚠ NEW</text>
+        <rect x="400" y="115" width="240" height="90" rx="6" fill="#0a0c0f" stroke="#ffd166"/>
+        <text x="412" y="135" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo">{ "answer": "...",</text>
+        <text x="424" y="153" fill="#ff7676" font-size="11" font-family="ui-monospace,Menlo" font-weight="700">"reasoning": "..." ⚠</text>
+        <text x="412" y="171" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo">}</text>
+        <text x="520" y="195" text-anchor="middle" fill="#ffd166" font-size="10">extra field, schema mismatch</text></g>`;
+
+      stages[2] = stages[1] + `<g class="mdShake mdBox" style="animation-delay:.6s">
+        <rect x="700" y="80" width="280" height="120" rx="10" fill="rgba(255,118,118,0.12)" stroke="#ff7676" stroke-width="2"/>
+        <text x="840" y="108" text-anchor="middle" fill="#ff7676" font-size="13" font-weight="700">💥 PROD INCIDENT</text>
+        <text x="840" y="132" text-anchor="middle" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo">ValidationError</text>
+        <text x="840" y="148" text-anchor="middle" fill="#cdd5de" font-size="10" font-family="ui-monospace,Menlo">extra fields not allowed: reasoning</text>
+        <text x="840" y="172" text-anchor="middle" fill="#ff7676" font-size="11" font-weight="700">parsing errors: 0% → 100%</text>
+        <text x="840" y="188" text-anchor="middle" fill="#9aa3ad" font-size="10">6 minutes after upstream rollout</text></g>`;
+
+      return `<svg viewBox="0 0 1000 280" xmlns="http://www.w3.org/2000/svg">${stages[stepIdx]||stages[0]}</svg>`;
+    }
+  },
+
+  embedding: {
+    title: 'EMBEDDING DRIFT — модель ембедингів не збігається з індексом',
+    desc: '<span class="bad">Що зламалось:</span> оновили embedding-модель у коді (з <code>text-embedding-3-small</code> на <code>text-embedding-3-large</code>), вектори у Pinecone/Qdrant лишилися старою моделлю. Cosine similarity 0.91 → 0.42.<br><br><span class="good">Як виявити:</span> <code>context_precision</code> у RAGAS різко падає. Top-k retrieval scores відрізняються від baseline.<br><br><span class="good">Як виправити:</span> переіндексувати весь knowledge base новою моделлю; зберігати embedding model name у metadata індексу як invariant.',
+    steps: [
+      { label: 'Day 1 · same model both sides', desc: 'Index і query використовують ту саму embedding-модель. Cosine similarity висока (0.91).' },
+      { label: 'Day 2 · query model swap', desc: 'Розробник оновив embedding-модель у app-коді. Index не переіндексували — у ньому старі вектори.' },
+      { label: 'Day 2 · RAG returns garbage', desc: 'Cosine similarity впала до 0.42. Top-k повертає нерелевантні чанки. Faithfulness eval падає.' }
+    ],
+    render: function(stepIdx) {
+      const idx = `<g class="dCascade"><rect x="40" y="40" width="280" height="200" rx="10" fill="#15181d" stroke="#c79bff" stroke-width="2"/>
+        <text x="180" y="65" text-anchor="middle" fill="#c79bff" font-size="12" font-weight="700">Vector Index (frozen)</text>
+        <text x="180" y="85" text-anchor="middle" fill="#9aa3ad" font-size="10">text-embedding-3-small · 1536d</text>
+        <circle cx="100" cy="130" r="6" fill="#c79bff"/><circle cx="140" cy="150" r="6" fill="#c79bff"/>
+        <circle cx="170" cy="125" r="6" fill="#c79bff"/><circle cx="200" cy="160" r="6" fill="#c79bff"/>
+        <circle cx="240" cy="140" r="6" fill="#c79bff"/><circle cx="260" cy="170" r="6" fill="#c79bff"/>
+        <text x="180" y="210" text-anchor="middle" fill="#9aa3ad" font-size="10">100k vectors · reindexed: 2024-Q2</text></g>`;
+
+      let query, bars, result;
+      if (stepIdx === 0) {
+        query = `<g class="dCascade" style="animation-delay:.2s"><rect x="380" y="40" width="240" height="100" rx="10" fill="#15181d" stroke="#9be37c" stroke-width="2"/>
+          <text x="500" y="65" text-anchor="middle" fill="#9be37c" font-size="12" font-weight="700">User query</text>
+          <text x="500" y="90" text-anchor="middle" fill="#9aa3ad" font-size="11" font-family="ui-monospace,Menlo">"refund policy?"</text>
+          <text x="500" y="110" text-anchor="middle" fill="#9be37c" font-size="10">embed: text-embedding-3-small ✓</text>
+          <text x="500" y="126" text-anchor="middle" fill="#9aa3ad" font-size="10">SAME model as index</text></g>`;
+        bars = `<g class="dCascade" style="animation-delay:.4s">
+          <text x="730" y="60" text-anchor="middle" fill="#9aa3ad" font-size="11" font-weight="700">cosine similarity</text>
+          <rect class="edBar" x="690" y="80" width="40" height="100" fill="#9be37c"/>
+          <rect class="edBar" x="740" y="80" width="40" height="100" fill="#9be37c" opacity=".7"/>
+          <rect class="edBar" x="790" y="80" width="40" height="100" fill="#9be37c" opacity=".5"/>
+          <text x="710" y="200" text-anchor="middle" fill="#9be37c" font-size="12" font-family="ui-monospace,Menlo" font-weight="700">0.91</text>
+          <text x="760" y="200" text-anchor="middle" fill="#9be37c" font-size="12" font-family="ui-monospace,Menlo">0.87</text>
+          <text x="810" y="200" text-anchor="middle" fill="#9be37c" font-size="12" font-family="ui-monospace,Menlo">0.79</text></g>`;
+        result = `<g class="dCascade" style="animation-delay:.6s"><rect x="660" y="220" width="300" height="40" rx="6" fill="rgba(155,227,124,0.1)" stroke="#9be37c"/>
+          <text x="810" y="245" text-anchor="middle" fill="#9be37c" font-size="11" font-weight="700">✓ RAG returns relevant chunks</text></g>`;
+      } else if (stepIdx === 1) {
+        query = `<g class="dCascade" style="animation-delay:.2s"><rect x="380" y="40" width="240" height="100" rx="10" fill="#15181d" stroke="#ff7676" stroke-width="2"/>
+          <text x="500" y="65" text-anchor="middle" fill="#ff7676" font-size="12" font-weight="700">User query (NEW)</text>
+          <text x="500" y="90" text-anchor="middle" fill="#9aa3ad" font-size="11" font-family="ui-monospace,Menlo">"refund policy?"</text>
+          <text x="500" y="110" text-anchor="middle" fill="#ff7676" font-size="10">embed: text-embedding-3-large ⚠</text>
+          <text x="500" y="126" text-anchor="middle" fill="#ff7676" font-size="10">3072d (dimension mismatch!)</text></g>`;
+        bars = `<g class="dCascade" style="animation-delay:.4s">
+          <text x="730" y="60" text-anchor="middle" fill="#9aa3ad" font-size="11" font-weight="700">cosine similarity</text>
+          <rect class="edBar" x="690" y="80" width="40" height="100" fill="#ffd166"/>
+          <text x="710" y="200" text-anchor="middle" fill="#ffd166" font-size="12" font-family="ui-monospace,Menlo" font-weight="700">recompute…</text></g>`;
+        result = '';
+      } else {
+        query = `<g class="dCascade" style="animation-delay:.1s"><rect x="380" y="40" width="240" height="100" rx="10" fill="#15181d" stroke="#ff7676" stroke-width="2"/>
+          <text x="500" y="65" text-anchor="middle" fill="#ff7676" font-size="12" font-weight="700">User query (NEW)</text>
+          <text x="500" y="90" text-anchor="middle" fill="#9aa3ad" font-size="11" font-family="ui-monospace,Menlo">"refund policy?"</text>
+          <text x="500" y="110" text-anchor="middle" fill="#ff7676" font-size="10">text-embedding-3-large</text></g>`;
+        bars = `<g class="dCascade" style="animation-delay:.3s">
+          <text x="730" y="60" text-anchor="middle" fill="#9aa3ad" font-size="11" font-weight="700">cosine similarity</text>
+          <rect class="edBar drop edPulse" x="690" y="138" width="40" height="42" fill="#ff7676"/>
+          <rect class="edBar drop" x="740" y="138" width="40" height="42" fill="#ff7676" opacity=".7" style="animation-delay:.15s"/>
+          <rect class="edBar drop" x="790" y="138" width="40" height="42" fill="#ff7676" opacity=".5" style="animation-delay:.3s"/>
+          <text x="710" y="200" text-anchor="middle" fill="#ff7676" font-size="12" font-family="ui-monospace,Menlo" font-weight="700">0.42 ↓</text>
+          <text x="760" y="200" text-anchor="middle" fill="#ff7676" font-size="12" font-family="ui-monospace,Menlo">0.38</text>
+          <text x="810" y="200" text-anchor="middle" fill="#ff7676" font-size="12" font-family="ui-monospace,Menlo">0.35</text></g>`;
+        result = `<g class="dCascade" style="animation-delay:.8s"><rect x="660" y="220" width="300" height="40" rx="6" fill="rgba(255,118,118,0.12)" stroke="#ff7676"/>
+          <text x="810" y="237" text-anchor="middle" fill="#ff7676" font-size="11" font-weight="700">✗ RAG returns shipping/FAQ instead</text>
+          <text x="810" y="252" text-anchor="middle" fill="#9aa3ad" font-size="10">faithfulness 0.85 → 0.51</text></g>`;
+      }
+      return `<svg viewBox="0 0 1000 280" xmlns="http://www.w3.org/2000/svg">${idx}${query}${bars}${result}</svg>`;
+    }
+  },
+
+  document: {
+    title: 'DOCUMENT DRIFT — знання у RAG застаріли',
+    desc: '<span class="bad">Що зламалось:</span> Pricing змінилось у Q3, документ у KB — з Q1. RAG чесно повертає правильний документ. Модель чесно його цитує. Але відповідь застаріла на 2 місяці.<br><br><span class="good">Як виявити:</span> support tickets про застарілу інформацію; TTL-перевірка документів; manual review топ-трафіку раз на місяць.<br><br><span class="good">Як виправити:</span> sync KB з source-of-truth раз на тиждень, TTL у metadata, версіонування з expiry dates.',
+    steps: [
+      { label: 'Day 1 · doc matches reality', desc: 'Документ у RAG свіжий. Real-world price збігається з тим, що в KB.' },
+      { label: 'Q3 · world changed', desc: 'Реальна ціна змінилася з $29 на $39. Trial скоротили з 14 до 7 днів. KB ніхто не оновив.' },
+      { label: 'Today · confident-wrong', desc: 'Юзер питає сьогодні. RAG повертає старий документ. Модель faithfully цитує — але відповідь невірна.' }
+    ],
+    render: function(stepIdx) {
+      const kb = `<g class="dCascade"><rect x="40" y="50" width="260" height="180" rx="10" fill="#15181d" stroke="#c79bff" stroke-width="2"/>
+        <text x="170" y="75" text-anchor="middle" fill="#c79bff" font-size="12" font-weight="700">Knowledge Base (RAG)</text>
+        <rect x="60" y="95" width="220" height="50" rx="6" fill="#0a0c0f" stroke="${stepIdx>=1?'#ffd166':'#9be37c'}"/>
+        <text x="170" y="113" text-anchor="middle" fill="${stepIdx>=1?'#ffd166':'#9be37c'}" font-size="11" font-weight="700">pricing.md</text>
+        <text x="170" y="130" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,Menlo">last_updated: 2024-Q1</text>
+        <text x="170" y="170" text-anchor="middle" fill="#9aa3ad" font-size="11">Pro tier: $29/month</text>
+        <text x="170" y="188" text-anchor="middle" fill="#9aa3ad" font-size="11">Trial: 14 days</text>
+        ${stepIdx>=1?'<text x="170" y="218" text-anchor="middle" fill="#ff7676" font-size="10" class="docTick">⚠ outdated since 2024-07-01</text>':''}</g>`;
+
+      let world;
+      if (stepIdx === 0) {
+        world = `<g class="dCascade" style="animation-delay:.3s"><rect x="360" y="50" width="280" height="180" rx="10" fill="#15181d" stroke="#9be37c" stroke-width="2"/>
+          <text x="500" y="75" text-anchor="middle" fill="#9be37c" font-size="12" font-weight="700">REAL WORLD (Q1)</text>
+          <text x="500" y="100" text-anchor="middle" fill="#9aa3ad" font-size="11">Pro tier: $29/month</text>
+          <text x="500" y="120" text-anchor="middle" fill="#9aa3ad" font-size="11">Trial: 14 days</text>
+          <text x="500" y="155" text-anchor="middle" fill="#9be37c" font-size="11" font-weight="700">✓ KB == reality</text></g>`;
+      } else {
+        world = `<g class="dCascade" style="animation-delay:.3s"><rect x="360" y="50" width="280" height="180" rx="10" fill="#15181d" stroke="#ff7676" stroke-width="2"/>
+          <text x="500" y="75" text-anchor="middle" fill="#ff7676" font-size="12" font-weight="700">REAL WORLD (since Q3)</text>
+          <text x="500" y="105" text-anchor="middle" fill="#9be37c" font-size="13" font-family="ui-monospace,Menlo" font-weight="700" class="docTick">Pro tier: $39/month</text>
+          <text x="500" y="130" text-anchor="middle" fill="#9be37c" font-size="13" font-family="ui-monospace,Menlo" font-weight="700" class="docTick" style="animation-delay:.4s">Trial: 7 days</text>
+          <text x="500" y="170" text-anchor="middle" fill="#ff7676" font-size="11" font-weight="700">✗ KB diverged from world</text></g>`;
+      }
+
+      let result = '';
+      if (stepIdx === 2) {
+        result = `<g class="dCascade" style="animation-delay:.7s"><rect x="680" y="50" width="280" height="180" rx="10" fill="rgba(255,118,118,0.1)" stroke="#ff7676" stroke-width="2"/>
+          <text x="820" y="75" text-anchor="middle" fill="#ff7676" font-size="12" font-weight="700">User asks TODAY</text>
+          <text x="820" y="98" text-anchor="middle" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo">"How much is Pro?"</text>
+          <rect x="700" y="115" width="240" height="50" rx="6" fill="#0a0c0f" stroke="#ffd166"/>
+          <text x="820" y="135" text-anchor="middle" fill="#ffd166" font-size="11" font-weight="700">Model says: "$29/month"</text>
+          <text x="820" y="152" text-anchor="middle" fill="#9aa3ad" font-size="10">faithful to RAG context</text>
+          <text x="820" y="190" text-anchor="middle" fill="#ff7676" font-size="11" font-weight="700">but $10 OFF from reality</text>
+          <text x="820" y="208" text-anchor="middle" fill="#9aa3ad" font-size="10">support ticket inbound...</text></g>`;
+      }
+      return `<svg viewBox="0 0 1000 280" xmlns="http://www.w3.org/2000/svg">${kb}${world}${result}</svg>`;
+    }
+  },
+
+  data: {
+    title: 'DATA DRIFT — користувачі почали питати інше',
+    desc: '<span class="bad">Що зламалось:</span> розподіл intents shift-ся. День 1: 60% billing, 30% tech, 10% features. День 30: 20% billing, 40% features, 40% complaints. Промпти і RAG оптимізовані під старий розподіл.<br><br><span class="good">Як виявити:</span> intent classification dashboard, топ-10 prompts week-over-week, embedding cluster shift у Phoenix.<br><br><span class="good">Як виправити:</span> поповнити RAG під нові intents, оновити prompt examples, можливо — додати спеціалізованих агентів.',
+    steps: [
+      { label: 'Day 1 · stable distribution', desc: 'Розподіл intents збігається з тим, під що оптимізовано систему. Все на місцях.' },
+      { label: 'Day 30 · distribution shifted', desc: 'Маркетинг новий feature pre-announced. Reddit thread виплив. Розподіл intents різко змінився.' },
+      { label: 'Symptoms surface', desc: 'Refusal rate на complaints +35%. Прийшов сезон Black Friday — додаткова навантаження на features.' }
+    ],
+    render: function(stepIdx) {
+      const day1 = `<g class="dCascade"><text x="180" y="35" text-anchor="middle" fill="#9be37c" font-size="13" font-weight="700">Day 1 · top intents</text>
+        <g transform="translate(40,55)">
+          <rect class="dBar" style="--dbar-w:200px" y="0" height="22" fill="#7cd1ff" opacity="0.8"/><text x="10" y="16" fill="#0b0d10" font-size="11" font-weight="700">billing 60%</text>
+          <rect class="dBar" style="--dbar-w:100px;animation-delay:.15s" y="28" height="22" fill="#7cd1ff" opacity="0.6"/><text x="10" y="44" fill="#0b0d10" font-size="11" font-weight="700">tech 30%</text>
+          <rect class="dBar" style="--dbar-w:35px;animation-delay:.3s" y="56" height="22" fill="#7cd1ff" opacity="0.4"/><text x="45" y="72" fill="#cdd5de" font-size="11">features 10%</text>
+          <rect class="dBar" style="--dbar-w:20px;animation-delay:.45s" y="84" height="22" fill="#7cd1ff" opacity="0.3"/><text x="30" y="100" fill="#cdd5de" font-size="11">complaints 5%</text>
+        </g>
+        <text x="180" y="195" text-anchor="middle" fill="#9aa3ad" font-size="10">RAG optimized for billing-heavy traffic</text></g>`;
+
+      let day30 = '';
+      if (stepIdx >= 1) {
+        day30 = `<g class="dCascade" style="animation-delay:.3s"><text x="520" y="35" text-anchor="middle" fill="#ff7676" font-size="13" font-weight="700">Day 30 · SHIFTED</text>
+          <g transform="translate(380,55)">
+            <rect class="dBar" style="--dbar-w:70px" y="0" height="22" fill="#ff7676" opacity="0.6"/><text x="80" y="16" fill="#cdd5de" font-size="11">billing 20% ↓</text>
+            <rect class="dBar" style="--dbar-w:130px;animation-delay:.15s" y="28" height="22" fill="#ff7676" opacity="0.8"/><text x="10" y="44" fill="#0b0d10" font-size="11" font-weight="700">features 40% ↑</text>
+            <rect class="dBar" style="--dbar-w:130px;animation-delay:.3s" y="56" height="22" fill="#ff7676" opacity="0.7"/><text x="10" y="72" fill="#0b0d10" font-size="11" font-weight="700">complaints 40% ↑</text>
+            <rect class="dBar" style="--dbar-w:18px;animation-delay:.45s" y="84" height="22" fill="#ff7676" opacity="0.3"/><text x="28" y="100" fill="#cdd5de" font-size="11">tech 5%</text>
+          </g>
+          <text x="520" y="195" text-anchor="middle" fill="#ff7676" font-size="10">⚠ розподіл різко змінився</text></g>`;
+      }
+
+      let causes = '';
+      if (stepIdx >= 2) {
+        causes = `<g class="dCascade" style="animation-delay:.7s"><rect x="700" y="40" width="260" height="200" rx="10" fill="rgba(255,209,102,0.08)" stroke="#ffd166"/>
+          <text x="830" y="65" text-anchor="middle" fill="#ffd166" font-size="12" font-weight="700">SYMPTOMS</text>
+          <text x="715" y="92" fill="#cdd5de" font-size="11" font-family="-apple-system,Helvetica">• refusal rate ×3 на complaints</text>
+          <text x="715" y="112" fill="#cdd5de" font-size="11" font-family="-apple-system,Helvetica">• unknown intent: "Black Friday"</text>
+          <text x="715" y="132" fill="#cdd5de" font-size="11" font-family="-apple-system,Helvetica">• нові entity у prompts</text>
+          <text x="715" y="152" fill="#cdd5de" font-size="11" font-family="-apple-system,Helvetica">• avg prompt length +18%</text>
+          <text x="715" y="190" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica">FIX: weekly topic mining,</text>
+          <text x="715" y="206" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica">оновити RAG + few-shot</text>
+          <text x="715" y="222" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica">examples for new intents</text></g>`;
+      }
+      return `<svg viewBox="0 0 1000 280" xmlns="http://www.w3.org/2000/svg">${day1}${day30}${causes}</svg>`;
+    }
+  },
+
+  concept: {
+    title: 'CONCEPT DRIFT — правильна відповідь змінилася',
+    desc: '<span class="bad">Що зламалось:</span> модель навчена з training cutoff 2024-04. Правильна відповідь на time-sensitive питання (current pricing, latest Python, GDPR rules) змінилась. Модель видає <b>впевнено-неправильну</b> відповідь.<br><br><span class="good">Як виявити:</span> golden dataset regression на time-sensitive кейсах. Eval тих самих питань місячно.<br><br><span class="good">Як виправити:</span> RAG з актуальною інформацією, system prompt з current date, для critical facts — function calling з external sources.',
+    steps: [
+      { label: 'Training cutoff', desc: 'Модель закінчила training у 2024-04. У неї фіксована "знаннєва картина" світу.' },
+      { label: 'World moves on', desc: 'Python випустив 3.14, React 19, EU AI Act набрав чинності. Модель про це не знає.' },
+      { label: 'Confident-wrong answer', desc: 'Користувач питає у 2026. Модель впевнено відповідає старим фактом — без жодного hedge.' }
+    ],
+    render: function(stepIdx) {
+      const train = `<g class="dCascade"><rect x="40" y="40" width="260" height="200" rx="10" fill="#15181d" stroke="#7cd1ff" stroke-width="2"/>
+        <text x="170" y="65" text-anchor="middle" fill="#7cd1ff" font-size="12" font-weight="700">Model training</text>
+        <text x="170" y="92" text-anchor="middle" fill="#9aa3ad" font-size="11" font-family="ui-monospace,Menlo">cutoff: 2024-04</text>
+        <text x="170" y="120" text-anchor="middle" fill="#9aa3ad" font-size="10">Knows up to April 2024:</text>
+        <text x="170" y="142" text-anchor="middle" fill="#cdd5de" font-size="10" class="ccTextOld">• Python 3.12 latest</text>
+        <text x="170" y="158" text-anchor="middle" fill="#cdd5de" font-size="10" class="ccTextOld" style="animation-delay:.1s">• React 18 stable</text>
+        <text x="170" y="174" text-anchor="middle" fill="#cdd5de" font-size="10" class="ccTextOld" style="animation-delay:.2s">• EU AI Act draft phase</text>
+        <text x="170" y="220" text-anchor="middle" fill="#9aa3ad" font-size="10" font-style="italic">frozen in time</text></g>`;
+
+      let world = '';
+      if (stepIdx >= 1) {
+        world = `<g class="dCascade" style="animation-delay:.3s"><rect x="360" y="40" width="260" height="200" rx="10" fill="#15181d" stroke="#ff7676" stroke-width="2"/>
+          <text x="490" y="65" text-anchor="middle" fill="#ff7676" font-size="12" font-weight="700">Reality TODAY</text>
+          <text x="490" y="92" text-anchor="middle" fill="#9aa3ad" font-size="11" font-family="ui-monospace,Menlo">2026-05</text>
+          <text x="490" y="120" text-anchor="middle" fill="#9aa3ad" font-size="10">Current facts:</text>
+          <text x="490" y="142" text-anchor="middle" fill="#9be37c" font-size="10" class="docTick">• Python 3.14 latest</text>
+          <text x="490" y="158" text-anchor="middle" fill="#9be37c" font-size="10" class="docTick" style="animation-delay:.2s">• React 19 stable</text>
+          <text x="490" y="174" text-anchor="middle" fill="#9be37c" font-size="10" class="docTick" style="animation-delay:.4s">• EU AI Act in force</text>
+          <text x="490" y="220" text-anchor="middle" fill="#ff7676" font-size="10" font-weight="700">model has no idea</text></g>`;
+      }
+
+      let qa = '';
+      if (stepIdx >= 2) {
+        qa = `<g class="dCascade" style="animation-delay:.7s"><rect x="680" y="50" width="280" height="180" rx="10" fill="rgba(255,118,118,0.1)" stroke="#ff7676" stroke-width="2"/>
+          <text x="820" y="78" text-anchor="middle" fill="#ff7676" font-size="12" font-weight="700">User question TODAY</text>
+          <text x="820" y="102" text-anchor="middle" fill="#cdd5de" font-size="11" font-family="ui-monospace,Menlo">"latest Python version?"</text>
+          <rect x="700" y="118" width="240" height="38" rx="6" fill="#0a0c0f" stroke="#ff7676"/>
+          <text x="820" y="142" text-anchor="middle" fill="#ff7676" font-size="11" font-weight="700">Model: "Python 3.12"</text>
+          <text x="820" y="178" text-anchor="middle" fill="#9be37c" font-size="11" font-weight="700">Real answer: 3.14</text>
+          <text x="820" y="200" text-anchor="middle" fill="#9aa3ad" font-size="10">FIX: RAG with web search,</text>
+          <text x="820" y="216" text-anchor="middle" fill="#9aa3ad" font-size="10">current date in system prompt</text></g>`;
+      }
+      return `<svg viewBox="0 0 1000 280" xmlns="http://www.w3.org/2000/svg">${train}${world}${qa}</svg>`;
+    }
+  }
+};
+
+const driftState = { type: 'model', step: 0, timer: null };
+
+function driftRender() {
+  const scene = driftScenes[driftState.type];
+  const totalSteps = scene.steps.length;
+  document.getElementById('driftStage').innerHTML = scene.render(driftState.step);
+  document.getElementById('driftStepInfo').innerHTML =
+    `<b style="color:#fff">Step ${driftState.step+1}/${totalSteps}</b> · ${scene.steps[driftState.step].label} — <span style="color:var(--muted)">${scene.steps[driftState.step].desc}</span>`;
+  document.getElementById('driftDesc').innerHTML =
+    `<div class="title">${scene.title}</div><div>${scene.desc}</div>`;
+}
+
+function driftSelect(type) {
+  driftState.type = type;
+  driftState.step = 0;
+  document.querySelectorAll('.driftTab').forEach(t=> t.classList.toggle('active', t.dataset.type === type));
+  driftRender();
+  driftAutoplay();
+}
+
+function driftAutoplay() {
+  if (driftState.timer) { clearTimeout(driftState.timer); driftState.timer = null; }
+  const scene = driftScenes[driftState.type];
+  const advance = ()=>{
+    if (driftState.step < scene.steps.length - 1) {
+      driftState.step++;
+      driftRender();
+      driftState.timer = setTimeout(advance, 2200);
+    } else {
+      driftState.timer = null;
+    }
+  };
+  driftState.timer = setTimeout(advance, 2200);
+}
+
+function driftReplay() {
+  driftState.step = 0;
+  driftRender();
+  driftAutoplay();
+}
+
+document.querySelectorAll('.driftTab').forEach(tab=>{
+  tab.addEventListener('click', ()=> driftSelect(tab.dataset.type));
+});
+document.getElementById('driftReplay').addEventListener('click', driftReplay);
+driftSelect('model');
+
+
+// === DEMO 2: 3 layers cumulative ===
+const layerState = { apm: false, trace: false, eval: false };
+
+function layerRender() {
+  const apm = document.getElementById('layerAPM');
+  const trace = document.getElementById('layerTrace');
+  const ev = document.getElementById('layerEval');
+  apm.classList.toggle('off', !layerState.apm); apm.classList.toggle('on', layerState.apm);
+  trace.classList.toggle('off', !layerState.trace); trace.classList.toggle('on', layerState.trace);
+  ev.classList.toggle('off', !layerState.eval); ev.classList.toggle('on', layerState.eval);
+  document.getElementById('layerLegAPM').classList.toggle('active', layerState.apm);
+  document.getElementById('layerLegTrace').classList.toggle('active', layerState.trace);
+  document.getElementById('layerLegEval').classList.toggle('active', layerState.eval);
+  let verdict;
+  if (!layerState.apm && !layerState.trace && !layerState.eval) {
+    verdict = '<span class="step">▶ Натисни Play sequence</span> — побачите, як одна й та сама проблема (галюцинація про refund policy) видима по-різному в кожному шарі.';
+  } else if (layerState.apm && !layerState.trace && !layerState.eval) {
+    verdict = '<span class="step">APM only</span> Бачимо <b>200 OK · 480ms</b>. Все виглядає здорово. <b class="bad">Sistema галюцинує, але ви про це не знаєте.</b>';
+  } else if (layerState.apm && layerState.trace && !layerState.eval) {
+    verdict = '<span class="step">APM + Tracing</span> Тепер бачимо <b>prompt і retrieved chunks</b>. Можна вручну відкрити trace і помітити, що відповідь не базується на context. Але <b class="bad">автоматичного сигналу немає</b> — поки людина не подивиться.';
+  } else if (layerState.apm && layerState.trace && layerState.eval) {
+    verdict = '<span class="step">Full stack</span> ⚖ <b class="bad">Faithfulness 0.42 — HALLUCINATION DETECTED.</b> Judge ловить що "30-day refund" не підтверджується контекстом ("14-day only"). Алерт летить у Slack. Інженер бачить incident до того як юзер натиснув "submit ticket".';
+  } else {
+    verdict = '<span class="step">Partial</span> Деякі шари увімкнено. Натисни Play sequence або всі три кнопки для повної картини.';
+  }
+  document.getElementById('layerVerdict').innerHTML = verdict;
+}
+
+document.getElementById('layerToggleAPM').addEventListener('click', ()=>{ layerState.apm = !layerState.apm; layerRender(); });
+document.getElementById('layerToggleTrace').addEventListener('click', ()=>{ layerState.trace = !layerState.trace; layerRender(); });
+document.getElementById('layerToggleEval').addEventListener('click', ()=>{ layerState.eval = !layerState.eval; layerRender(); });
+document.getElementById('layerReset').addEventListener('click', ()=>{
+  layerState.apm = layerState.trace = layerState.eval = false;
+  layerRender();
+});
+document.getElementById('layerPlayAll').addEventListener('click', ()=>{
+  layerState.apm = layerState.trace = layerState.eval = false;
+  layerRender();
+  setTimeout(()=>{ layerState.apm = true; layerRender(); }, 600);
+  setTimeout(()=>{ layerState.trace = true; layerRender(); }, 2200);
+  setTimeout(()=>{ layerState.eval = true; layerRender(); }, 3800);
+});
+layerRender();
+
+// === DEMO 3: LLM-as-a-Judge ===
+const judgeCases = {
+  good: {
+    user: 'How many days do I have to request a refund?',
+    ctx: [
+      { src: 'refund-policy-v3.md (score: 0.94)', text: 'Customers may request a refund within 14 days of purchase date. Product must be undamaged and unused.' },
+      { src: 'faq-refunds.md (score: 0.81)', text: 'Q: What is the refund window? A: 14 days from purchase.' }
+    ],
+    answer: 'You can request a refund within 14 days from the date of purchase, as long as the product is undamaged.',
+    scores: { faith: 0.95, rel: 0.97, prec: 0.88 },
+    expl: {
+      faith: 'all claims supported by context',
+      rel: 'directly answers the user question',
+      prec: 'both retrieved chunks are relevant'
+    }
+  },
+  hallucination: {
+    user: 'How many days do I have to request a refund?',
+    ctx: [
+      { src: 'refund-policy-v3.md (score: 0.92)', text: 'Customers may request a refund within 14 days of purchase date. Product must be undamaged and unused.' },
+      { src: 'faq-refunds.md (score: 0.78)', text: 'Q: What is the refund window? A: 14 days from purchase.' }
+    ],
+    answer: 'You have a 30-day window to request a refund, no questions asked. Just contact support and we will process it immediately.',
+    scores: { faith: 0.18, rel: 0.92, prec: 0.85 },
+    expl: {
+      faith: 'CLAIM "30-day window" NOT in context (context says 14 days). "no questions asked" also fabricated.',
+      rel: 'answers the question (about refund period), so relevancy is high',
+      prec: 'context is relevant — problem is in the model answer, not retrieval'
+    }
+  },
+  offtopic: {
+    user: 'How many days do I have to request a refund?',
+    ctx: [
+      { src: 'refund-policy-v3.md (score: 0.91)', text: 'Customers may request a refund within 14 days of purchase date.' },
+      { src: 'shipping-policy.md (score: 0.62)', text: 'Standard shipping takes 3-5 business days within EU.' }
+    ],
+    answer: 'Our standard shipping takes 3-5 business days within the EU. For international, please check your specific destination.',
+    scores: { faith: 0.82, rel: 0.12, prec: 0.51 },
+    expl: {
+      faith: 'shipping facts ARE in context (no hallucination), but...',
+      rel: 'answer is about shipping, not about refunds — does NOT answer the user',
+      prec: 'context contains relevant refund chunk, but also irrelevant shipping chunk'
+    }
+  },
+  'bad-retrieval': {
+    user: 'How many days do I have to request a refund?',
+    ctx: [
+      { src: 'careers-page.md (score: 0.41)', text: 'Our company values transparency and innovation. Apply for open positions.' },
+      { src: 'contact-us.md (score: 0.38)', text: 'Email support@example.com for general inquiries.' }
+    ],
+    answer: 'I do not have specific information about refund policies in the provided context. Please contact support@example.com for assistance.',
+    scores: { faith: 0.71, rel: 0.45, prec: 0.08 },
+    expl: {
+      faith: 'model honestly admits lack of info — no hallucination, decent faithfulness',
+      rel: 'gives a partial answer (contact info) but does not answer the actual question',
+      prec: 'CONTEXT IS GARBAGE — neither chunk relates to refunds. Retrieval problem.'
+    }
+  }
+};
+
+function judgeRender() {
+  const caseId = document.getElementById('judgeCase').value;
+  const c = judgeCases[caseId];
+  document.getElementById('judgeUser').innerHTML = c.user;
+  document.getElementById('judgeCtx').innerHTML = c.ctx.map(x=>`<div class="ctx"><div class="src">${x.src}</div>${x.text}</div>`).join('');
+  document.getElementById('judgeAnswer').innerHTML = c.answer;
+  document.getElementById('judgeVerdictPanel').style.display = 'none';
+}
+
+function judgeRun() {
+  const caseId = document.getElementById('judgeCase').value;
+  const c = judgeCases[caseId];
+  const panel = document.getElementById('judgeVerdictPanel');
+  panel.style.display = 'block';
+  const tier = (v)=> v >= 0.75 ? 'good' : v >= 0.5 ? 'mid' : 'bad';
+  const verdict = `
+    <div class="judgeBar ${tier(c.scores.faith)}">
+      <div class="bLbl"><span>✓ Faithfulness</span> <b>${c.scores.faith.toFixed(2)}</b></div>
+      <div class="bTrack"><div class="bFill" style="width:${c.scores.faith*100}%"></div></div>
+      <div class="bExpl">${c.expl.faith}</div>
+    </div>
+    <div class="judgeBar ${tier(c.scores.rel)}">
+      <div class="bLbl"><span>🎯 Answer Relevancy</span> <b>${c.scores.rel.toFixed(2)}</b></div>
+      <div class="bTrack"><div class="bFill" style="width:${c.scores.rel*100}%"></div></div>
+      <div class="bExpl">${c.expl.rel}</div>
+    </div>
+    <div class="judgeBar ${tier(c.scores.prec)}">
+      <div class="bLbl"><span>📚 Context Precision</span> <b>${c.scores.prec.toFixed(2)}</b></div>
+      <div class="bTrack"><div class="bFill" style="width:${c.scores.prec*100}%"></div></div>
+      <div class="bExpl">${c.expl.prec}</div>
+    </div>
+  `;
+  document.getElementById('judgeVerdict').innerHTML = verdict;
+}
+
+function judgeUpdateRate() {
+  const r = +document.getElementById('judgeRate').value;
+  document.getElementById('judgeRateV').textContent = r + '%';
+  document.getElementById('judgeRateLbl').textContent = r + '%';
+  const reqs = 1_000_000;
+  const evaled = reqs * (r/100);
+  const cost = (evaled * 0.005).toFixed(2);
+  document.getElementById('judgeCost').textContent = '$' + cost;
+  const coverage = Math.min(99, Math.round(40 + 60 * Math.log10(r+1)));
+  document.getElementById('judgeCoverage').textContent = '~' + coverage + '%';
+}
+
+document.getElementById('judgeCase').addEventListener('change', judgeRender);
+document.getElementById('judgeRun').addEventListener('click', judgeRun);
+document.getElementById('judgeClear').addEventListener('click', ()=>{ document.getElementById('judgeVerdictPanel').style.display='none'; });
+document.getElementById('judgeRate').addEventListener('input', judgeUpdateRate);
+judgeRender();
+judgeUpdateRate();
+
+// === DEMO 4: Alert dashboard ===
+const dashBaseline = { judge: 0.86, cost: 0.30, refusal: 2.5, safety: 0.2 };
+const dashFeed = document.getElementById('dashFeed');
+
+function dashAppend(line, kind='info') {
+  const t = new Date().toTimeString().slice(0,8);
+  const div = document.createElement('div');
+  div.className = 'line ' + kind;
+  div.textContent = `[${t}] ${line}`;
+  dashFeed.insertBefore(div, dashFeed.firstChild);
+  while (dashFeed.children.length > 30) dashFeed.removeChild(dashFeed.lastChild);
+}
+
+function dashSet(panelId, severityId, severity) {
+  const panel = document.getElementById(panelId);
+  const sev = document.getElementById(severityId);
+  panel.classList.remove('alert','page');
+  if (severity === 'alert') {
+    panel.classList.add('alert');
+    sev.textContent = 'Slack';
+  } else if (severity === 'page') {
+    panel.classList.add('page');
+    sev.textContent = 'PagerDuty';
+  } else {
+    sev.textContent = '';
+  }
+}
+
+function dashUpdate(opts = {}) {
+  const judge = +document.getElementById('sJudge').value / 100;
+  const cost = +document.getElementById('sCost').value / 100;
+  const refusal = +document.getElementById('sRefusal').value;
+  const safety = +document.getElementById('sSafety').value;
+
+  document.getElementById('sJudgeV').textContent = judge.toFixed(2);
+  document.getElementById('sCostV').textContent = '$' + cost.toFixed(2);
+  document.getElementById('sRefusalV').textContent = refusal + '%';
+  document.getElementById('sSafetyV').textContent = safety;
+
+  document.getElementById('dashP1Now').textContent = judge.toFixed(2);
+  document.getElementById('dashP2Now').textContent = '$' + cost.toFixed(2);
+  document.getElementById('dashP3Now').textContent = refusal + '%';
+  document.getElementById('dashP4Now').textContent = safety;
+
+  const dJudge = ((judge - dashBaseline.judge) / dashBaseline.judge) * 100;
+  const dCost = ((cost - dashBaseline.cost) / dashBaseline.cost) * 100;
+  const dRefusal = ((refusal - dashBaseline.refusal) / dashBaseline.refusal) * 100;
+
+  document.getElementById('dashP1Delta').textContent = (dJudge >= 0 ? '+' : '') + dJudge.toFixed(1) + '%';
+  document.getElementById('dashP1Delta').className = 'pDelta ' + (dJudge < 0 ? 'down' : '');
+  document.getElementById('dashP2Delta').textContent = (dCost >= 0 ? '+' : '') + dCost.toFixed(1) + '%';
+  document.getElementById('dashP2Delta').className = 'pDelta ' + (dCost > 0 ? 'up' : '');
+  document.getElementById('dashP3Delta').textContent = (dRefusal >= 0 ? '+' : '') + dRefusal.toFixed(1) + '%';
+  document.getElementById('dashP3Delta').className = 'pDelta ' + (dRefusal > 0 ? 'up' : '');
+  document.getElementById('dashP4Delta').textContent = safety > 0 ? (safety - dashBaseline.safety).toFixed(1) + ' over baseline' : '—';
+  document.getElementById('dashP4Delta').className = 'pDelta ' + (safety > 1 ? 'up' : '');
+
+  // Severities
+  let triggered = [];
+  if (dJudge <= -10) { dashSet('dashP1','dashP1Sev','alert'); triggered.push(['🟡 Judge score впав ' + dJudge.toFixed(1) + '% від baseline','warn']); }
+  else dashSet('dashP1','dashP1Sev',null);
+
+  if (dCost >= 20) { dashSet('dashP2','dashP2Sev','alert'); triggered.push(['🟡 Cost spike ' + dCost.toFixed(1) + '% → finance + Slack','warn']); }
+  else dashSet('dashP2','dashP2Sev',null);
+
+  if (dRefusal >= 100) { dashSet('dashP3','dashP3Sev','alert'); triggered.push(['🟡 Refusal rate × ' + ((dRefusal/100)+1).toFixed(1) + ' → possible upstream model drift','warn']); }
+  else dashSet('dashP3','dashP3Sev',null);
+
+  if (safety >= 1) { dashSet('dashP4','dashP4Sev','page'); triggered.push(['🔴 PAGE: safety_eval hits = ' + safety + '/hr → PagerDuty oncall','page']); }
+  else dashSet('dashP4','dashP4Sev',null);
+
+  if (opts.emit && triggered.length) {
+    triggered.forEach(([msg,kind])=> dashAppend(msg, kind));
+  }
+}
+
+['sJudge','sCost','sRefusal','sSafety'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=> dashUpdate({ emit: false }));
+  document.getElementById(id).addEventListener('change', ()=> dashUpdate({ emit: true }));
+});
+
+document.getElementById('dashReset').addEventListener('click', ()=>{
+  document.getElementById('sJudge').value = 87;
+  document.getElementById('sCost').value = 32;
+  document.getElementById('sRefusal').value = 3;
+  document.getElementById('sSafety').value = 0;
+  dashUpdate();
+  dashAppend('✓ Baselines reset to defaults','ok');
+});
+
+document.getElementById('dashCostSpike').addEventListener('click', ()=>{
+  document.getElementById('sCost').value = 70;
+  dashUpdate({ emit: true });
+  dashAppend('💸 Incident simulated: cost spike to $0.70/1K tok','info');
+});
+
+document.getElementById('dashJudgeDrop').addEventListener('click', ()=>{
+  document.getElementById('sJudge').value = 65;
+  dashUpdate({ emit: true });
+  dashAppend('⚖ Incident simulated: judge score dropped to 0.65','info');
+});
+
+document.getElementById('dashRefusalFlood').addEventListener('click', ()=>{
+  document.getElementById('sRefusal').value = 12;
+  dashUpdate({ emit: true });
+  dashAppend('🚫 Incident simulated: refusal rate 12% (× 4 baseline)','info');
+});
+
+document.getElementById('dashSafetyHit').addEventListener('click', ()=>{
+  document.getElementById('sSafety').value = 5;
+  dashUpdate({ emit: true });
+  dashAppend('🚨 Incident simulated: safety_eval hits 5/hr','info');
+});
+
+dashUpdate();
+dashAppend('Dashboard initialized. Baselines from last 7 days.','info');
+
+// === DEMO 5: AWS CloudWatch flow ===
+const awsSteps = [
+  {
+    nodes: [],
+    lines: [],
+    caption: '<span class="step">▶ Press Play</span> Покажемо як один LLM-запит проходить через AWS-стек і як content drift спрацьовує алертом, не зачіпаючи infrastructure-метрики.'
+  },
+  {
+    nodes: ['awsN1','awsN2'],
+    lines: ['awsL1'],
+    caption: '<span class="step">1 · Request</span> User шле повідомлення у support-чат → потрапляє у <b>API Gateway</b>. Тут стартує <b>X-Ray trace</b> — кожен подальший крок отримує trace_id.'
+  },
+  {
+    nodes: ['awsN1','awsN2','awsN3'],
+    lines: ['awsL1','awsL2'],
+    caption: '<span class="step">2 · Lambda</span> Handler у <b>Lambda</b> готує prompt + retrieval, додає <b>custom CloudWatch metric</b> через <code>PutMetricData</code> (intent label, user tier).'
+  },
+  {
+    nodes: ['awsN1','awsN2','awsN3','awsN4','awsN5'],
+    lines: ['awsL1','awsL2','awsL3','awsL4'],
+    caption: '<span class="step">3 · Bedrock + Guardrails</span> Lambda викликає <b>Bedrock InvokeModel</b>. Перед моделлю спрацьовують <b>Guardrails</b> — перевіряють PII, prompt injection, toxic content. Кожне спрацювання → метрика <code>GuardrailIntervention</code>.'
+  },
+  {
+    nodes: ['awsN1','awsN2','awsN3','awsN4','awsN5','awsN6'],
+    lines: ['awsL1','awsL2','awsL3','awsL4'],
+    caption: '<span class="step">4 · Logging</span> <b>Model Invocation Logging</b> пише повний request+response у <b>S3</b> асинхронно — не блокує latency. Це і є tracing-шар, аналог Langfuse.'
+  },
+  {
+    nodes: ['awsN1','awsN2','awsN3','awsN4','awsN5','awsN6','awsN7'],
+    lines: ['awsL1','awsL2','awsL3','awsL4','awsL5'],
+    caption: '<span class="step">5 · Evals → Metrics</span> Async job (<b>Bedrock Evaluations</b> або власний judge) семплить ~10% запитів, скорить через RAGAS, пише <code>judge_score</code> назад у <b>CloudWatch Metrics</b>.'
+  },
+  {
+    nodes: ['awsN1','awsN2','awsN3','awsN4','awsN5','awsN6','awsN7','awsN8'],
+    lines: ['awsL1','awsL2','awsL3','awsL4','awsL5','awsL6'],
+    caption: '<span class="step">6 · Alarm fires</span> <b>CloudWatch Alarm</b> бачить: <code>judge_score &lt; 0.7</code> впродовж 5 хв. <b class="bad">Provider silent-rolled gpt-4o-2024-08-06</b>. Latency без змін, але якість впала.'
+  },
+  {
+    nodes: ['awsN1','awsN2','awsN3','awsN4','awsN5','awsN6','awsN7','awsN8','awsN9'],
+    lines: ['awsL1','awsL2','awsL3','awsL4','awsL5','awsL6','awsL7'],
+    caption: '<span class="step good">7 · On-call paged</span> Alarm → <b>SNS</b> → <b>PagerDuty</b> → on-call інженер. Той самий 3-шаровий патерн (APM + Tracing + Evals), просто з AWS-назвами. Без content metrics — Lambda бачить лише <b>200 OK · 480ms</b>.'
+  }
+];
+let awsStep = 0; let awsTimer = null;
+function awsRender() {
+  ['awsN1','awsN2','awsN3','awsN4','awsN5','awsN6','awsN7','awsN8','awsN9'].forEach(id => {
+    document.getElementById(id).classList.remove('on');
+  });
+  ['awsL1','awsL2','awsL3','awsL4','awsL5','awsL6','awsL7'].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.opacity = '0';
+    el.style.animation = '';
+  });
+  const s = awsSteps[awsStep];
+  s.nodes.forEach(id => document.getElementById(id).classList.add('on'));
+  s.lines.forEach(id => {
+    const el = document.getElementById(id);
+    el.style.opacity = '0.85';
+    el.style.animation = 'awsFlowPulse 1.6s ease-in-out infinite';
+  });
+  document.getElementById('awsCaption').innerHTML = s.caption;
+  document.getElementById('awsStepLbl').textContent = `step ${awsStep} / ${awsSteps.length - 1}`;
+}
+function awsStop() { if (awsTimer) { clearInterval(awsTimer); awsTimer = null; } document.getElementById('awsPlay').textContent = '▶ Play sequence'; }
+document.getElementById('awsNext').addEventListener('click', () => { awsStop(); awsStep = Math.min(awsSteps.length - 1, awsStep + 1); awsRender(); });
+document.getElementById('awsPrev').addEventListener('click', () => { awsStop(); awsStep = Math.max(0, awsStep - 1); awsRender(); });
+document.getElementById('awsReset').addEventListener('click', () => { awsStop(); awsStep = 0; awsRender(); });
+document.getElementById('awsPlay').addEventListener('click', () => {
+  if (awsTimer) { awsStop(); return; }
+  if (awsStep >= awsSteps.length - 1) awsStep = 0;
+  awsRender();
+  document.getElementById('awsPlay').textContent = '⏸ Pause';
+  awsTimer = setInterval(() => {
+    if (awsStep >= awsSteps.length - 1) { awsStop(); return; }
+    awsStep += 1;
+    awsRender();
+  }, 1700);
+});
+awsRender();
+
+// === DEMO 6: Context Window Drift ===
+const cwSteps = [
+  {
+    phaseTag: 'DAY 0',
+    phaseText: 'Натисни Play. Покажемо як conversation з 5 turn-ів виростає до 200 за місяць, і що відбувається з context window та quality.',
+    turns: 5, tokens: 2400, ctxPct: 8, latency: 420, cost: 0.008, overall: 0.89,
+    buckets: [0.91, 0.89, 0.88, 0.87, 0.86, 0.85],
+    chatTurns: 5,
+    caption: '<span class="step">▶ Press Play</span> Покажемо як conversational AI деградує <b>невидимо</b> для aggregated метрик: overall judge_score лишається ~0.85+, але bucket-розріз показує що довгі чати <b class="bad">провалюються</b> до 0.52.'
+  },
+  {
+    phaseTag: 'DAY 1',
+    phaseText: 'Запуск продукту. Median chat = 5 turn-ів. Всі метрики у зеленій зоні. Context window майже порожній. Лектор-варіант — як виглядає health сервіс на старті.',
+    turns: 5, tokens: 2400, ctxPct: 8, latency: 420, cost: 0.008, overall: 0.89,
+    buckets: [0.91, 0.89, 0.88, 0.87, 0.86, 0.85],
+    chatTurns: 5,
+    caption: '<span class="step">1 · Baseline</span> Усі чати короткі. Aggregated <b>judge_score 0.89</b>, latency 420ms, cost $0.008. <b class="good">Все зелене.</b> Жодних сигналів дрифту.'
+  },
+  {
+    phaseTag: 'WEEK 2',
+    phaseText: 'Power users розкуштували бота. Median chat виросла до 25 turn-ів. Average tokens per request виросли — modal client тримає conversation history у prompt.',
+    turns: 25, tokens: 7200, ctxPct: 22, latency: 580, cost: 0.018, overall: 0.87,
+    buckets: [0.91, 0.89, 0.87, 0.84, 0.80, 0.74],
+    chatTurns: 12,
+    caption: '<span class="step">2 · Growth</span> Чати ростуть, токени теж. Overall score <b>0.87</b> — все ще "зелено". Але <b class="bad">довгі buckets (101+) вже почали просідати</b> до 0.74. Generic dashboard цього <b>не показує</b>.'
+  },
+  {
+    phaseTag: 'WEEK 4',
+    phaseText: 'Місяць у production. Power users мають чати по 80-120 turn-ів. Context bar заповнений на 50%. Latency зросла 2×. Cost зріс 3×. Quality на коротких чатах не змінилася.',
+    turns: 80, tokens: 22000, ctxPct: 48, latency: 980, cost: 0.034, overall: 0.83,
+    buckets: [0.91, 0.88, 0.84, 0.78, 0.69, 0.61],
+    chatTurns: 16,
+    caption: '<span class="step">3 · Warning</span> Latency p95 = 980ms (2×). Cost $0.034 (4×). Overall <b>0.83</b> — досі "ок" для SLO. <b class="bad">Bucket 150+ просів до 0.61.</b> Power users скаржаться у Slack — бот "забуває" що було на початку.'
+  },
+  {
+    phaseTag: 'WEEK 8',
+    phaseText: 'Топ-користувачі мають чати на 200+ turns. Context перевищує efficient zone моделі. Quality на цих чатах катастрофічно падає, але aggregated overall metric тримається на 0.78 — все ще не trigger SLO alert.',
+    turns: 200, tokens: 65000, ctxPct: 82, latency: 1820, cost: 0.058, overall: 0.78,
+    buckets: [0.90, 0.87, 0.82, 0.74, 0.63, 0.52],
+    chatTurns: 18,
+    caption: '<span class="step bad">4 · Incident hidden</span> Overall <b>0.78</b> — все ще вище SLO 0.75. Але bucket 150+ <b class="bad">провалився до 0.52</b> — модель галюцинує на довгих чатах. Aggregated метрика <b>приховує проблему</b> через диспропорцію: 80% чатів все ще короткі і тягнуть average догори.'
+  },
+  {
+    phaseTag: 'FIX',
+    phaseText: 'Правильна метрика виявляє проблему: judge_score by conversation_length_bucket. Тепер видно provel у червоних bucket-ах. Фіксу два: (а) sliding window context з summarization старих turn-ів, (б) окремий model tier для довгих чатів (Claude з 200k context замість gpt-4o з 128k).',
+    turns: 200, tokens: 65000, ctxPct: 82, latency: 1820, cost: 0.058, overall: 0.78,
+    buckets: [0.90, 0.87, 0.82, 0.74, 0.63, 0.52],
+    chatTurns: 18,
+    caption: '<span class="step good">5 · Diagnose</span> <b>Per-bucket metric</b> показує signature — quality лінійно падає з довжиною чату. <b>Фікси:</b> (a) sliding window + summarization старих turn-ів; (b) маршрутизація довгих чатів на model з більшим context (Claude 200k); (c) alert на <code>judge_score{bucket="150+"}&lt;0.7</code> замість overall.'
+  }
+];
+
+let cwStep = 0; let cwTimer = null;
+
+function cwRenderChat(n) {
+  const chat = document.getElementById('cwChat');
+  chat.innerHTML = '';
+  const samples = [
+    ['user', 'How do I configure SSO for our workspace?'],
+    ['bot',  'You can enable SSO in Settings → Security. Supported providers: Okta, Azure AD, Google Workspace.'],
+    ['user', 'We use Okta. Walk me through it.'],
+    ['bot',  '1. In Okta admin, create a SAML 2.0 app...'],
+    ['user', 'What about SCIM provisioning?'],
+    ['bot',  'SCIM is on Enterprise plan. You\'ll need the SCIM token from billing settings.'],
+    ['user', 'And what about the OIDC option you mentioned earlier?'],
+    ['bot',  'OIDC works similarly — use these endpoints: /oidc/authorize, /oidc/token...'],
+    ['user', 'Can I mix SCIM and JIT provisioning?'],
+    ['bot',  'No — pick one strategy. SCIM is push-based, JIT is pull-on-login.'],
+    ['user', 'You said earlier we need Enterprise — what about Pro tier?'],
+    ['bot',  'Pro supports SSO but not SCIM auto-provisioning.'],
+    ['user', 'Wait, earlier you said SSO needs Enterprise.'],
+    ['bot',  'Sorry — SSO is on Pro+, SCIM is Enterprise-only. Let me re-clarify...'],
+    ['user', 'I\'m getting confused by your earlier answers.'],
+    ['bot',  'You\'re right, my apologies. Here\'s the matrix again from scratch...'],
+    ['user', 'Just give me the final tier list.'],
+    ['bot',  'Free: no SSO. Pro: SAML SSO. Enterprise: SSO + SCIM + audit logs.'],
+    ['user', 'But you said three different things now.'],
+    ['bot',  'I understand the confusion — I should have been clearer from the start.']
+  ];
+  for (let i = 0; i < Math.min(n, samples.length); i++) {
+    const [who, text] = samples[i];
+    const div = document.createElement('div');
+    div.className = 'cwTurn ' + who;
+    div.style.animationDelay = (i * 0.04) + 's';
+    div.textContent = (who === 'user' ? '👤 ' : '🤖 ') + text;
+    chat.appendChild(div);
+  }
+  if (n > samples.length) {
+    const more = document.createElement('div');
+    more.className = 'cwTurn';
+    more.style.color = 'var(--muted)';
+    more.style.fontStyle = 'italic';
+    more.textContent = `... + ${n - samples.length} more turns (truncated for display)`;
+    chat.appendChild(more);
+  }
+}
+
+function cwSetMetric(id, cls, val) {
+  const m = document.getElementById(id + 'M');
+  m.classList.remove('ok','warn','bad');
+  m.classList.add(cls);
+  document.getElementById(id + 'V').textContent = val;
+}
+
+function cwRender() {
+  const s = cwSteps[cwStep];
+  document.getElementById('cwPhaseTag').textContent = s.phaseTag;
+  document.getElementById('cwPhaseText').textContent = s.phaseText;
+
+  document.getElementById('cwContextFill').style.width = s.ctxPct + '%';
+  document.getElementById('cwContextPct').textContent = s.ctxPct + '%';
+  document.getElementById('cwCtxLabel').textContent = `${Math.round(s.tokens/1000)}k / 128k tokens`;
+
+  cwRenderChat(s.chatTurns);
+
+  // Metrics with severity
+  cwSetMetric('cwTurns', s.turns < 20 ? 'ok' : s.turns < 80 ? 'warn' : 'bad', s.turns);
+  cwSetMetric('cwTokens', s.tokens < 5000 ? 'ok' : s.tokens < 20000 ? 'warn' : 'bad', Math.round(s.tokens/100)/10 + 'k');
+  cwSetMetric('cwLatency', s.latency < 600 ? 'ok' : s.latency < 1200 ? 'warn' : 'bad', s.latency + 'ms');
+  cwSetMetric('cwCost', s.cost < 0.015 ? 'ok' : s.cost < 0.04 ? 'warn' : 'bad', '$' + s.cost.toFixed(3));
+  cwSetMetric('cwOverall', s.overall >= 0.85 ? 'ok' : s.overall >= 0.78 ? 'warn' : 'bad', s.overall.toFixed(2));
+
+  // Per-bucket bars
+  const buckets = document.querySelectorAll('#cwBuckets .cwBucket');
+  s.buckets.forEach((v, i) => {
+    const b = buckets[i];
+    const bar = b.querySelector('.bar');
+    bar.style.height = Math.round(v * 100) + '%';
+    b.querySelector('.scr').textContent = '.' + Math.round(v*100);
+    b.classList.remove('warn','bad');
+    if (v < 0.7) b.classList.add('bad');
+    else if (v < 0.82) b.classList.add('warn');
+  });
+
+  document.getElementById('cwCaption').innerHTML = s.caption;
+  document.getElementById('cwStepLbl').textContent = `step ${cwStep} / ${cwSteps.length - 1}`;
+}
+
+function cwStop() { if (cwTimer) { clearInterval(cwTimer); cwTimer = null; } document.getElementById('cwPlay').textContent = '▶ Play sequence'; }
+document.getElementById('cwNext').addEventListener('click', () => { cwStop(); cwStep = Math.min(cwSteps.length - 1, cwStep + 1); cwRender(); });
+document.getElementById('cwPrev').addEventListener('click', () => { cwStop(); cwStep = Math.max(0, cwStep - 1); cwRender(); });
+document.getElementById('cwReset').addEventListener('click', () => { cwStop(); cwStep = 0; cwRender(); });
+document.getElementById('cwPlay').addEventListener('click', () => {
+  if (cwTimer) { cwStop(); return; }
+  if (cwStep >= cwSteps.length - 1) cwStep = 0;
+  cwRender();
+  document.getElementById('cwPlay').textContent = '⏸ Pause';
+  cwTimer = setInterval(() => {
+    if (cwStep >= cwSteps.length - 1) { cwStop(); return; }
+    cwStep += 1;
+    cwRender();
+  }, 2200);
+});
+cwRender();
+
+// === DEMO 7: Prompt Regression ===
+const prDiffOriginal = `<span class="prLine">system: |</span>
+<span class="prLine">  You are a customer support assistant for Acme Inc.</span>
+<span class="prLine">  Answer questions about pricing, refunds, and features.</span>
+<span class="prLine">  Always cite the relevant policy document.</span>
+<span class="prLine">  Refuse politely if a question is outside our scope.</span>
+<span class="prLine"></span>
+<span class="prLine" style="color:var(--muted);font-size:10px">  # ~120 tokens. Clear, focused, 4 rules.</span>`;
+
+const prDiffChanged = `<span class="prLine">system: |</span>
+<span class="prLine">  You are a customer support assistant for Acme Inc.</span>
+<span class="prLine">  Answer questions about pricing, refunds, and features.</span>
+<span class="prLine">  Always cite the relevant policy document.</span>
+<span class="prLine">  Refuse politely if a question is outside our scope.</span>
+<span class="prLine add">  Never mention competitor names (Globex, Initech, Hooli).</span>
+<span class="prLine add">  Do not discuss internal pricing tiers below $499/mo.</span>
+<span class="prLine add">  Always mention 14-day trial. But never on enterprise plans.</span>
+<span class="prLine add">  Use formal tone. Except on Slack channel — be casual there.</span>
+<span class="prLine add">  Refund window is 14 days. Pro plan: 30 days. EU: 60 days.</span>
+<span class="prLine add">  Never apologize unless customer used the word "broken".</span>
+<span class="prLine add">  Always suggest the upgrade if MRR &lt; $99.</span>
+<span class="prLine add">  Do not suggest upgrade if last ticket &lt; 7 days ago.</span>
+<span class="prLine add">  If user mentions cancellation — escalate to retention team.</span>
+<span class="prLine add">  Unless they paid annually — then offer 2-month extension.</span>
+<span class="prLine add">  GDPR: never log email addresses in your response.</span>
+<span class="prLine add">  HIPAA: redact any health-related context before responding.</span>
+<span class="prLine add">  Legal: never use words "guarantee", "promise", "ensure".</span>
+<span class="prLine add">  ... + 15 more rules added over 6 weeks of incidents ...</span>
+<span class="prLine"></span>
+<span class="prLine" style="color:var(--warn);font-size:10px">  # ~2,400 tokens. 30 rules. Conflicts everywhere.</span>`;
+
+const prCases = [
+  { id: 'prE1', baseScore: 0.94, regrScore: 0.41, fixScore: 0.94, kind: 'rule_recall',
+    fail: 'Pro plan = 30-day refund (rule 5) — модель сказала 14 днів, бо застосувала default rule і забула override' },
+  { id: 'prE2', baseScore: 0.91, regrScore: 0.86, fixScore: 0.91, kind: 'faithfulness', fail: null },
+  { id: 'prE3', baseScore: 0.92, regrScore: 0.38, fixScore: 0.92, kind: 'rule_recall',
+    fail: 'annual user → escalate + 2-month extension (rule 9+10) — модель ескалювала, але пропустила extension offer' },
+  { id: 'prE4', baseScore: 0.96, regrScore: 0.52, fixScore: 0.96, kind: 'compliance',
+    fail: 'rule 5: "never mention competitors" — модель порівняла з Globex у відповіді про SSO. Забула правило з 30.' },
+  { id: 'prE5', baseScore: 0.93, regrScore: 0.44, fixScore: 0.93, kind: 'rule_recall',
+    fail: 'EU customer = 60-day refund (rule 5) — модель видала 14 днів, проігнорувала geo-conditional' },
+  { id: 'prE6', baseScore: 0.94, regrScore: 0.67, fixScore: 0.94, kind: 'citation',
+    fail: 'policy citation вимога розчинилась серед 30 інших правил — модель цитує 4 з 10 кейсів' },
+  { id: 'prE7', baseScore: 0.95, regrScore: 0.49, fixScore: 0.95, kind: 'compliance',
+    fail: 'rule 7: "always mention trial. EXCEPT enterprise" — модель пропонує trial enterprise lead-у. Conflicting rule забутий.' },
+  { id: 'prE8', baseScore: 0.89, regrScore: 0.34, fixScore: 0.89, kind: 'consistency',
+    fail: 'кейс перевіряє коли 3 правила накладаються (formal+casual+legal). Модель видає inconsistent відповіді у різних запусках.' }
+];
+
+const prTicketsList = [
+  ['+6h',  '#4471 — "я Pro user, бот сказав 14 днів refund, а у вас 30"'],
+  ['+11h', '#4488 — "я з Німеччини, чому мені відмовляють у 60-day refund?"'],
+  ['+18h', '#4502 — "бот порівняв вас з Globex у відповіді — це навмисне?"'],
+  ['+24h', '#4519 — "канселюю плану, ніхто не запропонував extension"'],
+  ['+31h', '#4534 — sales: "лід запитав про enterprise — бот втюхав 14-day trial"'],
+  ['+38h', '#4551 — "Bob каже одне, а у документації інше — кому вірити"'],
+  ['+44h', '#4567 — "бот двічі видав різні відповіді на те саме питання"'],
+  ['+48h', '#4583 — legal alert: бот використав слово "guarantee" попри policy']
+];
+
+const prSteps = [
+  {
+    branch: 'main', author: 'launch · 6 weeks ago', diff: prDiffOriginal,
+    ciTitle: 'GitHub Actions · #802 (initial release)', ciStatus: 'ok', ciStatusText: 'PASSED',
+    ciStates: { prCi1: 'active ok', prCi2: 'active ok', prCi3: 'active ok', prCi4: 'active ok' },
+    cases: 'base', tickets: 'baseline',
+    caption: '<span class="step">▶ Press Play</span> Покажемо як прості 4 правила за 6 тижнів перетворюються на 30 конфліктних інструкцій, модель починає галюцинувати правила, і чому overall judge_score цього не показує.'
+  },
+  {
+    branch: 'main', author: 'launch · 6 weeks ago', diff: prDiffOriginal,
+    ciTitle: 'GitHub Actions · #802 (initial release)', ciStatus: 'ok', ciStatusText: 'PASSED',
+    ciStates: { prCi1: 'active ok', prCi2: 'active ok', prCi3: 'active ok', prCi4: 'active ok' },
+    cases: 'base', tickets: 'baseline',
+    caption: '<span class="step">1 · Початковий prompt</span> 4 чіткі інструкції, ~120 токенів. Усі 8 golden cases дають faithfulness <b>0.89-0.96</b>. Production стабільний — 2 support тікети/день. <b>Все працює як треба.</b>'
+  },
+  {
+    branch: 'feat/add-30-rules', author: 'commits · 6 weeks of incident-driven patches', diff: prDiffChanged,
+    ciTitle: 'GitHub Actions · #847', ciStatus: 'pending', ciStatusText: 'PENDING',
+    ciStates: { prCi1: '', prCi2: '', prCi3: '', prCi4: '' },
+    cases: 'base', tickets: 'baseline',
+    caption: '<span class="step">2 · Rule accretion</span> Кожен incident за 6 тижнів додав 1-2 правила: "не згадуй конкурентів", "Pro = 30 днів", "EU = 60 днів", "не вибачайся без слова broken", "GDPR redact"... Prompt виріс з <b>120 до 2,400 токенів</b>. PR-и були маленькі — ніхто не побачив проблеми.'
+  },
+  {
+    branch: 'feat/add-30-rules', author: 'rule #30: legal banned-words list', diff: prDiffChanged,
+    ciTitle: 'GitHub Actions · #847 · running', ciStatus: 'ok', ciStatusText: 'PASSED',
+    ciStates: { prCi1: 'active ok', prCi2: 'active ok', prCi3: 'active ok', prCi4: '' },
+    cases: 'base', tickets: 'baseline',
+    caption: '<span class="step bad">3 · CI without eval-gate</span> Lint passed. Unit tests passed (prompt-renderer працює). Integration — deploy у staging успішний. <b class="bad">Eval-gate на golden dataset — НЕ НАЛАШТОВАНИЙ.</b> PR merged, 30-те правило задеплоєне. ✅ All green.'
+  },
+  {
+    branch: 'main', author: 'merged · 2 hours ago', diff: prDiffChanged,
+    ciTitle: 'Production · running 30-rule prompt', ciStatus: 'fail', ciStatusText: 'IN PROD',
+    ciStates: { prCi1: 'active ok', prCi2: 'active ok', prCi3: 'active ok', prCi4: '' },
+    cases: 'regr', tickets: 'flood',
+    caption: '<span class="step bad">4 · Rule hallucination</span> Модель почала <b>забувати правила під номерами 5, 7, 9, 10</b> — типовий "lost in the middle" пробле of long context. <b class="bad">6 з 8 golden cases провалені</b>. Pro user отримує 14-day refund (бо default rule переважив override). EU customer пропускає 60-day window. Bot згадує конкурента бо забув rule 5. <b>Найгірше: однакові питання дають різні відповіді</b> (consistency score 0.34) — модель випадково підбирає які правила застосовувати.'
+  },
+  {
+    branch: 'main + eval-gate', author: 'fix · regression test added', diff: prDiffChanged,
+    ciTitle: 'GitHub Actions · #848 (with eval-gate)', ciStatus: 'fail', ciStatusText: 'BLOCKED',
+    ciStates: { prCi1: 'active ok', prCi2: 'active ok', prCi3: 'active ok', prCi4: 'active fail' },
+    cases: 'regr', tickets: 'flood',
+    caption: '<span class="step good">5 · The fix</span> Eval-gate з golden dataset (8 кейсів покривають усі 30 правил) <b class="good">блокує merge</b>. Інцидент попереджено. <b>Правильна стратегія для prompt bloat:</b> (a) <b>винести правила у tools</b> — модель викликає <code>check_refund_policy(user_tier, region)</code> замість тримати 5 правил у голові; (b) <b>RAG для policy</b> — правила як documents, не як prompt; (c) <b>workflow split</b> — окремий prompt для refund/cancellation/pricing замість одного monolith. <b>Простий prompt + tools завжди надійніший за довгий prompt з правилами.</b>'
+  }
+];
+
+let prStep = 0; let prTimer = null;
+
+function prSetCases(mode) {
+  prCases.forEach(c => {
+    const el = document.getElementById(c.id);
+    const v = el.querySelector('.v');
+    el.classList.remove('pass','fail');
+    if (mode === 'base') {
+      v.textContent = c.baseScore.toFixed(2);
+      el.classList.add('pass');
+    } else if (mode === 'regr') {
+      v.textContent = c.regrScore.toFixed(2);
+      if (c.regrScore < 0.7) el.classList.add('fail');
+      else el.classList.add('pass');
+    } else {
+      v.textContent = '—';
+    }
+  });
+}
+
+function prSetTickets(mode) {
+  const wrap = document.getElementById('prTickets');
+  wrap.innerHTML = '';
+  if (mode === 'baseline') {
+    wrap.innerHTML = '<div class="prTicket" style="border-left-color:var(--muted);opacity:.5;animation:none"><span class="tT">—</span><span>baseline: 2 тікети / день, normal</span></div>';
+  } else {
+    prTicketsList.forEach((t, i) => {
+      const div = document.createElement('div');
+      div.className = 'prTicket';
+      div.style.animationDelay = (i * 0.08) + 's';
+      div.innerHTML = `<span class="tT">${t[0]}</span><span>${t[1]}</span>`;
+      wrap.appendChild(div);
+    });
+  }
+}
+
+function prSetCi(states, statusCls, statusText, title) {
+  document.getElementById('prCiTitle').textContent = title;
+  const s = document.getElementById('prCiStatus');
+  s.className = 'ciStatus ' + statusCls;
+  s.textContent = statusText;
+  ['prCi1','prCi2','prCi3','prCi4'].forEach(id => {
+    const el = document.getElementById(id);
+    el.className = 'prCiStep ' + (states[id] || '');
+    const icon = el.querySelector('.icon');
+    if (states[id] && states[id].includes('ok')) icon.textContent = '✓';
+    else if (states[id] && states[id].includes('fail')) icon.textContent = '✗';
+    else icon.textContent = '○';
+  });
+}
+
+function prRender() {
+  const s = prSteps[prStep];
+  document.getElementById('prBranch').textContent = s.branch;
+  document.getElementById('prAuthor').textContent = s.author;
+  document.getElementById('prDiff').innerHTML = s.diff;
+  prSetCi(s.ciStates, s.ciStatus, s.ciStatusText, s.ciTitle);
+  prSetCases(s.cases);
+  prSetTickets(s.tickets);
+  document.getElementById('prCaption').innerHTML = s.caption;
+  document.getElementById('prStepLbl').textContent = `step ${prStep} / ${prSteps.length - 1}`;
+}
+
+function prStop() { if (prTimer) { clearInterval(prTimer); prTimer = null; } document.getElementById('prPlay').textContent = '▶ Play sequence'; }
+document.getElementById('prNext').addEventListener('click', () => { prStop(); prStep = Math.min(prSteps.length - 1, prStep + 1); prRender(); });
+document.getElementById('prPrev').addEventListener('click', () => { prStop(); prStep = Math.max(0, prStep - 1); prRender(); });
+document.getElementById('prReset').addEventListener('click', () => { prStop(); prStep = 0; prRender(); });
+document.getElementById('prPlay').addEventListener('click', () => {
+  if (prTimer) { prStop(); return; }
+  if (prStep >= prSteps.length - 1) prStep = 0;
+  prRender();
+  document.getElementById('prPlay').textContent = '⏸ Pause';
+  prTimer = setInterval(() => {
+    if (prStep >= prSteps.length - 1) { prStop(); return; }
+    prStep += 1;
+    prRender();
+  }, 2400);
+});
+prRender();
+</script>
+</body>
+</html>

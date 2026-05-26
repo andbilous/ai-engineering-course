@@ -1,0 +1,22 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      manageAlerts: true
+      alertmanagerUid: alertmanager-prom
+
+  - name: Alertmanager
+    uid: alertmanager-prom
+    type: alertmanager
+    access: proxy
+    url: http://prometheus:9090
+    editable: true
+    jsonData:
+      implementation: prometheus
+      handleGrafanaManagedAlerts: false

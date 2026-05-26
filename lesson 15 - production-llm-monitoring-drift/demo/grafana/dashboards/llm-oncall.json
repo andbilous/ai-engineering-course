@@ -1,0 +1,778 @@
+{
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "Overview",
+      "url": "/d/llm-drift-demo",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false
+    },
+    {
+      "title": "Quality Deep-Dive",
+      "url": "/d/llm-quality",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false
+    }
+  ],
+  "liveNow": true,
+  "panels": [
+    {
+      "type": "row",
+      "title": "\ud83d\udea8 Active alerts (live from Prometheus)",
+      "id": 200,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false
+    },
+    {
+      "type": "alertlist",
+      "title": "Firing alerts",
+      "id": 201,
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "datasource": {
+        "type": "alertmanager",
+        "uid": "alertmanager-prom"
+      },
+      "options": {
+        "viewMode": "list",
+        "showOptions": "current",
+        "maxItems": 20,
+        "sortOrder": 3,
+        "groupMode": "default",
+        "groupBy": [],
+        "alertName": "",
+        "stateFilter": {
+          "firing": true,
+          "pending": true,
+          "noData": false,
+          "normal": false,
+          "error": true
+        },
+        "alertInstanceLabelFilter": ""
+      }
+    },
+    {
+      "type": "row",
+      "title": "Incident status",
+      "id": 100,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "collapsed": false
+    },
+    {
+      "type": "stat",
+      "title": "Current drift phase",
+      "id": 1,
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 9
+      },
+      "datasource": {
+        "type": "prometheus"
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "BASELINE",
+                  "color": "green"
+                }
+              }
+            },
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "\ud83d\udd25 INCIDENT",
+                  "color": "red"
+                }
+              }
+            },
+            {
+              "type": "value",
+              "options": {
+                "2": {
+                  "text": "RECOVERED",
+                  "color": "blue"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "llm_drift_phase",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Active model version",
+      "id": 2,
+      "gridPos": {
+        "h": 5,
+        "w": 9,
+        "x": 6,
+        "y": 9
+      },
+      "datasource": {
+        "type": "prometheus"
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "name",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "topk(1, llm_model_version_info)",
+          "legendFormat": "{{model}} @ {{version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Faithfulness (1m)",
+      "id": 3,
+      "gridPos": {
+        "h": 5,
+        "w": 3,
+        "x": 15,
+        "y": 9
+      },
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.7
+              },
+              {
+                "color": "green",
+                "value": 0.85
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "avg(avg_over_time(llm_judge_score[1m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Refusal rate",
+      "id": 4,
+      "gridPos": {
+        "h": 5,
+        "w": 3,
+        "x": 18,
+        "y": 9
+      },
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 0.2
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(llm_refusals_total[1m])) / clamp_min(sum(rate(llm_requests_total[1m])), 0.001)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Cost / req",
+      "id": 5,
+      "gridPos": {
+        "h": 5,
+        "w": 3,
+        "x": 21,
+        "y": 9
+      },
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.002
+              },
+              {
+                "color": "red",
+                "value": 0.003
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "rate(llm_cost_usd_total[2m]) / clamp_min(rate(llm_requests_total[2m]), 0.001)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Runbook \u2014 what to check, in order",
+      "id": 101,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "collapsed": false
+    },
+    {
+      "type": "text",
+      "title": "On-call runbook",
+      "id": 6,
+      "gridPos": {
+        "h": 12,
+        "w": 8,
+        "x": 0,
+        "y": 15
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "### \ud83d\udea8 Page received \u2014 what to do\n\n**Step 1. Confirm the drift phase** (top-left).\nIf `BASELINE` \u2192 false positive, check Prometheus rule.\nIf `INCIDENT` \u2192 keep reading.\n\n**Step 2. Compare model version** (next panel) with the version 24h ago.\nIf changed \u2192 provider rolled silent update. **Pin model snapshot** in your code.\n\n**Step 3. Which RAGAS metric dropped?**\n- `faithfulness \u2193`, others ok \u2192 model is hallucinating. Likely cause: model swap, prompt regression.\n- `context_precision \u2193` \u2192 retrieval is broken. Check embedding model version, vector index size.\n- `relevancy \u2193` only on some intents \u2192 docs are stale. Trigger reindex.\n\n**Step 4. Is refusal rate up?**\nIf yes \u2192 check `safety_violations` panel \u2014 possible prompt-injection wave.\n\n**Step 5. Is cost up but quality ok?**\nProvider routed to expensive variant. Slack the team, not page.\n\n**Step 6. Mitigation order**:\n1. **Pin** previous model snapshot (`model: gpt-4o-2024-05-13`).\n2. **Roll back** prompt to last known good (registry).\n3. **Increase eval sampling** (5% \u2192 50%) for 30 min.\n4. If RAG-related \u2014 **rebuild index** with old embedder.\n\n**Step 7. After incident**: add the new failure mode to golden dataset."
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "All RAGAS metrics + version-change events",
+      "id": 7,
+      "gridPos": {
+        "h": 12,
+        "w": 16,
+        "x": 8,
+        "y": 15
+      },
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "drawStyle": "line",
+            "spanNulls": true
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "avg(avg_over_time(llm_judge_score[30s]))",
+          "legendFormat": "faithfulness",
+          "refId": "A"
+        },
+        {
+          "expr": "avg(avg_over_time(llm_judge_relevancy[30s]))",
+          "legendFormat": "answer_relevancy",
+          "refId": "B"
+        },
+        {
+          "expr": "avg(avg_over_time(llm_judge_context_precision[30s]))",
+          "legendFormat": "context_precision",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Symptoms",
+      "id": 102,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Refusal rate \u2014 overall vs by intent (spot prompt-injection waves)",
+      "id": 8,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "drawStyle": "line",
+            "spanNulls": true
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(llm_refusals_total[1m])) / clamp_min(sum(rate(llm_requests_total[1m])), 0.001)",
+          "legendFormat": "OVERALL",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (intent) (rate(llm_refusals_total[1m])) / clamp_min(sum by (intent) (rate(llm_requests_total[1m])), 0.001)",
+          "legendFormat": "{{intent}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Token volume + cost per request (drift inflates output)",
+      "id": 9,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "drawStyle": "line",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cost_per_req_usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegex",
+              "options": "tokens_.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(llm_tokens_total{kind=\"prompt\"}[1m]))",
+          "legendFormat": "tokens_prompt/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(llm_tokens_total{kind=\"completion\"}[1m]))",
+          "legendFormat": "tokens_completion/s",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(llm_cost_usd_total[2m]) / clamp_min(rate(llm_requests_total[2m]), 0.001)",
+          "legendFormat": "cost_per_req_usd",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Eval coverage",
+      "id": 103,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "collapsed": false
+    },
+    {
+      "type": "stat",
+      "title": "Failed judge verdicts (last 5m)",
+      "id": 10,
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 37
+      },
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(llm_judge_samples_total{verdict=\"fail\"}[5m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Failed-by-intent (5m, top offender)",
+      "id": 11,
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 37
+      },
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "topk(1, sum by (intent) (increase(llm_judge_samples_total{verdict=\"fail\"}[5m])))",
+          "legendFormat": "{{intent}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "gauge",
+      "title": "Golden-dataset coverage of incoming intents",
+      "id": 12,
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 37
+      },
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.75
+              },
+              {
+                "color": "green",
+                "value": 0.9
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "expr": "llm_golden_dataset_coverage",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": [
+    "llm",
+    "oncall",
+    "runbook",
+    "lesson-15"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "LLM On-Call \u2014 Runbook",
+  "uid": "llm-oncall",
+  "version": 1,
+  "weekStart": ""
+}

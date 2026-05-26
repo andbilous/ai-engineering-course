@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: drift-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=2h
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "9095:9090"
+    networks: [drift]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: drift-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_USERS_DEFAULT_THEME: dark
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3030:3000"
+    depends_on: [prometheus]
+    networks: [drift]
+
+  simulator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: drift-simulator
+    environment:
+      SCENARIO: "${SCENARIO:-model_drift}"
+      RPS: "${RPS:-5}"
+      DRIFT_START_SEC: "${DRIFT_START_SEC:-120}"
+      DRIFT_DURATION_SEC: "${DRIFT_DURATION_SEC:-180}"
+    ports:
+      - "8081:8000"
+    networks: [drift]
+
+networks:
+  drift:
+    driver: bridge
