@@ -1,0 +1,1595 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCP — Model Context Protocol — заняття 16</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#15181d; --panel2:#1d2127; --line:#2a2f37;
+    --text:#e6e8ec; --muted:#9aa3ad;
+    --accent:#7cd1ff; --accent2:#ffd166; --accent3:#9be37c; --accent4:#c79bff; --accent5:#ff7eb6;
+    --warn:#ff7676; --ok:#9be37c;
+    --host:#7cd1ff; --client:#c79bff; --server:#9be37c;
+    --tools:#ffd166; --resources:#5dade2; --prompts:#ff7eb6; --apps:#9be37c;
+    --json:#f08862;
+    --a2a:#4f9eff; --agent1:#ff7eb6; --agent2:#9be37c; --agent3:#ffd166; --agent4:#c79bff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .wrap{max-width:1320px;margin:0 auto;padding:24px}
+  h1{font-size:30px;letter-spacing:.5px;margin:0 0 6px}
+  h1 small{color:var(--muted);font-weight:400;font-size:14px;display:block;margin-top:6px}
+  .sub{color:var(--muted);margin-bottom:24px;font-size:14px;line-height:1.6;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+
+  section{margin:36px 0;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px;scroll-margin-top:20px}
+  section h2{font-size:20px;margin:0 0 8px;color:#fff;letter-spacing:.5px}
+  section h2 .num{color:var(--accent);font-weight:400}
+  section .lead{color:var(--muted);margin:0 0 18px;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.6}
+  section h3{font-size:13px;margin:18px 0 8px;color:#fff;text-transform:uppercase;letter-spacing:1.2px}
+
+  .pad{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;line-height:1.65;color:#cdd5de}
+  .pad b{color:#fff}
+  .pad code{background:#11151a;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+  @media(max-width:980px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .card h4{margin:0 0 8px;font-size:13px;color:#fff;letter-spacing:.5px}
+  .card p{margin:0;color:#cdd5de;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:13px}
+
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:13px}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px;background:var(--panel2)}
+  td b{color:#fff}
+  td code{background:#11151a;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
+
+  pre{background:#0a0c0f;border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;font-size:12px;line-height:1.5;color:#cdd5de;margin:8px 0}
+  pre .k{color:#ff7eb6}
+  pre .s{color:#9be37c}
+  pre .c{color:#6a737d;font-style:italic}
+  pre .n{color:#7cd1ff}
+  pre .f{color:#ffd166}
+
+  .demo{margin-top:14px;padding:14px;background:#0a0c0f;border:1px solid var(--line);border-radius:10px}
+  .demo .demoHead{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .demo .demoHead .tag{padding:3px 10px;border-radius:999px;background:var(--accent);color:#0b0d10;font-weight:700;font-size:11px;letter-spacing:.5px;text-transform:uppercase}
+  .demo .demoHead h4{margin:0;font-size:13px;color:#fff}
+  .btn{background:#26303b;color:#fff;border:1px solid #3a4654;border-radius:8px;padding:7px 14px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;transition:all .15s}
+  .btn:hover{border-color:#57667a;background:#2d3845}
+  .btn.primary{background:var(--accent);color:#0b0d10;border-color:var(--accent)}
+  .btn.primary:hover{background:#a4dfff;border-color:#a4dfff}
+  .btn.warn{background:var(--warn);color:#fff;border-color:var(--warn)}
+  .btn.ok{background:var(--ok);color:#0b0d10;border-color:var(--ok)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:11px;color:var(--muted)}
+  .pill.ok{background:rgba(155,227,124,0.15);border-color:var(--ok);color:var(--ok)}
+  .pill.warn{background:rgba(255,118,118,0.15);border-color:var(--warn);color:var(--warn)}
+  .pill.host{background:rgba(124,209,255,0.15);border-color:var(--host);color:var(--host)}
+  .pill.client{background:rgba(199,155,255,0.15);border-color:var(--client);color:var(--client)}
+  .pill.server{background:rgba(155,227,124,0.15);border-color:var(--server);color:var(--server)}
+
+  .keypoint{padding:12px 14px;background:rgba(124,209,255,0.08);border:1px solid rgba(124,209,255,0.3);border-left:3px solid var(--accent);border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;line-height:1.6;color:#cdd5de}
+  .keypoint b{color:#fff}
+  .smallnote{margin-top:10px;font-size:11px;color:var(--muted);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+
+  .checklist{list-style:none;padding:0;margin:0}
+  .checklist li{padding:9px 12px 9px 36px;margin:5px 0;background:var(--panel2);border:1px solid var(--line);border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#cdd5de;position:relative}
+  .checklist li:before{content:"✓";position:absolute;left:12px;top:9px;color:var(--ok);font-weight:700}
+  .checklist li.warn:before{content:"⚠";color:var(--warn)}
+  .checklist li b{color:#fff}
+
+  /* === CHAOS ANIMATION (top of page, like Pain in lesson 15) === */
+  .chaosAnim{background:linear-gradient(135deg,#1a0e0e 0%,#1d1517 100%);border:1px solid rgba(255,118,118,0.3);border-radius:14px;padding:18px;margin:0 0 18px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .chaosAnim .heroHdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .chaosAnim .heroHdr h3{margin:0;color:#fff;font-size:14px;letter-spacing:.5px;text-transform:uppercase}
+  .chaosAnim .heroHdr h3 .skull{color:var(--warn)}
+  .chaosAnim .stepLbl{margin-left:auto;color:var(--warn);font-family:ui-monospace,Menlo,monospace;font-size:12px;font-weight:700;padding:4px 10px;background:rgba(255,118,118,0.1);border:1px solid var(--warn);border-radius:6px}
+  .chaosAnim .heroBtns{display:flex;gap:6px;flex-wrap:wrap}
+  .chaosSvgWrap{background:#0a0c0f;border:1px solid #3a1f1f;border-radius:10px;padding:14px;overflow:hidden}
+  .chaosSvgWrap svg{width:100%;height:auto;display:block}
+  .chaosCaption{margin-top:12px;padding:12px 14px;background:#0a0c0f;border:1px solid #3a1f1f;border-radius:8px;min-height:56px;color:#cdd5de;font-size:13px;line-height:1.6}
+  .chaosCaption .step{color:var(--warn);font-weight:700;margin-right:8px}
+  .chaosCaption b{color:#fff}
+  .chaosCaption code{background:#11151a;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#f08862}
+  .chaosLine{transition:opacity .4s,stroke .4s}
+  .chaosNode{transition:opacity .4s,stroke .4s}
+  .chaosLine.fade{opacity:.15}
+  .chaosNode.fade{opacity:.25}
+
+  /* === HERO ANIMATION (MCP intro) === */
+  .heroAnim{background:linear-gradient(135deg,#0f1419 0%,#15181d 100%);border:1px solid var(--line);border-radius:14px;padding:18px;margin:0 0 30px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .heroAnim .heroHdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .heroAnim .heroHdr h3{margin:0;color:#fff;font-size:14px;letter-spacing:.5px;text-transform:uppercase}
+  .heroAnim .heroHdr .stepLbl{margin-left:auto;color:var(--accent);font-family:ui-monospace,Menlo,monospace;font-size:12px;font-weight:700;padding:4px 10px;background:rgba(124,209,255,0.1);border:1px solid var(--accent);border-radius:6px}
+  .heroAnim .heroBtns{display:flex;gap:6px;flex-wrap:wrap}
+  .heroSvgWrap{background:#0a0c0f;border:1px solid var(--line);border-radius:10px;padding:14px;overflow:hidden}
+  .heroSvgWrap svg{width:100%;height:auto;display:block}
+  .heroCaption{margin-top:12px;padding:12px 14px;background:#0a0c0f;border:1px solid var(--line);border-radius:8px;min-height:56px;color:#cdd5de;font-size:13px;line-height:1.6}
+  .heroCaption .step{color:var(--accent);font-weight:700;margin-right:8px}
+  .heroCaption b{color:#fff}
+  .heroBox{transition:stroke .4s,fill .4s,filter .4s,opacity .4s}
+  .heroBox.active{filter:drop-shadow(0 0 8px currentColor)}
+  .heroBox.dim{opacity:.3}
+  .heroPath{stroke-dasharray:6 4;transition:stroke-opacity .4s}
+  .heroPath.active{animation:flowDash 1.2s linear infinite}
+  @keyframes flowDash{to{stroke-dashoffset:-30}}
+
+  /* === RPC FLOW ANIMATION (Section 05) === */
+  .rpcFlow{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px;margin-top:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .rpcFlow .demoHead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .rpcFlow .demoTitle{font-size:13px;color:#fff;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .rpcFlow .demoTitle::before{content:"";display:inline-block;width:14px;height:14px;background:var(--accent);border-radius:3px;box-shadow:0 0 12px rgba(124,209,255,.5)}
+  .rpcFlow .demoCtrl{display:flex;gap:6px;align-items:center}
+  .rpcFlow .demoCtrl button{background:var(--panel);border:1px solid var(--line);color:#cdd5de;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:11px;letter-spacing:.3px;font-family:inherit;transition:all .15s}
+  .rpcFlow .demoCtrl button:hover{border-color:var(--accent);color:#fff}
+  .rpcFlow .demoCtrl button.primary{background:var(--accent);color:#0b0d10;border-color:var(--accent);font-weight:600}
+  .rpcFlow .demoCtrl .stepLbl{font-size:11px;color:var(--muted);padding:0 8px}
+  .rpcStage{position:relative;background:#0a0d12;border:1px solid var(--line);border-radius:8px;padding:16px;min-height:380px}
+  .rpcNode{position:absolute;background:var(--panel);border:1.5px solid #3b4859;border-radius:8px;padding:10px 12px;color:#fff;font-size:11px;line-height:1.3;min-width:140px;opacity:.3;transition:all .5s ease}
+  .rpcNode.on{opacity:1}
+  .rpcNode .nTitle{font-weight:700;font-size:11px;color:#fff;display:flex;align-items:center;gap:6px;margin-bottom:4px}
+  .rpcNode .nSub{font-size:10px;color:#9aa6b2;font-family:ui-monospace,monospace}
+  .rpcNode.host{border-color:var(--host)}
+  .rpcNode.host.on{box-shadow:0 0 14px rgba(124,209,255,.35)}
+  .rpcNode.host .nTitle::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--host)}
+  .rpcNode.client{border-color:var(--client)}
+  .rpcNode.client.on{box-shadow:0 0 14px rgba(199,155,255,.35)}
+  .rpcNode.client .nTitle::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--client)}
+  .rpcNode.server{border-color:var(--server)}
+  .rpcNode.server.on{box-shadow:0 0 14px rgba(155,227,124,.35)}
+  .rpcNode.server .nTitle::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--server)}
+  .rpcNode.llm{border-color:var(--accent2);background:linear-gradient(180deg,rgba(255,209,102,.1),var(--panel))}
+  .rpcNode.llm.on{box-shadow:0 0 14px rgba(255,209,102,.4)}
+  .rpcNode.llm .nTitle::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent2)}
+  .rpcNode.api{border-color:var(--json)}
+  .rpcNode.api.on{box-shadow:0 0 14px rgba(240,136,98,.4)}
+  .rpcNode.api .nTitle::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--json)}
+  .rpcCaption{margin-top:12px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:6px;font-size:12px;color:#cdd5de;line-height:1.6;min-height:42px}
+  .rpcCaption b{color:#fff}
+  .rpcCaption code{background:#0a0d12;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,monospace;font-size:11px;color:var(--accent)}
+  .rpcCaption .step{display:inline-block;background:var(--accent);color:#0b0d10;padding:1px 7px;border-radius:3px;font-weight:600;font-size:10px;margin-right:6px;letter-spacing:.3px;text-transform:uppercase}
+  .rpcLineSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .rpcArrow{opacity:0;transition:opacity .4s ease}
+  .rpcArrow.on{opacity:.85;animation:rpcPulse 1.4s ease-in-out infinite}
+  @keyframes rpcPulse{0%,100%{opacity:.5}50%{opacity:.95}}
+
+  /* === Wire view (Section 06) === */
+  .wireGrid{display:grid;grid-template-columns:1fr 1.4fr;gap:14px;margin-top:14px}
+  @media(max-width:980px){.wireGrid{grid-template-columns:1fr}}
+  .wireDiag{background:#0a0d12;border:1px solid var(--line);border-radius:8px;padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;min-height:380px}
+  .wireBox{width:180px;padding:14px;border-radius:8px;border:1.5px solid #3b4859;background:var(--panel);text-align:center;transition:all .35s ease;opacity:.55}
+  .wireBox.host{border-color:var(--host)}
+  .wireBox.server{border-color:var(--server)}
+  .wireBox.on{opacity:1;transform:scale(1.04)}
+  .wireBox.on.host{box-shadow:0 0 16px rgba(124,209,255,.4)}
+  .wireBox.on.server{box-shadow:0 0 16px rgba(155,227,124,.4)}
+  .wireBox .wbTitle{font-size:12px;font-weight:700;color:#fff;letter-spacing:.4px;margin-bottom:4px}
+  .wireBox .wbSub{font-size:10px;color:var(--muted);font-family:ui-monospace,monospace}
+  .wirePipe{position:relative;height:60px;width:6px;background:linear-gradient(180deg,#3b4859,#3b4859);border-radius:3px}
+  .wirePipe.down{background:linear-gradient(180deg,var(--host),var(--server))}
+  .wirePipe.up{background:linear-gradient(180deg,var(--server),var(--host))}
+  .wirePipe::after{content:"";position:absolute;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;opacity:0;transition:opacity .3s}
+  .wirePipe.down::after{bottom:-2px;border-top:9px solid var(--server);opacity:1}
+  .wirePipe.up::after{top:-2px;border-bottom:9px solid var(--host);opacity:1}
+  .wireLabel{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;text-align:center;min-height:14px}
+  .wireLabel.on{color:var(--accent)}
+  .wireLog{background:#0a0d12;border:1px solid var(--line);border-radius:8px;padding:0;min-height:380px;max-height:520px;overflow-y:auto;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.55}
+  .wireLog .logHead{position:sticky;top:0;background:#0a0d12;border-bottom:1px solid var(--line);padding:10px 14px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:flex;justify-content:space-between}
+  .wireLog .logHead b{color:#fff}
+  .wireLogBody{padding:12px 14px}
+  .wireMsg{margin-bottom:14px;padding:10px 12px;border-left:3px solid var(--line);background:#0c1117;border-radius:0 6px 6px 0;opacity:0;transform:translateY(8px);transition:opacity .4s ease,transform .4s ease}
+  .wireMsg.on{opacity:1;transform:translateY(0)}
+  .wireMsg.req{border-left-color:var(--host)}
+  .wireMsg.res{border-left-color:var(--server)}
+  .wireMsg.notif{border-left-color:var(--accent2)}
+  .wireMsg .mHead{font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;display:flex;justify-content:space-between;gap:6px}
+  .wireMsg .mTag{display:inline-block;padding:1px 7px;border-radius:3px;font-weight:700;font-size:9px}
+  .wireMsg.req .mTag{background:var(--host);color:#0b0d10}
+  .wireMsg.res .mTag{background:var(--server);color:#0b0d10}
+  .wireMsg.notif .mTag{background:var(--accent2);color:#0b0d10}
+  .wireMsg .mDir{color:var(--muted);font-family:ui-monospace,monospace;font-size:10px}
+  .wireMsg .mIdHi{color:var(--accent);font-weight:700}
+  .wireMsg pre{margin:0;padding:0;background:none;border:0;color:#cdd5de;white-space:pre-wrap;word-break:break-word;font-size:11px}
+  .wireMsg .jk{color:#7cd1ff}
+  .wireMsg .jstr{color:#9be37c}
+  .wireMsg .jnum{color:#ffd166}
+  .wireMsg .jpunct{color:#5a6678}
+  .wireMsg .jid{color:#ff7eb6;font-weight:700}
+  .wireMsg .jnull{color:#c79bff}
+  .wireCap{margin-top:12px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:6px;font-size:12px;color:#cdd5de;line-height:1.6;min-height:42px;font-family:-apple-system,Helvetica,Arial,sans-serif}
+  .wireCap b{color:#fff}
+  .wireCap code{background:#0a0d12;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,monospace;font-size:11px;color:var(--accent)}
+  .wireCap .step{display:inline-block;background:var(--accent);color:#0b0d10;padding:1px 7px;border-radius:3px;font-weight:600;font-size:10px;margin-right:6px;letter-spacing:.3px;text-transform:uppercase}
+
+  /* === Capabilities tabs (Section 04) === */
+  .capTabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .capTab{padding:10px 18px;background:var(--panel2);border:1.5px solid var(--line);border-radius:8px;cursor:pointer;font-size:12px;color:#cdd5de;font-weight:600;letter-spacing:.5px;transition:all .15s;display:flex;align-items:center;gap:8px}
+  .capTab:hover{border-color:#57667a}
+  .capTab .num{color:var(--muted);font-family:ui-monospace,Menlo,monospace;font-weight:400}
+  .capTab.active.tools{border-color:var(--tools);background:rgba(255,209,102,.1);color:var(--tools)}
+  .capTab.active.resources{border-color:var(--resources);background:rgba(93,173,226,.1);color:var(--resources)}
+  .capTab.active.prompts{border-color:var(--prompts);background:rgba(255,126,182,.1);color:var(--prompts)}
+  .capTab.active.apps{border-color:var(--apps);background:rgba(155,227,124,.1);color:var(--apps)}
+  .capStage{background:#0a0c0f;border:1px solid var(--line);border-radius:10px;padding:18px;min-height:280px}
+  .capCol{display:grid;grid-template-columns:1fr 1.4fr;gap:18px}
+  @media(max-width:760px){.capCol{grid-template-columns:1fr}}
+  .capDef{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.65;color:#cdd5de}
+  .capDef h4{margin:0 0 10px;font-size:14px;color:#fff;letter-spacing:.3px}
+  .capDef b{color:#fff}
+  .capCode{background:#0a0d12;border:1px solid var(--line);border-radius:6px;padding:12px;font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.6;overflow-x:auto;color:#cdd5de}
+  .capCode .k{color:#ff7eb6}
+  .capCode .s{color:#9be37c}
+  .capCode .c{color:#6a737d;font-style:italic}
+  .capCode .n{color:#7cd1ff}
+
+  /* === Comparison table accent === */
+  table.compare th:first-child{width:22%}
+  table.compare tr td:first-child{color:#fff;font-weight:600}
+  table.compare .yes{color:var(--ok)}
+  table.compare .no{color:var(--warn)}
+  table.compare .partial{color:var(--accent2)}
+
+  /* === A2A demo === */
+  .a2aFlow{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px;margin-top:14px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}
+  .a2aFlow .demoHead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .a2aFlow .demoTitle{font-size:13px;color:#fff;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .a2aFlow .demoTitle::before{content:"";display:inline-block;width:14px;height:14px;background:var(--a2a);border-radius:3px;box-shadow:0 0 12px rgba(79,158,255,.55)}
+  .a2aFlow .demoCtrl{display:flex;gap:6px;align-items:center}
+  .a2aFlow .demoCtrl button{background:var(--panel);border:1px solid var(--line);color:#cdd5de;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:11px;letter-spacing:.3px;font-family:inherit;transition:all .15s}
+  .a2aFlow .demoCtrl button:hover{border-color:var(--a2a);color:#fff}
+  .a2aFlow .demoCtrl button.primary{background:var(--a2a);color:#fff;border-color:var(--a2a);font-weight:600}
+  .a2aFlow .demoCtrl .stepLbl{font-size:11px;color:var(--muted);padding:0 8px}
+  .a2aStage{position:relative;background:#0a0d12;border:1px solid var(--line);border-radius:8px;padding:16px;min-height:380px}
+  .a2aAgent{position:absolute;background:var(--panel);border:1.5px solid #3b4859;border-radius:10px;padding:10px 12px;color:#fff;font-size:11px;line-height:1.35;min-width:160px;opacity:.3;transition:all .5s ease}
+  .a2aAgent.on{opacity:1}
+  .a2aAgent .nTitle{font-weight:700;font-size:11px;color:#fff;margin-bottom:3px;display:flex;align-items:center;gap:6px}
+  .a2aAgent .nTitle::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor}
+  .a2aAgent .nSub{font-size:10px;color:#9aa6b2;font-family:ui-monospace,monospace}
+  .a2aAgent .nSkill{margin-top:5px;font-size:9px;color:#cdd5de;font-family:ui-monospace,monospace;padding:2px 5px;background:#15181d;border-radius:3px;display:inline-block}
+  .a2aAgent.user{border-color:#7cd1ff}
+  .a2aAgent.user.on{box-shadow:0 0 14px rgba(124,209,255,.4)}
+  .a2aAgent.user .nTitle{color:#7cd1ff}
+  .a2aAgent.host{border-color:var(--a2a)}
+  .a2aAgent.host.on{box-shadow:0 0 14px rgba(79,158,255,.45)}
+  .a2aAgent.host .nTitle{color:var(--a2a)}
+  .a2aAgent.a1{border-color:var(--agent1)}
+  .a2aAgent.a1.on{box-shadow:0 0 14px rgba(255,126,182,.45)}
+  .a2aAgent.a1 .nTitle{color:var(--agent1)}
+  .a2aAgent.a2{border-color:var(--agent2)}
+  .a2aAgent.a2.on{box-shadow:0 0 14px rgba(155,227,124,.45)}
+  .a2aAgent.a2 .nTitle{color:var(--agent2)}
+  .a2aAgent.a3{border-color:var(--agent3)}
+  .a2aAgent.a3.on{box-shadow:0 0 14px rgba(255,209,102,.45)}
+  .a2aAgent.a3 .nTitle{color:var(--agent3)}
+  .a2aArrow{opacity:0;transition:opacity .4s ease}
+  .a2aArrow.on{opacity:.85;animation:a2aPulse 1.4s ease-in-out infinite}
+  @keyframes a2aPulse{0%,100%{opacity:.5}50%{opacity:.95}}
+  .a2aCaption{margin-top:12px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:6px;font-size:12px;color:#cdd5de;line-height:1.6;min-height:42px}
+  .a2aCaption b{color:#fff}
+  .a2aCaption code{background:#0a0d12;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,monospace;font-size:11px;color:var(--accent)}
+  .a2aCaption .step{display:inline-block;background:var(--a2a);color:#fff;padding:1px 7px;border-radius:3px;font-weight:600;font-size:10px;margin-right:6px;letter-spacing:.3px;text-transform:uppercase}
+  .a2aLineSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+  /* === Use case cards === */
+  .ucCard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .ucCard h4{margin:0 0 8px;font-size:13px;color:#fff;display:flex;align-items:center;gap:8px}
+  .ucCard h4 .pillSm{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:var(--accent);color:#0b0d10}
+  .ucCard p{margin:0 0 8px;color:#cdd5de;font-size:12px;line-height:1.6;font-family:-apple-system,Helvetica,Arial,sans-serif}
+  .ucCard ul{margin:6px 0 0;padding-left:18px;color:#cdd5de;font-size:12px;line-height:1.6;font-family:-apple-system,Helvetica,Arial,sans-serif}
+  .ucCard ul li b{color:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>MCP — Model Context Protocol
+  <small>Заняття 16 · AI Tools Architecture · стандартний протокол між AI-моделями та tools</small>
+</h1>
+<div class="sub">Системний огляд Model Context Protocol — відкритого стандарту як AI-моделі говорять із зовнішнім світом. Чому MCP виник, як влаштована його тришарова архітектура (Host · Client · Server), які три типи капабіліті він експортує (Tools · Resources · Prompts), як виглядає життєвий цикл одного запиту крізь стек, чим MCP відрізняється від function calling і LangChain tools, реальні production use cases, безпекова модель, екосистема і коли НЕ варто використовувати MCP. Чотири інтерактивні анімації для емпіричної перевірки.</div>
+
+<!-- =============== CHAOS ANIMATION =============== -->
+<div class="chaosAnim">
+  <div class="heroHdr">
+    <h3><span class="skull">💀</span> Чому ми взагалі говоримо про MCP — chaos у tool-інтеграціях</h3>
+    <div class="heroBtns">
+      <button class="btn" id="chaosPlay">▶ Play</button>
+      <button class="btn" id="chaosReset">↻ Reset</button>
+    </div>
+    <span class="stepLbl" id="chaosStepLbl">step 0 / 4</span>
+  </div>
+  <div class="chaosSvgWrap">
+    <svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg">
+      <!-- 4 LLM models on the left -->
+      <g id="chaosLLMs">
+        <rect class="chaosNode" id="chaosL1" x="20" y="20" width="160" height="50" rx="8" fill="#15181d" stroke="#ffd166" stroke-width="2"/>
+        <text x="100" y="42" text-anchor="middle" fill="#ffd166" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">OpenAI</text>
+        <text x="100" y="58" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">function_calling</text>
+
+        <rect class="chaosNode" id="chaosL2" x="20" y="90" width="160" height="50" rx="8" fill="#15181d" stroke="#c79bff" stroke-width="2"/>
+        <text x="100" y="112" text-anchor="middle" fill="#c79bff" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">Anthropic</text>
+        <text x="100" y="128" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">tool_use blocks</text>
+
+        <rect class="chaosNode" id="chaosL3" x="20" y="160" width="160" height="50" rx="8" fill="#15181d" stroke="#7cd1ff" stroke-width="2"/>
+        <text x="100" y="182" text-anchor="middle" fill="#7cd1ff" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">Google</text>
+        <text x="100" y="198" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">Gemini tools</text>
+
+        <rect class="chaosNode" id="chaosL4" x="20" y="230" width="160" height="50" rx="8" fill="#15181d" stroke="#9be37c" stroke-width="2"/>
+        <text x="100" y="252" text-anchor="middle" fill="#9be37c" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">LangChain</text>
+        <text x="100" y="268" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">Tool() class</text>
+      </g>
+
+      <!-- 4 services on the right -->
+      <g id="chaosServices">
+        <rect class="chaosNode" id="chaosS1" x="800" y="20" width="160" height="50" rx="8" fill="#15181d" stroke="#5dade2" stroke-width="2"/>
+        <text x="880" y="50" text-anchor="middle" fill="#5dade2" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">Slack</text>
+
+        <rect class="chaosNode" id="chaosS2" x="800" y="90" width="160" height="50" rx="8" fill="#15181d" stroke="#5dade2" stroke-width="2"/>
+        <text x="880" y="120" text-anchor="middle" fill="#5dade2" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">GitHub</text>
+
+        <rect class="chaosNode" id="chaosS3" x="800" y="160" width="160" height="50" rx="8" fill="#15181d" stroke="#5dade2" stroke-width="2"/>
+        <text x="880" y="190" text-anchor="middle" fill="#5dade2" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">Postgres</text>
+
+        <rect class="chaosNode" id="chaosS4" x="800" y="230" width="160" height="50" rx="8" fill="#15181d" stroke="#5dade2" stroke-width="2"/>
+        <text x="880" y="260" text-anchor="middle" fill="#5dade2" font-size="12" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">Gmail</text>
+      </g>
+
+      <!-- 16 chaotic lines: 4 LLMs × 4 services -->
+      <g id="chaosLines" stroke-width="1.5" fill="none">
+        <line class="chaosLine" data-from="L1" data-to="S1" x1="180" y1="45" x2="800" y2="45" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L1" data-to="S2" x1="180" y1="45" x2="800" y2="115" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L1" data-to="S3" x1="180" y1="45" x2="800" y2="185" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L1" data-to="S4" x1="180" y1="45" x2="800" y2="255" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L2" data-to="S1" x1="180" y1="115" x2="800" y2="45" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L2" data-to="S2" x1="180" y1="115" x2="800" y2="115" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L2" data-to="S3" x1="180" y1="115" x2="800" y2="185" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L2" data-to="S4" x1="180" y1="115" x2="800" y2="255" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L3" data-to="S1" x1="180" y1="185" x2="800" y2="45" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L3" data-to="S2" x1="180" y1="185" x2="800" y2="115" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L3" data-to="S3" x1="180" y1="185" x2="800" y2="185" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L3" data-to="S4" x1="180" y1="185" x2="800" y2="255" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L4" data-to="S1" x1="180" y1="255" x2="800" y2="45" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L4" data-to="S2" x1="180" y1="255" x2="800" y2="115" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L4" data-to="S3" x1="180" y1="255" x2="800" y2="185" stroke="#ff7676"/>
+        <line class="chaosLine" data-from="L4" data-to="S4" x1="180" y1="255" x2="800" y2="255" stroke="#ff7676"/>
+      </g>
+
+      <!-- N×M counter -->
+      <text x="490" y="320" text-anchor="middle" fill="#ff7676" font-size="14" font-weight="700" font-family="ui-monospace,Menlo,monospace" id="chaosCount">N × M = 16 custom integrations</text>
+      <text x="490" y="340" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="-apple-system,Helvetica,Arial,sans-serif">кожна команда пише свою обгортку для кожної пари</text>
+    </svg>
+  </div>
+  <div class="chaosCaption" id="chaosCaption">
+    <span class="step">▶ Натисни Play</span> — анімація показує природу N×M-проблеми у tool-інтеграціях до MCP, і чому індустрії потрібен був стандартний протокол.
+  </div>
+</div>
+
+<!-- =============== HERO ANIMATION =============== -->
+<div class="heroAnim">
+  <div class="heroHdr">
+    <h3>🎬 Як MCP вирішує цю проблему за 60 секунд</h3>
+    <div class="heroBtns">
+      <button class="btn primary" id="heroPlay">▶ Play sequence</button>
+      <button class="btn" id="heroReset">↻ Reset</button>
+    </div>
+    <span class="stepLbl" id="heroStepLbl">step 0 / 4</span>
+  </div>
+  <div class="heroSvgWrap">
+    <svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="heroArr" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#7cd1ff" opacity="0.85"/>
+        </marker>
+      </defs>
+
+      <!-- LLM (any provider) on the left -->
+      <rect class="heroBox" id="heroLLM" x="30" y="150" width="170" height="70" rx="10" fill="#15181d" stroke="#ffd166" stroke-width="2" color="#ffd166"/>
+      <text x="115" y="180" text-anchor="middle" fill="#ffd166" font-size="13" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">Any LLM</text>
+      <text x="115" y="200" text-anchor="middle" fill="#9aa3ad" font-size="11" font-family="ui-monospace,monospace">Claude · GPT · Gemini</text>
+
+      <!-- Host in the middle-left -->
+      <rect class="heroBox" id="heroHost" x="280" y="150" width="170" height="70" rx="10" fill="#15181d" stroke="#7cd1ff" stroke-width="2" color="#7cd1ff"/>
+      <text x="365" y="180" text-anchor="middle" fill="#7cd1ff" font-size="13" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">Host</text>
+      <text x="365" y="200" text-anchor="middle" fill="#9aa3ad" font-size="11" font-family="ui-monospace,monospace">Claude Desktop · Cursor</text>
+
+      <!-- Three Clients in middle-right -->
+      <rect class="heroBox" id="heroCl1" x="530" y="60" width="140" height="55" rx="8" fill="#15181d" stroke="#c79bff" stroke-width="2" color="#c79bff"/>
+      <text x="600" y="83" text-anchor="middle" fill="#c79bff" font-size="11" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">MCP Client</text>
+      <text x="600" y="100" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">→ github</text>
+
+      <rect class="heroBox" id="heroCl2" x="530" y="155" width="140" height="55" rx="8" fill="#15181d" stroke="#c79bff" stroke-width="2" color="#c79bff"/>
+      <text x="600" y="178" text-anchor="middle" fill="#c79bff" font-size="11" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">MCP Client</text>
+      <text x="600" y="195" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">→ postgres</text>
+
+      <rect class="heroBox" id="heroCl3" x="530" y="250" width="140" height="55" rx="8" fill="#15181d" stroke="#c79bff" stroke-width="2" color="#c79bff"/>
+      <text x="600" y="273" text-anchor="middle" fill="#c79bff" font-size="11" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">MCP Client</text>
+      <text x="600" y="290" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">→ slack</text>
+
+      <!-- Three Servers on the right -->
+      <rect class="heroBox" id="heroSr1" x="780" y="60" width="170" height="55" rx="8" fill="#15181d" stroke="#9be37c" stroke-width="2" color="#9be37c"/>
+      <text x="865" y="83" text-anchor="middle" fill="#9be37c" font-size="11" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">GitHub MCP Server</text>
+      <text x="865" y="100" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">tools · resources</text>
+
+      <rect class="heroBox" id="heroSr2" x="780" y="155" width="170" height="55" rx="8" fill="#15181d" stroke="#9be37c" stroke-width="2" color="#9be37c"/>
+      <text x="865" y="178" text-anchor="middle" fill="#9be37c" font-size="11" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">Postgres MCP Server</text>
+      <text x="865" y="195" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">tools · resources</text>
+
+      <rect class="heroBox" id="heroSr3" x="780" y="250" width="170" height="55" rx="8" fill="#15181d" stroke="#9be37c" stroke-width="2" color="#9be37c"/>
+      <text x="865" y="273" text-anchor="middle" fill="#9be37c" font-size="11" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">Slack MCP Server</text>
+      <text x="865" y="290" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">tools · resources</text>
+
+      <!-- Connection paths -->
+      <line class="heroPath" id="heroP1" x1="200" y1="185" x2="280" y2="185" stroke="#ffd166" stroke-width="2" stroke-opacity="0.25" marker-end="url(#heroArr)"/>
+      <line class="heroPath" id="heroP2" x1="450" y1="170" x2="530" y2="85" stroke="#c79bff" stroke-width="2" stroke-opacity="0.25" marker-end="url(#heroArr)"/>
+      <line class="heroPath" id="heroP3" x1="450" y1="185" x2="530" y2="180" stroke="#c79bff" stroke-width="2" stroke-opacity="0.25" marker-end="url(#heroArr)"/>
+      <line class="heroPath" id="heroP4" x1="450" y1="200" x2="530" y2="275" stroke="#c79bff" stroke-width="2" stroke-opacity="0.25" marker-end="url(#heroArr)"/>
+      <line class="heroPath" id="heroP5" x1="670" y1="85" x2="780" y2="85" stroke="#9be37c" stroke-width="2" stroke-opacity="0.25" marker-end="url(#heroArr)"/>
+      <line class="heroPath" id="heroP6" x1="670" y1="180" x2="780" y2="180" stroke="#9be37c" stroke-width="2" stroke-opacity="0.25" marker-end="url(#heroArr)"/>
+      <line class="heroPath" id="heroP7" x1="670" y1="275" x2="780" y2="275" stroke="#9be37c" stroke-width="2" stroke-opacity="0.25" marker-end="url(#heroArr)"/>
+
+      <!-- Labels -->
+      <text x="115" y="50" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">model</text>
+      <text x="365" y="50" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">application</text>
+      <text x="600" y="35" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">3 clients (one per server)</text>
+      <text x="865" y="35" text-anchor="middle" fill="#9aa3ad" font-size="10" font-family="ui-monospace,monospace">3 servers (one per service)</text>
+    </svg>
+  </div>
+  <div class="heroCaption" id="heroCaption">
+    <span class="step">▶ Натисни Play sequence</span> — побачите як один Host може мати багато Clients, кожен з яких говорить з власним Server. Сервери можна писати один раз, переюзати з будь-яким Host що підтримує MCP.
+  </div>
+</div>
+
+<!-- ============================ SECTION 1: WHY ============================ -->
+<section id="why">
+  <h2><span class="num">01 ·</span> Чому MCP з'явився — N×M проблема у tool-інтеграціях</h2>
+  <p class="lead">До листопада 2024 не існувало жодного стандарту як LLM-системи мають викликати зовнішні tools. Кожен фреймворк винайшов свій формат — OpenAI function calling, Anthropic tool_use, LangChain Tool, LlamaIndex BaseTool. У результаті кожна компанія, що хотіла підключити Slack або GitHub до AI-системи, писала <b>власну обгортку для кожної пари (LLM × tool)</b>. Це і називається N×M проблема — масштабується катастрофічно і породжує vendor lock-in.</p>
+
+  <h3>Чотири симптоми хаосу до MCP</h3>
+  <div class="grid2">
+    <div class="card">
+      <h4>🔁 Переписування інтеграцій</h4>
+      <p>Команда написала GitHub-інтеграцію для OpenAI-агента. Через рік мігрують на Claude — переписують ту саму інтеграцію з нуля, бо формат tool_use інший. <b>Жодного переюзу.</b></p>
+    </div>
+    <div class="card">
+      <h4>🔒 Vendor lock-in через tools</h4>
+      <p>Tools прив'язані до конкретного провайдера. Компанія яка побудувала 30 інструментів навколо OpenAI не може дешево переключитися на Anthropic — це коштує місяців переписування.</p>
+    </div>
+    <div class="card">
+      <h4>📦 Дублювання у компанії</h4>
+      <p>У великій компанії 5 AI-команд паралельно інтегрують одну й ту саму внутрішню API. Ніхто не може використати чужий код, бо кожна команда писала його під свій stack.</p>
+    </div>
+    <div class="card">
+      <h4>🧪 Відсутність testability</h4>
+      <p>Кожна custom integration має власну логіку валідації, авторизації, error handling. Інтеграційні тести — складні і непереносні між проектами.</p>
+    </div>
+  </div>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>Ключова теза:</b> історично кожна революційна технологія мала свій момент стандартизації. HTTP стандартизував клієнт-серверний обмін. USB стандартизував підключення периферії. SQL стандартизував доступ до даних. <b>MCP — це стандарт для AI tools.</b> Він не винаходить нічого нового, він лише забороняє кожній команді винаходити велосипед.
+  </div>
+
+  <h3 style="margin-top:18px">Від проєкту Anthropic до стандарту Linux Foundation</h3>
+  <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.7;color:#cdd5de;margin:0 0 12px">У грудні 2025 Anthropic передала MCP до новоствореної <b>Agentic AI Foundation (AAIF)</b> під егідою Linux Foundation. Це знімає головне запере­чення щодо vendor lock-in: протокол більше не належить одній компанії. Станом на травень 2026 фундація налічує <b>190 організацій-членів</b>; Platinum-рівень формують AWS, Anthropic, Block, Bloomberg, Cloudflare, Google, Microsoft, OpenAI. Засновницькі проєкти AAIF — MCP, goose (Block), AGENTS.md (OpenAI).</p>
+  <div class="grid3">
+    <div class="card">
+      <h4>📊 Метрики прийняття 2026</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.65"><b>110+ млн</b> щомісячних SDK-завантажень, <b>10 000+</b> публічних серверів, офіційний реєстр <code>registry.modelcontextprotocol.io</code>. Поріг критичної маси пройдено.</p>
+    </div>
+    <div class="card">
+      <h4>🏛 Управління AAIF</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.65">Directed fund Linux Foundation. Governing Board вирішує стратегію; технічні рішення — у мейнтейнерів. 7 Working Groups: Transports, Auth, Agents, Governance, UI/Apps, Triggers, Enterprise.</p>
+    </div>
+    <div class="card">
+      <h4>🤝 Нативна підтримка вендорами</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.65">OpenAI (Agents SDK, ChatGPT), Google (Gemini API, CLI, Enterprise, Spark), Microsoft (Azure MCP 2.0, VS 2026, Copilot), AWS, Cloudflare, Salesforce, Bloomberg.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ SECTION 2: WHAT ============================ -->
+<section id="what">
+  <h2><span class="num">02 ·</span> Що таке MCP — стандарт як AI-моделі говорять із зовнішнім світом</h2>
+  <p class="lead">Model Context Protocol — це відкритий протокол створений Anthropic у листопаді 2024. До 2026 його підхопили OpenAI, Google, Microsoft, Block, Sourcegraph, Zed, Cursor — практично всі major вендори AI-стеку. Це означає що MCP вже не "experiment Anthropic", а <b>de-facto стандарт індустрії</b>.</p>
+
+  <h3>Що MCP визначає</h3>
+  <div class="grid3">
+    <div class="card">
+      <h4>📡 Як з'єднуються процеси</h4>
+      <p><b>Транспорт:</b> stdio (для локальних), HTTP/SSE (для віддалених). Все на базі <b>JSON-RPC 2.0</b> — простий, людиночитаний, дебагабельний.</p>
+    </div>
+    <div class="card">
+      <h4>📦 Що Server експортує</h4>
+      <p>Три типи капабіліті: <b>Tools</b> (функції які викликає модель), <b>Resources</b> (дані які модель читає), <b>Prompts</b> (шаблони запитів).</p>
+    </div>
+    <div class="card">
+      <h4>🤝 Lifecycle handshake</h4>
+      <p><b>initialize → capabilities exchange → use → shutdown.</b> Жодних surprise — обидві сторони на старті домовляються про версію протоколу і доступні функції.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">Що MCP <b style="color:var(--warn)">не</b> є</h3>
+  <ul class="checklist">
+    <li><b>Не модель і не AI.</b> MCP не генерує текст. Це лише протокол між компонентами.</li>
+    <li><b>Не заміна function calling.</b> MCP <b>доповнює</b> function calling шаром стандартизації — модель все ще генерує tool_use blocks, але Host транслює їх у MCP виклики.</li>
+    <li><b>Не ще один LangChain.</b> Це не фреймворк і не SDK з готовими інтеграціями. Це <b>специфікація</b>, реалізації якої існують на різних мовах.</li>
+    <li><b>Не silver bullet.</b> Для простого chatbot-а з 2 функціями MCP — overkill. Він починає окуповуватися коли інструментів багато або вони використовуються кількома командами.</li>
+  </ul>
+
+  <h3 style="margin-top:18px">Три корисні аналогії</h3>
+  <table>
+    <tr><th>Аналогія</th><th>Що стандартизує</th><th>Що було до</th><th>Що стало після</th></tr>
+    <tr><td><b>USB-C</b></td><td>Підключення периферії</td><td>Mini-USB, micro-USB, lightning, magsafe — кожен свій</td><td>Один кабель працює з будь-яким пристроєм</td></tr>
+    <tr><td><b>HTTP</b></td><td>Клієнт-серверний обмін</td><td>FTP, gopher, telnet, кожен сайт міг бути на своєму протоколі</td><td>Один протокол, єдиний бровзер, єдиний URL</td></tr>
+    <tr><td><b>SQL</b></td><td>Доступ до реляційних даних</td><td>Кожна БД зі своїм API (dBase, FoxPro, Informix)</td><td>Один синтаксис працює з 90% БД</td></tr>
+    <tr><td><b>MCP</b></td><td>AI tool calling</td><td>OpenAI / Anthropic / LangChain — кожен свій</td><td>Один Server працює з будь-яким Host</td></tr>
+  </table>
+</section>
+
+<!-- ============================ SECTION 3: ARCHITECTURE ============================ -->
+<section id="architecture">
+  <h2><span class="num">03 ·</span> Архітектура — Host, Client, Server</h2>
+  <p class="lead">MCP визначає три ролі у системі. Ключова властивість — кожна роль повністю замінюється без впливу на інші. Це і є те що робить екосистему переносимою: Server можна написати один раз і використати з будь-яким Host.</p>
+
+  <div class="grid3">
+    <div class="card" style="border-color:var(--host);background:rgba(124,209,255,0.04)">
+      <h4 style="color:var(--host)">🖥 Host <span class="pill host" style="font-size:10px;margin-left:6px">application</span></h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.65;color:#cdd5de;margin:0">AI-застосунок з яким взаємодіє користувач. <b>Запускає LLM, керує діалогом, орчеструє виклики до tools.</b><br><br><b>Приклади:</b> Claude Desktop, Cursor IDE, Zed editor, OpenAI ChatGPT (через MCP-конектори), власний chatbot побудований з нуля.<br><br><b>Відповідальність:</b> інтерактивний UI, виклик моделі, рішення коли і який tool викликати, security policies (user approval перед destructive operations).</p>
+    </div>
+    <div class="card" style="border-color:var(--client);background:rgba(199,155,255,0.04)">
+      <h4 style="color:var(--client)">🔌 Client <span class="pill client" style="font-size:10px;margin-left:6px">connection</span></h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.65;color:#cdd5de;margin:0">Компонент <b>всередині Host</b> що зв'язується з <b>одним конкретним Server</b>. Один Host має багато Clients — по одному на кожен підключений сервер.<br><br><b>Що робить:</b> керує transport (stdio або HTTP), серіалізує JSON-RPC повідомлення, обробляє авторизацію, лічить tokens, відновлює з'єднання при розриві.<br><br><b>Аналогія:</b> у бровзері Client = HTTP-з'єднання до конкретного сайту. Кожне відкрите вікно має свій Client до свого сервера.</p>
+    </div>
+    <div class="card" style="border-color:var(--server);background:rgba(155,227,124,0.04)">
+      <h4 style="color:var(--server)">⚙ Server <span class="pill server" style="font-size:10px;margin-left:6px">capability provider</span></h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.65;color:#cdd5de;margin:0">Окремий процес що <b>експортує можливості</b>: tools, resources, prompts. Server <b>не знає про LLM</b> — він просто заявляє "ось мої функції, ось як їх викликати".<br><br><b>Приклади:</b> filesystem server, github server, postgres server, custom internal API server.<br><br><b>Відповідальність:</b> business logic, авторизація на рівні API, валідація аргументів, error handling. Один Server обслуговує один сервіс — не варто робити "monolith server" з 50 інтеграціями всередині.</p>
+    </div>
+  </div>
+
+  <div class="keypoint" style="margin-top:18px">
+    <b>Чому розділення на 3 ролі — це сила:</b> Server можна писати один раз і переюзовувати з будь-яким Host. Postgres MCP server від Anthropic однаково працює у Claude Desktop, Cursor, або у вашому власному Python-скрипті. <b>Якби MCP мав одну роль "application + integration в одному" — переюзу б не було, кожен застосунок ніс би свої інтеграції.</b>
+  </div>
+
+  <h3 style="margin-top:18px">Хто за що відповідає — детальна таблиця</h3>
+  <table class="compare">
+    <tr><th>Відповідальність</th><th>Host</th><th>Client</th><th>Server</th></tr>
+    <tr><td>Запуск LLM</td><td class="yes">✓ так</td><td class="no">— ні</td><td class="no">— ні</td></tr>
+    <tr><td>Користувацький UI</td><td class="yes">✓ так</td><td class="no">— ні</td><td class="no">— ні</td></tr>
+    <tr><td>Transport (stdio / HTTP)</td><td class="no">— ні</td><td class="yes">✓ так</td><td class="yes">✓ так (інший кінець)</td></tr>
+    <tr><td>JSON-RPC serialization</td><td class="no">— ні</td><td class="yes">✓ так</td><td class="yes">✓ так</td></tr>
+    <tr><td>Авторизація (OAuth)</td><td class="partial">~ ініціює</td><td class="yes">✓ передає токени</td><td class="yes">✓ перевіряє</td></tr>
+    <tr><td>Business logic (виклик API)</td><td class="no">— ні</td><td class="no">— ні</td><td class="yes">✓ так</td></tr>
+    <tr><td>User approval перед destructive ops</td><td class="yes">✓ так</td><td class="no">— ні</td><td class="partial">~ опціонально дублює</td></tr>
+    <tr><td>Tool discovery (list)</td><td class="partial">~ агрегує</td><td class="yes">✓ запитує</td><td class="yes">✓ декларує</td></tr>
+  </table>
+</section>
+
+<!-- ============================ SECTION 4: CAPABILITIES ============================ -->
+<section id="capabilities">
+  <h2><span class="num">04 ·</span> Капабіліті — Tools, Resources, Prompts, Apps</h2>
+  <p class="lead">MCP Server може експортувати чотири різних класи можливостей. Це <b>сильніше за function calling</b>, який має лише tools. Resources додають declarative data layer, Prompts додають prompt library, <b>Apps</b> (нове у 2026) додають інтерактивний UI всередині Host. Клікайте таби щоб побачити приклад кожного.</p>
+
+  <div class="capTabs" id="capTabs">
+    <div class="capTab active tools" data-cap="tools"><span class="num">①</span>🛠 Tools</div>
+    <div class="capTab resources" data-cap="resources"><span class="num">②</span>📂 Resources</div>
+    <div class="capTab prompts" data-cap="prompts"><span class="num">③</span>📝 Prompts</div>
+    <div class="capTab apps" data-cap="apps"><span class="num">④</span>🪟 Apps <span class="pill" style="font-size:9px;padding:2px 6px;margin-left:4px;background:var(--apps);color:#0d1117">new 2026</span></div>
+  </div>
+
+  <div class="capStage" id="capStage"></div>
+
+  <h3 style="margin-top:18px">Порівняння чотирьох типів</h3>
+  <table>
+    <tr><th>Аспект</th><th>Tools</th><th>Resources</th><th>Prompts</th><th style="color:var(--apps)">Apps (2026)</th></tr>
+    <tr><td><b>Хто ініціює</b></td><td>LLM (вирішує викликати)</td><td>Host (читає за потребою) або юзер</td><td>Юзер (вибирає зі списку)</td><td>Юзер (взаємодіє з UI)</td></tr>
+    <tr><td><b>Сторона ефекту</b></td><td>Часто write (мутує стан)</td><td>Read-only</td><td>Read-only (тільки шаблон)</td><td>Може мутувати через події</td></tr>
+    <tr><td><b>Аналог</b></td><td>POST/PUT API виклик</td><td>GET API виклик або файл</td><td>Snippet у IDE</td><td>Embedded widget / iframe</td></tr>
+    <tr><td><b>Формат передачі</b></td><td>JSON</td><td>Bytes / text / JSON</td><td>Text template</td><td>HTML у sandboxed iframe</td></tr>
+    <tr><td><b>Підтримка у function calling</b></td><td class="yes">✓ так</td><td class="no">— ні</td><td class="no">— ні</td><td class="no">— ні</td></tr>
+    <tr><td><b>Потребує user approval</b></td><td>Так (для destructive)</td><td>Ні</td><td>Ні</td><td>Sandbox замість approval</td></tr>
+  </table>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>Чому 3 типи замість одного:</b> у function calling все робиться через tools — навіть читання документа стає викликом <code>read_document(id)</code>. Це <b>працює, але неефективно</b>: модель витрачає одне tool call rotation замість прямого attach документа у context. Resources — це визнання що "AI має читати дані часто, давайте зробимо це окремо". Prompts — визнання що "юзер часто хоче ту саму операцію, давайте дамо йому шаблони замість друкування".
+  </div>
+</section>
+
+<!-- ============================ SECTION 5: FLOW ============================ -->
+<section id="flow">
+  <h2><span class="num">05 ·</span> Lifecycle одного запиту — крізь весь стек</h2>
+  <p class="lead">Щоб зрозуміти MCP найкраще — простежити що відбувається коли користувач робить запит у Claude Desktop із підключеним GitHub MCP Server. Натисніть Play sequence — побачите 7 кроків від користувацького промпта до відповіді LLM.</p>
+
+  <div class="rpcFlow">
+    <div class="demoHead">
+      <div class="demoTitle">Live demo · "Що нового у моєму GitHub репозиторії?"</div>
+      <div class="demoCtrl">
+        <span class="stepLbl" id="rpcStepLbl">step 0 / 7</span>
+        <button id="rpcPrev">‹ Prev</button>
+        <button id="rpcNext">Next ›</button>
+        <button id="rpcPlay" class="primary">▶ Play sequence</button>
+        <button id="rpcReset">Reset</button>
+      </div>
+    </div>
+    <div class="rpcStage" id="rpcStage">
+      <svg class="rpcLineSvg" viewBox="0 0 920 380" preserveAspectRatio="none">
+        <defs>
+          <marker id="rpcArr" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#7cd1ff" opacity="0.85"/>
+          </marker>
+        </defs>
+        <line class="rpcArrow" id="rpcL1" x1="155" y1="55" x2="270" y2="55" stroke="#7cd1ff" stroke-width="2" marker-end="url(#rpcArr)"/>
+        <line class="rpcArrow" id="rpcL2" x1="430" y1="55" x2="555" y2="55" stroke="#ffd166" stroke-width="2" marker-end="url(#rpcArr)"/>
+        <line class="rpcArrow" id="rpcL3" x1="555" y1="80" x2="430" y2="180" stroke="#ffd166" stroke-width="2" marker-end="url(#rpcArr)"/>
+        <line class="rpcArrow" id="rpcL4" x1="430" y1="195" x2="555" y2="195" stroke="#c79bff" stroke-width="2" marker-end="url(#rpcArr)"/>
+        <line class="rpcArrow" id="rpcL5" x1="700" y1="195" x2="780" y2="195" stroke="#9be37c" stroke-width="2" marker-end="url(#rpcArr)"/>
+        <line class="rpcArrow" id="rpcL6" x1="780" y1="220" x2="700" y2="320" stroke="#f08862" stroke-width="2" marker-end="url(#rpcArr)"/>
+        <line class="rpcArrow" id="rpcL7" x1="555" y1="320" x2="430" y2="220" stroke="#9be37c" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#rpcArr)"/>
+      </svg>
+
+      <div class="rpcNode host" id="rpcN1" style="left:10px;top:30px"><div class="nTitle">User</div><div class="nSub">Claude Desktop chat</div></div>
+      <div class="rpcNode host" id="rpcN2" style="left:270px;top:30px"><div class="nTitle">Host</div><div class="nSub">Claude Desktop</div></div>
+      <div class="rpcNode llm" id="rpcN3" style="left:555px;top:30px"><div class="nTitle">LLM</div><div class="nSub">claude-sonnet · tool_use</div></div>
+      <div class="rpcNode client" id="rpcN4" style="left:270px;top:170px"><div class="nTitle">MCP Client</div><div class="nSub">→ github server</div></div>
+      <div class="rpcNode server" id="rpcN5" style="left:555px;top:170px"><div class="nTitle">GitHub MCP Server</div><div class="nSub">tool: list_recent_commits</div></div>
+      <div class="rpcNode api" id="rpcN6" style="left:780px;top:170px"><div class="nTitle">GitHub API</div><div class="nSub">api.github.com</div></div>
+      <div class="rpcNode api" id="rpcN7" style="left:555px;top:310px"><div class="nTitle">Response data</div><div class="nSub">5 commits · authors · titles</div></div>
+    </div>
+    <div class="rpcCaption" id="rpcCaption">
+      <span class="step">▶ Press Play</span> Покажемо як одне просте питання користувача проходить 7 кроків крізь Host → LLM → Client → Server → External API і повертається назад.
+    </div>
+  </div>
+
+  <div class="keypoint" style="margin-top:18px;border-left-color:var(--warn)">
+    <b style="color:var(--warn)">⚠ Spec 2026-07-28: цей flow стає stateless.</b> У релізі специфікації від 28 липня 2026 (RC опубліковано 21 травня) Anthropic + AAIF <b>прибирають handshake</b> <code>initialize / notifications/initialized</code> і заголовок <code>Mcp-Session-Id</code>. Кожен запит тепер <b>самодостатній</b>: версія протоколу, ідентифікація клієнта та capabilities передаються у полі <code>_meta</code> кожного JSON-RPC виклику.<br><br><b>Чому це важливо для тебе:</b> stateless дозволяє <b>горизонтальний scale без sticky sessions</b> — будь-який інстанс сервера обслуговує будь-який запит. Те що ти бачиш у демо вище (initialize-крок) — це <b>legacy flow</b>. Він залишиться сумісним, але новий стандарт інший. Якщо твій сервер має сесійні залежності (path до репо, browser session, env-vars) — зроби їх явними хендлами в аргументах tool, а не state у пам'яті процесу. <span class="pill" style="font-size:10px">SEP-2575 · SEP-2567 · SEP-2260 · SEP-2322 · SEP-2243 · SEP-2549</span>
+  </div>
+
+  <h3 style="margin-top:18px">Що ще приходить у Spec 2026-07-28</h3>
+  <table>
+    <tr><th>Зміна</th><th>SEP</th><th>Що це дає</th></tr>
+    <tr><td><b>Stateless core</b></td><td>2575, 2567, 2260</td><td>Прибирається handshake і session-id; горизонтальний scale без sticky routing</td></tr>
+    <tr><td><b>Extensions framework</b></td><td>2133</td><td>Розширення — першокласні сутності з reverse-DNS ID і власним lifecycle</td></tr>
+    <tr><td><b>JSON Schema 2020-12</b></td><td>2106</td><td>Точніші tool schemas: <code>oneOf</code>, <code>anyOf</code>, <code>$ref</code>, умовні залежності</td></tr>
+    <tr><td><b>W3C Trace Context</b></td><td>414</td><td><code>traceparent</code>/<code>tracestate</code> у <code>_meta</code> — повна OpenTelemetry-сумісність</td></tr>
+    <tr><td><b>OAuth tightening</b></td><td>2468, 2207, 2352</td><td>Обов'язкова валідація <code>iss</code> (RFC 9207), refresh tokens OIDC, credential binding до видавника</td></tr>
+    <tr><td><b>Deprecation policy</b></td><td>2577, 2596</td><td>Формальний цикл Active → Deprecated → Removed з мінімум 12 місяців. Вже deprecated: Roots, Sampling, Logging</td></tr>
+    <tr><td><b>Conformance suite</b></td><td>2484</td><td>Жоден Standards Track SEP не стає Final без сценарію у наборі тестів — захист від silent breaking changes</td></tr>
+  </table>
+</section>
+
+<!-- ============================ SECTION 6: WIRE VIEW ============================ -->
+<section id="wire">
+  <h2><span class="num">06 ·</span> Wire view — що буквально летить між Host і Server</h2>
+  <p class="lead">У попередній секції ми бачили <b>архітектурний flow</b> — хто кого викликає. Тут — <b>сирий JSON-RPC trace</b>, який реально летить через stdio. MCP не магія: це звичайні JSON-рядки розділені <code>\n</code>. Натисни Next щоб побачити повний handshake від <code>initialize</code> до <code>tools/call</code> — 7 повідомлень.</p>
+
+  <div class="rpcFlow">
+    <div class="demoHead">
+      <div class="demoTitle">Live JSON-RPC · повний handshake + tool call</div>
+      <div class="demoCtrl">
+        <span class="stepLbl" id="wireStepLbl">step 0 / 7</span>
+        <button id="wirePrev">‹ Prev</button>
+        <button id="wireNext">Next ›</button>
+        <button id="wirePlay" class="primary">▶ Play sequence</button>
+        <button id="wireReset">Reset</button>
+      </div>
+    </div>
+
+    <div class="wireGrid">
+      <div class="wireDiag">
+        <div class="wireBox host" id="wireHost">
+          <div class="wbTitle">🖥 Host</div>
+          <div class="wbSub">Claude Desktop · stdin/stdout</div>
+        </div>
+        <div class="wireLabel" id="wireLabelTop">stdio pipe</div>
+        <div class="wirePipe" id="wirePipe"></div>
+        <div class="wireLabel" id="wireLabelBot">↑ response · ↓ request</div>
+        <div class="wireBox server" id="wireServer">
+          <div class="wbTitle">⚙ Server</div>
+          <div class="wbSub">notes-keeper · Python</div>
+        </div>
+      </div>
+
+      <div class="wireLog">
+        <div class="logHead"><span>Wire log · <b>JSON-RPC 2.0</b></span><span id="wireMsgCount">0 messages</span></div>
+        <div class="wireLogBody" id="wireLogBody">
+          <div style="color:var(--muted);font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;padding:24px 4px;line-height:1.65">▶ Натисни <b>Play sequence</b> або <b>Next ›</b><br>Кожен крок додасть один JSON-RPC конверт у лог. Підсвічуються поля <code style="color:var(--accent)">id</code> щоб видно було як зв'язується request ↔ response.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wireCap" id="wireCap">
+      <span class="step">▶ Press Play</span> Покажемо повний обмін: 3 повідомлення initialization → 2 для discovery → 2 для виклику tool. Усе через <b>stdio</b>, кожне повідомлення — один рядок JSON.
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">Анатомія одного JSON-RPC конверта</h3>
+  <div class="grid2">
+    <div class="card">
+      <h4>📤 Request (Host → Server)</h4>
+      <pre style="margin:8px 0 0;font-size:11.5px;line-height:1.55;background:#0a0d12;padding:10px 12px;border:1px solid var(--line);border-radius:6px"><span style="color:#7cd1ff">"jsonrpc"</span><span style="color:#5a6678">:</span> <span style="color:#9be37c">"2.0"</span><span style="color:#5a6678">,</span>
+<span style="color:#7cd1ff">"id"</span><span style="color:#5a6678">:</span> <span style="color:#ff7eb6;font-weight:700">2</span><span style="color:#5a6678">,</span>
+<span style="color:#7cd1ff">"method"</span><span style="color:#5a6678">:</span> <span style="color:#9be37c">"tools/call"</span><span style="color:#5a6678">,</span>
+<span style="color:#7cd1ff">"params"</span><span style="color:#5a6678">:</span> <span style="color:#5a6678">{</span><span style="color:#7cd1ff">"name"</span><span style="color:#5a6678">:</span> <span style="color:#9be37c">"add_note"</span><span style="color:#5a6678">}</span></pre>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;margin-top:10px;color:#cdd5de"><b>4 поля</b>: <code>jsonrpc</code> (завжди "2.0"), <code>id</code> (унікальний для запиту), <code>method</code> (що робимо), <code>params</code> (аргументи). Server мусить відповісти з тим самим <code>id</code>.</p>
+    </div>
+    <div class="card">
+      <h4>📥 Response (Server → Host)</h4>
+      <pre style="margin:8px 0 0;font-size:11.5px;line-height:1.55;background:#0a0d12;padding:10px 12px;border:1px solid var(--line);border-radius:6px"><span style="color:#7cd1ff">"jsonrpc"</span><span style="color:#5a6678">:</span> <span style="color:#9be37c">"2.0"</span><span style="color:#5a6678">,</span>
+<span style="color:#7cd1ff">"id"</span><span style="color:#5a6678">:</span> <span style="color:#ff7eb6;font-weight:700">2</span><span style="color:#5a6678">,</span>
+<span style="color:#7cd1ff">"result"</span><span style="color:#5a6678">:</span> <span style="color:#5a6678">{</span><span style="color:#7cd1ff">"content"</span><span style="color:#5a6678">:</span> <span style="color:#5a6678">[…]}</span></pre>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;margin-top:10px;color:#cdd5de"><b>3 поля</b> для успіху: <code>jsonrpc</code>, <code>id</code> <b>той самий що в запиті</b>, <code>result</code>. Якщо помилка — замість <code>result</code> буде <code>error</code> з кодом і повідомленням. <code>method</code> у відповіді немає.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">Три типи повідомлень у JSON-RPC</h3>
+  <table>
+    <tr><th>Тип</th><th>Має <code>id</code>?</th><th>Очікує відповідь?</th><th>Приклад у MCP</th></tr>
+    <tr><td><b style="color:var(--host)">Request</b></td><td>так</td><td>так (з тим самим id)</td><td><code>tools/call</code>, <code>tools/list</code>, <code>initialize</code></td></tr>
+    <tr><td><b style="color:var(--server)">Response</b></td><td>так (того ж запиту)</td><td>—</td><td>Будь-який <code>result</code> або <code>error</code></td></tr>
+    <tr><td><b style="color:var(--accent2)">Notification</b></td><td><b>ні</b></td><td>ні (fire-and-forget)</td><td><code>notifications/initialized</code>, <code>notifications/resources/updated</code></td></tr>
+  </table>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>Чому це важливо для дебагу:</b> якщо твій сервер не відповідає — перевір <code>id</code>. Найчастіша помилка початківця: повернути response з іншим <code>id</code> або без <code>id</code> взагалі. Host чекає response з конкретним id і просто <b>висне на таймауті</b>. Друга часта помилка: відповісти на notification (без id) — це порушення протоколу, notifications принципово не мають відповіді.
+  </div>
+</section>
+
+<!-- ============================ SECTION 7: COMPARE ============================ -->
+<section id="compare">
+  <h2><span class="num">07 ·</span> MCP vs function calling vs LangChain — чим відрізняється</h2>
+  <p class="lead">Найчастіше питання студентів: "чим MCP кращий за function calling? у нас же вже все працює." Відповідь: <b>вони на різних шарах</b> і можуть співіснувати. Function calling — це формат повідомлення моделі. LangChain — це фреймворк-обгортка. MCP — це протокол між процесами.</p>
+
+  <table class="compare">
+    <tr><th>Аспект</th><th>Function calling</th><th>LangChain tools</th><th>MCP</th></tr>
+    <tr><td>Тип</td><td>Формат повідомлення</td><td>Framework wrapper</td><td><b>Cross-vendor протокол</b></td></tr>
+    <tr><td>Стандартизація</td><td class="partial">~ per-provider (OpenAI ≠ Anthropic)</td><td class="no">✗ framework-specific</td><td class="yes">✓ open spec</td></tr>
+    <tr><td>Переноcимість серверів</td><td class="no">✗ прив'язано до API</td><td class="no">✗ прив'язано до LangChain</td><td class="yes">✓ будь-який Host</td></tr>
+    <tr><td>Discovery</td><td class="partial">~ hardcoded в промпт</td><td class="partial">~ hardcoded в коді</td><td class="yes">✓ dynamic (capabilities)</td></tr>
+    <tr><td>Resources</td><td class="no">✗ нема</td><td class="partial">~ через retrievers</td><td class="yes">✓ first-class</td></tr>
+    <tr><td>Prompts library</td><td class="no">✗ нема</td><td class="partial">~ PromptTemplate (in-code)</td><td class="yes">✓ first-class</td></tr>
+    <tr><td>Транспорт</td><td>API call</td><td>In-process Python</td><td><b>stdio / HTTP / SSE</b></td></tr>
+    <tr><td>Авторизація</td><td>Per-tool ручно</td><td>Per-tool ручно</td><td class="yes">✓ OAuth 2.0 standard</td></tr>
+    <tr><td>State / sessions</td><td class="no">✗ stateless</td><td class="partial">~ stateful у коді</td><td class="yes">✓ через JSON-RPC sessions</td></tr>
+    <tr><td>Простота старту</td><td class="yes">✓ один API call</td><td class="yes">✓ pip install</td><td class="partial">~ потрібен Server-процес</td></tr>
+  </table>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>Ключове розуміння:</b> MCP не <i>замінює</i> function calling — він <b>надбудовується</b> над ним. Коли LLM генерує tool_use block у форматі Anthropic — Host транслює його у MCP виклик до правильного Server. Коли той самий код працює з OpenAI — Host транслює function_call → MCP. <b>Модель цього не помічає, користувач не помічає, тільки розробник перестає писати по 5 інтеграцій на кожен сервіс.</b>
+  </div>
+
+  <h3 style="margin-top:18px">Коли який обирати</h3>
+  <div class="grid3">
+    <div class="card">
+      <h4>🔧 Function calling напряму</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">Простий chatbot з 2-3 функціями, один провайдер LLM, нічого не плануєш переносити. Найшвидший старт.</p>
+    </div>
+    <div class="card">
+      <h4>🧰 LangChain tools</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">Прототип, експериментуєш, потрібні готові chains (RAG + memory). У production менш переносимо.</p>
+    </div>
+    <div class="card">
+      <h4>📡 MCP</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">Production-агент з 5+ tools, кілька AI-додатків у компанії, потрібен enterprise auth, треба переюз у різних Host. <b>Default вибір для 2026.</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ SECTION 7: A2A ============================ -->
+<section id="a2a">
+  <h2><span class="num">08 ·</span> A2A — Agent-to-Agent Protocol — коли MCP замало</h2>
+  <p class="lead">MCP вирішує одну проблему — як <b>один AI говорить з tools</b>. Але у 2025 з'явилася друга — як <b>агенти говорять між собою</b>. У квітні 2025 Google презентував <b>A2A (Agent-to-Agent Protocol)</b>, який доповнює MCP замість конкурувати. Сьогодні A2A підтримується Anthropic, OpenAI, AWS, Microsoft і живе під Linux Foundation.</p>
+
+  <h3>Дві різні задачі — два різні протоколи</h3>
+  <div class="grid2">
+    <div class="card" style="border-color:var(--server);background:rgba(155,227,124,0.04)">
+      <h4 style="color:var(--server)">⚙ MCP — AI ↔ Tools</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.65;color:#cdd5de;margin:0"><b>Питання:</b> як один AI-агент звертається до зовнішніх сервісів?<br><br>Server — <b>пасивний</b>, експортує функції. Сам нічого не вирішує. Виглядає як API для AI.<br><br><b>Аналогія:</b> бібліотечні функції — викликаєш, отримуєш відповідь, рухаєшся далі.</p>
+    </div>
+    <div class="card" style="border-color:var(--a2a);background:rgba(79,158,255,0.06)">
+      <h4 style="color:var(--a2a)">🤖 A2A — AI ↔ AI</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.65;color:#cdd5de;margin:0"><b>Питання:</b> як один AI-агент делегує задачу іншому AI-агенту?<br><br>Кожен агент — <b>активний</b>, має власну логіку, може ставити уточнюючі питання, домовлятися про результат, відмовлятись.<br><br><b>Аналогія:</b> розмова з колегою — кооперація між сутностями, не виклик функції.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">Чому одного MCP недостатньо</h3>
+  <p class="pad">MCP моделює світ як <b>один-центральний-AI + багато-пасивних-tools</b>. Це працює для більшості задач "Claude Desktop + GitHub". Але у 2025 індустрія прийшла до <b>agentic mesh</b> — десятки спеціалізованих AI-агентів від різних вендорів, кожен зі своєю експертизою. Подзвонити пасивну функцію недостатньо коли інший агент сам має думати, шукати, узгоджувати з третім агентом.</p>
+
+  <ul class="checklist">
+    <li><b>Sales agent</b> від Salesforce треба узгодити з <b>finance agent</b> від SAP щоб виставити інвойс — обидва володіють своїми даними і логікою</li>
+    <li><b>Research agent</b> делегує <b>code review agent</b>-у перевірку проекту — кожен має свою спеціалізацію</li>
+    <li><b>Travel booking agent</b> координує з <b>calendar agent</b> і <b>expense agent</b> — мульти-сторонній workflow</li>
+    <li>Усі ці агенти можуть бути від <b>різних компаній</b> на <b>різних моделях</b> — потрібен спільний протокол</li>
+  </ul>
+
+  <h3 style="margin-top:18px">Архітектура A2A — 5 ключових концептів</h3>
+  <div class="grid3">
+    <div class="card">
+      <h4 style="color:var(--a2a)">📋 Agent Card</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">JSON-документ що описує агента: ім'я, опис, skills, endpoint, auth. Лежить за стандартним URL <code>/.well-known/agent.json</code>. <b>Discovery аналог</b> robots.txt — кожен агент сам себе анонсує.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--a2a)">🛠 Skills</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">Високорівневі здібності — не функції. <b>"перевести текст з en→fr"</b>, <b>"проаналізувати PR на безпеку"</b>, <b>"запланувати meeting між 4 people"</b>. Описуються природною мовою + JSON schema.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--a2a)">📨 Task</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">Одиниця роботи з життєвим циклом: <code>submitted → working → input-required → completed/failed</code>. Тримає state. <b>Може тривати години</b> — асинхронна модель.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--a2a)">💬 Messages</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">Обмін у форматі text / file / structured data всередині task. Агенти ведуть <b>діалог</b>, не один-в-один request-response. Можуть запитувати уточнення.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--a2a)">📡 Streaming (SSE)</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">Server-Sent Events для long-running tasks — клієнт-агент отримує progress updates у real-time. <b>Принципово відрізняється від MCP</b> який в основному синхронний.</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--a2a)">🔐 Auth + Push</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">OAuth 2.0, mTLS, push notifications через webhooks — для enterprise. Агенти можуть <b>повертатися самостійно</b> коли робота готова.</p>
+    </div>
+  </div>
+
+  <div class="a2aFlow">
+    <div class="demoHead">
+      <div class="demoTitle">Live demo · Travel booking — Host агент координує 3 спеціалізованих агентів</div>
+      <div class="demoCtrl">
+        <span class="stepLbl" id="a2aStepLbl">step 0 / 6</span>
+        <button id="a2aPrev">‹ Prev</button>
+        <button id="a2aNext">Next ›</button>
+        <button id="a2aPlay" class="primary">▶ Play sequence</button>
+        <button id="a2aReset">Reset</button>
+      </div>
+    </div>
+    <div class="a2aStage" id="a2aStage">
+      <svg class="a2aLineSvg" viewBox="0 0 920 380" preserveAspectRatio="none">
+        <defs>
+          <marker id="a2aArr" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#4f9eff" opacity="0.9"/>
+          </marker>
+          <marker id="a2aArrPink" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#ff7eb6" opacity="0.9"/>
+          </marker>
+          <marker id="a2aArrGreen" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#9be37c" opacity="0.9"/>
+          </marker>
+          <marker id="a2aArrYellow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#ffd166" opacity="0.9"/>
+          </marker>
+        </defs>
+        <line class="a2aArrow" id="a2aL1" x1="180" y1="55" x2="370" y2="55" stroke="#7cd1ff" stroke-width="2" marker-end="url(#a2aArr)"/>
+        <line class="a2aArrow" id="a2aL2" x1="540" y1="80" x2="720" y2="80" stroke="#ff7eb6" stroke-width="2" marker-end="url(#a2aArrPink)"/>
+        <line class="a2aArrow" id="a2aL3" x1="540" y1="185" x2="720" y2="185" stroke="#9be37c" stroke-width="2" marker-end="url(#a2aArrGreen)"/>
+        <line class="a2aArrow" id="a2aL4" x1="540" y1="290" x2="720" y2="290" stroke="#ffd166" stroke-width="2" marker-end="url(#a2aArrYellow)"/>
+        <line class="a2aArrow" id="a2aL5" x1="720" y1="100" x2="540" y2="100" stroke="#ff7eb6" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#a2aArrPink)"/>
+        <line class="a2aArrow" id="a2aL6" x1="720" y1="205" x2="540" y2="205" stroke="#9be37c" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#a2aArrGreen)"/>
+        <line class="a2aArrow" id="a2aL7" x1="720" y1="310" x2="540" y2="310" stroke="#ffd166" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#a2aArrYellow)"/>
+        <line class="a2aArrow" id="a2aL8" x1="370" y1="55" x2="180" y2="55" stroke="#4f9eff" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#a2aArr)"/>
+      </svg>
+
+      <div class="a2aAgent user" id="a2aN0" style="left:10px;top:30px"><div class="nTitle">User</div><div class="nSub">"Book trip to Lisbon"</div></div>
+      <div class="a2aAgent host" id="a2aN1" style="left:370px;top:160px"><div class="nTitle">Travel Host Agent</div><div class="nSub">orchestrator</div><span class="nSkill">a2a/discover</span></div>
+      <div class="a2aAgent a1" id="a2aN2" style="left:720px;top:50px"><div class="nTitle">Flight Agent</div><div class="nSub">United Airlines</div><span class="nSkill">search_flight</span></div>
+      <div class="a2aAgent a2" id="a2aN3" style="left:720px;top:155px"><div class="nTitle">Hotel Agent</div><div class="nSub">Booking.com</div><span class="nSkill">find_hotel</span></div>
+      <div class="a2aAgent a3" id="a2aN4" style="left:720px;top:260px"><div class="nTitle">Calendar Agent</div><div class="nSub">Google Workspace</div><span class="nSkill">block_dates</span></div>
+    </div>
+    <div class="a2aCaption" id="a2aCaption">
+      <span class="step">▶ Press Play</span> Покажемо як Travel Host Agent координує 3 спеціалізованих агентів від різних компаній (United, Booking, Google) щоб виконати одну задачу користувача.
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">MCP vs A2A — коли який</h3>
+  <table class="compare">
+    <tr><th>Аспект</th><th>MCP</th><th>A2A</th></tr>
+    <tr><td>Хто з ким говорить</td><td>AI ↔ tool/service</td><td>AI ↔ AI</td></tr>
+    <tr><td>Друга сторона</td><td>Пасивний JSON-RPC сервер</td><td>Активний агент із власною логікою</td></tr>
+    <tr><td>Транспорт</td><td>stdio (локально) / HTTP</td><td>HTTP + SSE для streaming</td></tr>
+    <tr><td>Тривалість виклику</td><td>Секунди (synchronous)</td><td>Хвилини-години (asynchronous)</td></tr>
+    <tr><td>Discovery</td><td>Server-list у Host config</td><td>Agent Cards на <code>/.well-known/agent.json</code></td></tr>
+    <tr><td>State</td><td>Часто stateless</td><td>Stateful Tasks з життєвим циклом</td></tr>
+    <tr><td>Уточнюючі питання</td><td class="no">— ні (один shot)</td><td class="yes">✓ так (multi-turn)</td></tr>
+    <tr><td>Push notifications</td><td class="no">— ні</td><td class="yes">✓ webhooks</td></tr>
+    <tr><td>Створено</td><td>Anthropic, 2024</td><td>Google, 2025 (Linux Foundation)</td></tr>
+    <tr><td>Зрілість 2026</td><td><span class="pill ok">stable</span></td><td><span class="pill warn">evolving</span></td></tr>
+  </table>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>Ключова теза:</b> MCP і A2A — <b>комплементарні</b>, не конкуруючі. Реальний production-агент 2026 використовує <b>обидва</b>: A2A для координації з іншими агентами (delegation, multi-step workflows), MCP для звертань до своїх tools (БД, API, файлова система). Як HTTP + SMTP — обидва живуть поруч, кожен для своєї задачі.
+  </div>
+
+  <h3 style="margin-top:18px">Коли інвестувати у A2A</h3>
+  <div class="grid2">
+    <div class="card" style="border-color:var(--ok)">
+      <h4 style="color:var(--ok)">✓ A2A підходить коли</h4>
+      <ul style="margin:0;padding-left:18px;font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.7;color:#cdd5de">
+        <li>Будуєш <b>multi-agent систему</b> з 3+ спеціалізованих агентів</li>
+        <li>Агенти живуть у <b>різних компаніях / стеках / моделях</b></li>
+        <li>Workflow <b>довготривалий</b> — хвилини, години</li>
+        <li>Потрібен <b>real-time progress</b> через SSE</li>
+        <li>Агентам треба <b>домовлятися</b> (negotiate price, dates, options)</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:var(--warn)">
+      <h4 style="color:var(--warn)">✗ A2A — overkill коли</h4>
+      <ul style="margin:0;padding-left:18px;font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.7;color:#cdd5de">
+        <li>Один агент + tools — <b>MCP достатньо</b></li>
+        <li>Усі агенти у тебе в репозиторії — можна викликати напряму</li>
+        <li>Простий sequential pipeline без negotiation</li>
+        <li>Latency-critical — A2A додає async overhead</li>
+        <li>Прототип/демо — інвестиція не окупиться</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ SECTION 8: USE CASES ============================ -->
+<section id="usecases">
+  <h2><span class="num">09 ·</span> Реальні use cases — де MCP вже працює у production</h2>
+  <p class="lead">MCP не лабораторна іграшка — вже у 2025-26 його використовують Anthropic, OpenAI, Cursor, Block, Sourcegraph, Zed. Розглянемо три персони які отримують різну вигоду.</p>
+
+  <div class="grid3">
+    <div class="ucCard">
+      <h4>👨‍💻 Developer productivity <span class="pillSm">persona</span></h4>
+      <p><b>Cursor IDE</b> підключає GitHub MCP — AI бачить PR-и, issues, репозиторії. Не треба копіювати code review у chat.</p>
+      <p><b>Claude Desktop + filesystem MCP</b> — Claude читає локальні файли, виконує grep, експортує markdown.</p>
+      <p><b>Claude Desktop + Postgres MCP</b> — Claude пише і виконує SQL прямо на твоїй базі.</p>
+      <ul>
+        <li><b>Виграш:</b> економія 30-60 хв/день на context switching між AI і інструментами</li>
+        <li><b>Setup:</b> 5-10 хвилин на конфіг</li>
+      </ul>
+    </div>
+    <div class="ucCard">
+      <h4>🏢 Enterprise data access <span class="pillSm">persona</span></h4>
+      <p>Внутрішній MCP-сервер компанії експортує <b>Confluence + JIRA + Slack</b> як єдиний інтерфейс.</p>
+      <p>AI-асистент компанії підключається через MCP → отримує доступ до всіх внутрішніх знань <b>без custom integration</b> на кожен сервіс.</p>
+      <p>IAM-permissions працюють на рівні MCP Server через OAuth — кожен користувач бачить тільки те що йому дозволено.</p>
+      <ul>
+        <li><b>Виграш:</b> compliance + uniform audit log + переносимість між AI-провайдерами</li>
+        <li><b>Setup:</b> один platform engineer на 2-4 тижні</li>
+      </ul>
+    </div>
+    <div class="ucCard">
+      <h4>🤖 Agentic workflows <span class="pillSm">persona</span></h4>
+      <p>AI-агент має 5 MCP-серверів: Gmail, Calendar, CRM, Stripe, Slack.</p>
+      <p>Виконує мульти-step задачу: "знайди клієнтів які не оплатили інвойс за 30+ днів, надішли email, постав follow-up у календар, нотіфай sales-канал".</p>
+      <p><b>Жодного коду інтеграції не треба писати</b> — все через стандартні MCP-сервери.</p>
+      <ul>
+        <li><b>Виграш:</b> час від ідеї до production agent — дні, не тижні</li>
+        <li><b>Setup:</b> підключити готові сервери + написати prompt</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">Реальні приклади продуктів що підтримують MCP (станом на 2026)</h3>
+  <div class="grid4">
+    <div class="card"><h4>Claude Desktop</h4><p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px">Native MCP-конфіг через <code>claude_desktop_config.json</code></p></div>
+    <div class="card"><h4>Cursor IDE</h4><p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px">MCP-розширення для будь-якого AI-провайдера</p></div>
+    <div class="card"><h4>Zed editor</h4><p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px">MCP як основний механізм AI-інтеграцій</p></div>
+    <div class="card"><h4>Sourcegraph Cody</h4><p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px">MCP для context із внутрішніх джерел</p></div>
+    <div class="card"><h4>Block (Square)</h4><p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px">Внутрішні MCP-сервери для розробників</p></div>
+    <div class="card"><h4>OpenAI Agents SDK</h4><p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px">MCP як рекомендований transport</p></div>
+    <div class="card"><h4>Anthropic Skills</h4><p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px">Skills використовують MCP під капотом</p></div>
+    <div class="card"><h4>200+ community servers</h4><p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px">Готові сервери для Slack, Notion, AWS, Kubernetes</p></div>
+  </div>
+</section>
+
+<!-- ============================ SECTION 8: SECURITY ============================ -->
+<section id="security">
+  <h2><span class="num">10 ·</span> Безпека — що відбувається коли AI отримує доступ до твоїх інструментів</h2>
+  <p class="lead">Підключаєш MCP-сервер з повним read/write доступом до GitHub — AI <b>технічно може видалити репозиторій</b>. Це реальна проблема яку треба вирішувати правильно. MCP має 4 шари безпеки що працюють разом.</p>
+
+  <div class="grid2">
+    <div class="card" style="border-left:3px solid var(--server)">
+      <h4>🔒 Шар 1: Server-side permissions</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">Сервер сам обмежує що дозволено. Filesystem MCP server можна налаштувати на <b>read-only mode</b> або обмежити конкретними директоріями.<br><br><b>Принцип:</b> не довіряй AI — обмежуй на рівні Server. Він знає реальні permissions, AI може помилитись.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--host)">
+      <h4>👤 Шар 2: Host-side approval</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">Claude Desktop і Cursor показують <b>user confirmation dialog</b> перед виконанням destructive tool. Користувач бачить "Claude хоче видалити файл /tmp/foo — Approve / Deny" і вирішує.<br><br><b>Принцип:</b> destructive operations завжди йдуть через людину.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent)">
+      <h4>🔑 Шар 3: OAuth scopes</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">MCP підтримує OAuth 2.0 з scopes. Gmail-сервер може запитати тільки <code>gmail.readonly</code> — не повний доступ. Користувач бачить scope-list у consent screen.<br><br><b>Принцип:</b> мінімальний privilege. Завжди запитуй найвужчий scope.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4)">
+      <h4>📦 Шар 4: Sandbox processes</h4>
+      <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6">Server запускається як окремий процес з власними правами. Якщо Server скомпрометований — він <b>не може вийти за межі sandbox</b>.<br><br><b>Принцип:</b> isolation за замовчуванням. Server це окрема "ящик" а не частина Host-процесу.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">⚠ Anti-patterns яких слід уникати</h3>
+  <ul class="checklist">
+    <li class="warn"><b>Підключати MCP-сервери з невідомих джерел.</b> Як npm — може містити malware. Кожен Server це повноцінний процес на твоїй машині.</li>
+    <li class="warn"><b>Дозволяти AI виконувати arbitrary shell commands</b> через MCP без human approval. Найшвидший шлях до prompt injection → data exfiltration.</li>
+    <li class="warn"><b>Зберігати API keys у конфізі MCP-сервера у plaintext.</b> Використовуй OS keychain (macOS Keychain, Windows Credential Manager) або змінні середовища з обмеженим доступом.</li>
+    <li class="warn"><b>Підключати write-MCP до публічних AI-сервісів.</b> Якщо твій бот доступний користувачам — обмежуй MCP-сервери на read-only.</li>
+  </ul>
+
+  <div class="keypoint" style="margin-top:14px">
+    <b>Правило:</b> MCP <b>збільшує power</b> AI-агента, але також <b>збільшує attack surface</b>. Кожен підключений Server — це новий шлях для potential prompt injection або data exfiltration. Перед підключенням нового сервера у production задавай три питання: <b>(1)</b> що він може зробити у найгіршому випадку? <b>(2)</b> які scopes йому реально потрібні? <b>(3)</b> чи можна звузити до read-only або до однієї директорії?
+  </div>
+
+  <h3 style="margin-top:18px">⚠ Реальні інциденти 2026 — це не теорія</h3>
+  <p style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.65;color:#cdd5de;margin:0 0 12px">За перші п'ять місяців 2026 з'явилось понад десяток CVE у популярних MCP-серверах. Це означає що абстрактні ризики вище — конкретні вектори, які вже експлуатуються. Ось найгучніше:</p>
+  <table>
+    <tr><th style="width:130px">CVE / Reference</th><th style="width:90px">CVSS</th><th>Компонент і суть</th></tr>
+    <tr>
+      <td><b>CVE-2026-32211</b><br><span class="pill" style="font-size:9px">квітень 2026</span></td>
+      <td><span style="color:var(--err);font-weight:700">9.1</span><br>critical</td>
+      <td><b>@azure-devops/mcp — missing authentication.</b> Server від Microsoft приймав tool-виклики без перевірки токена. Будь-хто з мережевим доступом міг читати repo, pipelines, секрети. Виправлено у v2.0.</td>
+    </tr>
+    <tr>
+      <td><b>3× CVE у mcp-server-git</b><br><span class="pill" style="font-size:9px">січень 2026 · Cyata</span></td>
+      <td><span style="color:var(--err);font-weight:700">high</span></td>
+      <td><b>Офіційний git-сервер Anthropic.</b> Три вразливості prompt injection → file read/delete. Зловмисний commit message змушував AI-агента читати <code>~/.ssh/id_rsa</code> або видаляти файли поза репо. Це найболючіше — incident у "reference implementation".</td>
+    </tr>
+    <tr>
+      <td><b>CVE-2026-30615</b><br><span class="pill" style="font-size:9px">квітень 2026</span></td>
+      <td><span style="color:var(--err);font-weight:700">high</span></td>
+      <td><b>Zero-click prompt injection у Windsurf.</b> Клас вразливостей у AI IDE: Cursor, Claude Code, Gemini-CLI, GitHub Copilot вразливі схожим чином. Зловмисний файл у відкритому проєкті → exfiltration через MCP без жодного кліку юзера.</td>
+    </tr>
+    <tr>
+      <td><b>OX Security advisory</b><br><span class="pill" style="font-size:9px">2026 · 10 CVE</span></td>
+      <td><span style="color:var(--warn);font-weight:700">varies</span></td>
+      <td><b>Command injection у MCP STDIO.</b> 10 CVE одночасно для серверів, які передавали аргументи у shell без sanitization. Класичний 90-х CWE-78 повернувся через MCP-обгортки. CVE-2026-23947 — типовий приклад.</td>
+    </tr>
+    <tr>
+      <td><b>NSA CSI U/OO/6030316-26</b><br><span class="pill" style="font-size:9px">травень 2026</span></td>
+      <td><span style="color:var(--accent);font-weight:700">guidance</span></td>
+      <td><b>Cybersecurity Information Sheet від NSA</b> з рекомендаціями: OAuth 2.1 mandatory, session-scoped tokens, sandbox isolation, audit trails. Обов'язкове читання перед deploy у regulated environment.</td>
+    </tr>
+  </table>
+
+  <div class="keypoint" style="margin-top:14px;border-left-color:var(--err)">
+    <b style="color:var(--err)">Висновок:</b> класичні вразливості (SSRF, path traversal, command injection) у поєднанні з prompt injection створюють <b>розширену поверхню атаки</b>, до якої більшість команд не готова. Перед підключенням публічного MCP-сервера у production: <b>(1)</b> перевірити CVE-базу для пакета; <b>(2)</b> запустити у sandbox (Docker, Daytona, Cloudflare Sandbox) — ніколи як native process з повними правами; <b>(3)</b> увімкнути audit log на всі tool-виклики.
+  </div>
+</section>
+
+<!-- ============================ SECTION 9: ECOSYSTEM ============================ -->
+<section id="ecosystem">
+  <h2><span class="num">11 ·</span> Екосистема — і коли НЕ використовувати MCP</h2>
+  <p class="lead">MCP — потужний інструмент, але <b>не silver bullet</b>. Іноді function calling простіше і правильніше. Розглянемо коли MCP підходить, коли overkill, і яка зрілість екосистеми у 2026.</p>
+
+  <div class="grid2">
+    <div class="card" style="border-color:var(--ok)">
+      <h4 style="color:var(--ok)">✓ MCP підходить коли</h4>
+      <ul style="margin:0;padding-left:18px;font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.7;color:#cdd5de">
+        <li>Будуєш AI-агента що <b>підключається до багатьох сервісів</b> (Slack, GitHub, БД, API)</li>
+        <li>Хочеш щоб tools <b>переносились між Host-ами</b> (Claude → Cursor → власний bot)</li>
+        <li>Команда має <b>багато AI-додатків</b> які потребують спільних інтеграцій</li>
+        <li>Будуєш <b>enterprise AI-платформу</b> з permission management і audit</li>
+        <li>Інтегруєш AI з internal compliance-критичною системою</li>
+        <li>Хочеш мати свободу <b>міняти LLM-провайдера</b> без переписування інтеграцій</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:var(--warn)">
+      <h4 style="color:var(--warn)">✗ MCP — overkill коли</h4>
+      <ul style="margin:0;padding-left:18px;font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.7;color:#cdd5de">
+        <li><b>Простий chatbot</b> з 2-3 hardcoded функціями — function calling достатньо</li>
+        <li><b>Однорангове scripting</b> — Python script з OpenAI SDK і прямими API calls простіший</li>
+        <li><b>Latency-critical системи</b> — JSON-RPC overhead може коштувати десятки мс</li>
+        <li><b>Real-time streaming</b> — MCP transport не оптимізований під SSE/WebSocket high-throughput</li>
+        <li><b>Демо/прототип</b> — у нього і так піде у смітник, не варто інвестувати у Server</li>
+        <li><b>Один-провайдер один-tool</b> — нема що переносити, нема що стандартизувати</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">Зрілість екосистеми (станом на 2026)</h3>
+  <table>
+    <tr><th>Компонент</th><th>Стан</th><th>Примітки</th></tr>
+    <tr><td><b>JSON-RPC core spec</b></td><td><span class="pill ok">stable</span></td><td>Версія 2024-11-05 не зміниться без deprecation period</td></tr>
+    <tr><td><b>stdio transport</b></td><td><span class="pill ok">stable</span></td><td>Default для локальних серверів, добре працює</td></tr>
+    <tr><td><b>HTTP/SSE transport</b></td><td><span class="pill ok">stable</span></td><td>Для віддалених серверів і enterprise</td></tr>
+    <tr><td><b>OAuth 2.0 flow</b></td><td><span class="pill ok">stable</span></td><td>Стандартні scopes, типова integration</td></tr>
+    <tr><td><b>Python SDK</b></td><td><span class="pill ok">stable</span></td><td>Офіційний <code>mcp</code> пакет, активна підтримка</td></tr>
+    <tr><td><b>TypeScript SDK</b></td><td><span class="pill ok">stable</span></td><td><code>@modelcontextprotocol/sdk</code></td></tr>
+    <tr><td><b>WebSocket transport</b></td><td><span class="pill warn">evolving</span></td><td>Новий, ще не стандартизований для всіх кейсів</td></tr>
+    <tr><td><b>Schema versioning</b></td><td><span class="pill warn">evolving</span></td><td>Best practices ще формуються</td></tr>
+    <tr><td><b>Observability standards</b></td><td><span class="pill warn">evolving</span></td><td>OpenTelemetry integration на ранніх стадіях</td></tr>
+  </table>
+
+  <h3 style="margin-top:18px">Альтернативи якщо MCP не підходить</h3>
+  <ul class="checklist">
+    <li><b>OpenAI Agents SDK</b> — фреймворк, не протокол. Простіший старт, але vendor-locked на OpenAI.</li>
+    <li><b>LangChain tool calling</b> — для prototyping і одноразових скриптів. У production менш переносимо.</li>
+    <li><b>Native function calling</b> — найпростіше для одного провайдера, найскладніше для портабельності.</li>
+    <li><b>Custom REST API</b> — якщо твій Server вже існує як internal REST API, можна не загортати у MCP, а викликати напряму через function calling.</li>
+  </ul>
+</section>
+
+<!-- ============================ SECTION 10: RECAP ============================ -->
+<section id="recap">
+  <h2><span class="num">12 ·</span> Recap — практичні висновки</h2>
+  <p class="lead">Підсумуємо що варто винести з лекції і що зробити цього тижня.</p>
+
+  <h3>Ключові тези лекції — у п'яти реченнях</h3>
+  <ul class="checklist">
+    <li><b>MCP — це стандартизація</b> того що раніше кожен фреймворк винаходив сам. Не нова технологія, не модель — <b>протокол</b>.</li>
+    <li><b>Три ролі: Host (застосунок), Client (з'єднання), Server (capability provider).</b> Server можна писати один раз і переюзовувати з будь-яким Host.</li>
+    <li><b>Три типи капабіліті: Tools (модель викликає), Resources (модель читає), Prompts (юзер вибирає).</b> Function calling має лише tools — MCP додає два інші шари.</li>
+    <li><b>MCP не замінює function calling — надбудовується над ним.</b> LLM генерує tool_use, Host транслює у MCP. Модель цього не помічає.</li>
+    <li><b>Default вибір для production AI-агентів у 2026.</b> Підтримують всі major вендори, екосистема зріла, інвестиція окуповується через 6-12 місяців переносимості.</li>
+  </ul>
+
+  <h3 style="margin-top:18px">Recap — симптом → який шар MCP розв'язує</h3>
+  <table>
+    <tr><th>Симптом / задача</th><th>Що використати</th><th>Чому</th></tr>
+    <tr><td>Модель має викликати функцію (write)</td><td><b>Tool</b></td><td>LLM сама вирішує коли — стандартний tool calling</td></tr>
+    <tr><td>Модель має прочитати документ</td><td><b>Resource</b></td><td>Attach у context, без витрачання tool call rotation</td></tr>
+    <tr><td>Юзер часто робить ту саму операцію</td><td><b>Prompt</b></td><td>Шаблон у dropdown — швидше і надійніше</td></tr>
+    <tr><td>Потрібен переніс tools між провайдерами</td><td><b>MCP Server</b></td><td>Один Server працює з Claude, GPT, Gemini одночасно</td></tr>
+    <tr><td>Enterprise auth для AI-доступу</td><td><b>MCP + OAuth</b></td><td>Стандартні scopes, audit log на рівні Server</td></tr>
+    <tr><td>Простий chatbot з 2 функціями</td><td><b>Function calling напряму</b></td><td>MCP overkill, не варто інвестувати в Server</td></tr>
+  </table>
+
+  <h3 style="margin-top:18px">Що зробити цього тижня</h3>
+  <ul class="checklist">
+    <li><b>Встанови Claude Desktop</b> і подивись як виглядає UI з підключеним MCP — 10 хвилин роботи</li>
+    <li><b>Підключи готовий filesystem MCP server</b> — побачиш протокол у дії на твоїх локальних файлах</li>
+    <li><b>Прочитай specification</b> на <code>modelcontextprotocol.io</code> — це 30 сторінок, читається за вечір</li>
+    <li><b>Виконай домашнє завдання</b> — напиши власний MCP-сервер. Це <b>єдиний спосіб</b> по-справжньому зрозуміти протокол.</li>
+    <li><b>Подивись список 200+ community MCP-серверів</b> на GitHub — імовірно для твого use case вже є готовий</li>
+  </ul>
+
+  <div class="keypoint" style="margin-top:18px">
+    <b>Фінальна думка:</b> MCP — це <b>не нова технологія</b>, це <b>стандартизація</b>. Так само як HTTP не винайшов клієнт-сервер а стандартизував його, MCP не винайшов tool use — він <b>зробив його портабельним</b>. Це виглядає менш ефектно ніж нова модель, але має <b>більший довгостроковий вплив</b>: AI-система яку ви пишете сьогодні з MCP — буде працювати з моделями і платформами 2030 року <b>без переписування</b>. Це і є основна цінність.
+  </div>
+</section>
+
+</div>
+
+<script>
+// === DEMO 1: Chaos animation (N×M problem) ===
+const chaosLines = document.querySelectorAll('#chaosLines .chaosLine');
+const chaosNodes = document.querySelectorAll('#chaosLLMs .chaosNode, #chaosServices .chaosNode');
+const chaosCount = document.getElementById('chaosCount');
+const chaosCaption = document.getElementById('chaosCaption');
+const chaosLbl = document.getElementById('chaosStepLbl');
+let chaosStep = 0;
+let chaosTimer = null;
+
+const chaosSteps = [
+  { lines: [], count: 'N × M = 16 custom integrations', caption: '<span class="step">▶ Press Play</span> До MCP кожен AI-провайдер мав свій формат tools. Щоб підключити Slack до 4 провайдерів — треба було писати 4 окремі обгортки.' },
+  { lines: ['L1-S1','L1-S2','L1-S3','L1-S4'], count: 'OpenAI: 4 custom integrations', caption: '<span class="step">1 · OpenAI</span> Команда під OpenAI пише 4 інтеграції — кожна у форматі <b>function_calling</b>. Працює.' },
+  { lines: ['L1-S1','L1-S2','L1-S3','L1-S4','L2-S1','L2-S2','L2-S3','L2-S4'], count: '+ Anthropic: 8 total', caption: '<span class="step">2 · + Anthropic</span> Інша команда мігрує на Claude. <b>Все треба переписати</b> у форматі tool_use blocks. Тих самих 4 інтеграції — другий раз.' },
+  { lines: ['L1-S1','L1-S2','L1-S3','L1-S4','L2-S1','L2-S2','L2-S3','L2-S4','L3-S1','L3-S2','L3-S3','L3-S4'], count: '+ Google: 12 total', caption: '<span class="step">3 · + Google</span> Третя команда на Gemini. Знову переписують. Це і є N×M проблема.' },
+  { lines: 'all', count: '4 × 4 = 16 maintained codepaths', caption: '<span class="step bad">4 · The chaos</span> 4 LLM × 4 сервіси = <b class="bad">16 окремих інтеграцій</b> які треба підтримувати. <b>MCP вирішує це</b> заміною на 1 + N + M (1 протокол + N клієнтів + M серверів).' }
+];
+
+function chaosRender() {
+  const s = chaosSteps[chaosStep];
+  chaosLines.forEach(line => {
+    const key = line.dataset.from + '-' + line.dataset.to;
+    const isOn = s.lines === 'all' || (s.lines || []).includes(key);
+    line.classList.toggle('fade', !isOn);
+  });
+  chaosCount.textContent = s.count;
+  chaosCaption.innerHTML = s.caption;
+  chaosLbl.textContent = `step ${chaosStep} / ${chaosSteps.length - 1}`;
+}
+
+function chaosStop() { if (chaosTimer) { clearInterval(chaosTimer); chaosTimer = null; document.getElementById('chaosPlay').textContent = '▶ Play'; } }
+
+document.getElementById('chaosPlay').addEventListener('click', () => {
+  if (chaosTimer) { chaosStop(); return; }
+  if (chaosStep >= chaosSteps.length - 1) chaosStep = 0;
+  document.getElementById('chaosPlay').textContent = '⏸ Pause';
+  chaosRender();
+  chaosTimer = setInterval(() => {
+    if (chaosStep >= chaosSteps.length - 1) { chaosStop(); return; }
+    chaosStep++;
+    chaosRender();
+  }, 1800);
+});
+document.getElementById('chaosReset').addEventListener('click', () => { chaosStop(); chaosStep = 0; chaosRender(); });
+chaosRender();
+
+// === DEMO 2: Hero animation (MCP intro) ===
+const heroSteps = [
+  { active: [], paths: [], caption: '<span class="step">▶ Натисни Play sequence</span> Покажемо як один Host (Claude Desktop) має багато Clients — кожен говорить з власним Server. Сервери незалежні і переюзні.' },
+  { active: ['heroLLM','heroHost'], paths: ['heroP1'], caption: '<span class="step">1 · LLM ↔ Host</span> Host (Claude Desktop, Cursor) запускає LLM. Це <b>користувацький застосунок</b>. Він не знає про деталі tools — лише про факт що вони існують.' },
+  { active: ['heroLLM','heroHost','heroCl1','heroCl2','heroCl3'], paths: ['heroP1','heroP2','heroP3','heroP4'], caption: '<span class="step">2 · Host → 3 Clients</span> Host створює <b>по одному Client на кожен підключений MCP-server</b>. Кожен Client відповідає за свій transport, авторизацію, lifecycle.' },
+  { active: ['heroLLM','heroHost','heroCl1','heroCl2','heroCl3','heroSr1','heroSr2','heroSr3'], paths: ['heroP1','heroP2','heroP3','heroP4','heroP5','heroP6','heroP7'], caption: '<span class="step">3 · Clients ↔ Servers</span> Кожен Client має свій Server. Server експортує <b>tools / resources / prompts</b>. Жоден Server не знає про LLM — він просто JSON-RPC сервіс.' },
+  { active: ['heroLLM','heroHost','heroCl1','heroCl2','heroCl3','heroSr1','heroSr2','heroSr3'], paths: ['heroP1','heroP2','heroP3','heroP4','heroP5','heroP6','heroP7'], caption: '<span class="step">4 · The payoff</span> Цей самий GitHub MCP Server <b>працює з будь-яким Host</b> — Claude Desktop сьогодні, Cursor завтра, твій власний bot післязавтра. <b>Один сервер — N споживачів.</b>' }
+];
+
+const heroAllBoxes = ['heroLLM','heroHost','heroCl1','heroCl2','heroCl3','heroSr1','heroSr2','heroSr3'];
+const heroAllPaths = ['heroP1','heroP2','heroP3','heroP4','heroP5','heroP6','heroP7'];
+let heroStep = 0;
+let heroTimer = null;
+
+function heroRender() {
+  const s = heroSteps[heroStep];
+  heroAllBoxes.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const on = s.active.includes(id);
+    el.classList.toggle('active', on);
+    el.classList.toggle('dim', !on && s.active.length > 0);
+  });
+  heroAllPaths.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('active', s.paths.includes(id));
+    el.setAttribute('stroke-opacity', s.paths.includes(id) ? '0.9' : '0.25');
+  });
+  document.getElementById('heroCaption').innerHTML = s.caption;
+  document.getElementById('heroStepLbl').textContent = `step ${heroStep} / ${heroSteps.length - 1}`;
+}
+
+function heroStop() { if (heroTimer) { clearInterval(heroTimer); heroTimer = null; document.getElementById('heroPlay').textContent = '▶ Play sequence'; } }
+
+document.getElementById('heroPlay').addEventListener('click', () => {
+  if (heroTimer) { heroStop(); return; }
+  if (heroStep >= heroSteps.length - 1) heroStep = 0;
+  document.getElementById('heroPlay').textContent = '⏸ Pause';
+  heroRender();
+  heroTimer = setInterval(() => {
+    if (heroStep >= heroSteps.length - 1) { heroStop(); return; }
+    heroStep++;
+    heroRender();
+  }, 2400);
+});
+document.getElementById('heroReset').addEventListener('click', () => { heroStop(); heroStep = 0; heroRender(); });
+heroRender();
+
+// === DEMO 3: Capabilities tabs (Tools / Resources / Prompts) ===
+const capData = {
+  tools: {
+    cls: 'tools',
+    title: '🛠 Tools — функції які викликає модель',
+    def: '<b>Tools</b> — це найближче до function calling. Server заявляє "у мене є функція <code>send_email(to, subject, body)</code>". LLM <b>вирішує коли її викликати</b>, Host пропускає виклик через Client до Server, Server виконує і повертає результат.<br><br><b>Властивості:</b><br>• Часто <b>мутують стан</b> (send, create, delete, write)<br>• <b>Параметризовані</b> — мають JSON Schema для arguments<br>• Потребують <b>user approval</b> для destructive операцій (Host робить confirmation dialog)<br>• Можуть повертати <b>structured data</b> або текст<br><br><b>Приклад:</b> GitHub MCP server експортує <code>create_issue</code>, <code>list_pull_requests</code>, <code>merge_pr</code>, <code>add_comment</code>.',
+    code: '<span class="c">// Tool declaration (Python MCP SDK)</span>\n<span class="k">@app</span>.list_tools()\n<span class="k">async def</span> <span class="n">list_tools</span>(): \n  <span class="k">return</span> [\n    Tool(\n      name=<span class="s">"create_issue"</span>,\n      description=<span class="s">"Create a new GitHub issue"</span>,\n      inputSchema={\n        <span class="s">"type"</span>: <span class="s">"object"</span>,\n        <span class="s">"properties"</span>: {\n          <span class="s">"repo"</span>: {<span class="s">"type"</span>: <span class="s">"string"</span>},\n          <span class="s">"title"</span>: {<span class="s">"type"</span>: <span class="s">"string"</span>},\n          <span class="s">"body"</span>: {<span class="s">"type"</span>: <span class="s">"string"</span>}\n        },\n        <span class="s">"required"</span>: [<span class="s">"repo"</span>, <span class="s">"title"</span>]\n      }\n    )\n  ]'
+  },
+  resources: {
+    cls: 'resources',
+    title: '📂 Resources — дані які читає модель',
+    def: '<b>Resources</b> — це <b>новий концепт</b> якого нема у function calling. Server каже "у мене є файл <code>policy.md</code>, у мене є таблиця <code>users</code>, у мене є API endpoint <code>/orders/recent</code>". Модель може ці ресурси <b>прочитати у context window</b> як read-only дані.<br><br><b>Властивості:</b><br>• <b>Read-only</b> завжди<br>• Ідентифіковані за URI (<code>file:///...</code>, <code>postgres://...</code>, custom schemes)<br>• Підтримують <b>subscriptions</b> — Server може повідомити коли ресурс змінився<br>• Можуть бути <b>статичні</b> (фіксовані файли) або <b>динамічні</b> (генеруються при запиті)<br><br><b>Чому окремо від tools:</b> attach документа у context — це не tool call. Прямий шлях зменшує latency і token usage.',
+    code: '<span class="c">// Resource declaration</span>\n<span class="k">@app</span>.list_resources()\n<span class="k">async def</span> <span class="n">list_resources</span>():\n  <span class="k">return</span> [\n    Resource(\n      uri=<span class="s">"notes://all"</span>,\n      name=<span class="s">"All notes"</span>,\n      description=<span class="s">"Snapshot of every stored note"</span>,\n      mimeType=<span class="s">"application/json"</span>\n    )\n  ]\n\n<span class="k">@app</span>.read_resource()\n<span class="k">async def</span> <span class="n">read_resource</span>(uri):\n  <span class="k">if</span> uri == <span class="s">"notes://all"</span>:\n    <span class="k">return</span> json.dumps(load_notes())'
+  },
+  prompts: {
+    cls: 'prompts',
+    title: '📝 Prompts — шаблони які вибирає юзер',
+    def: '<b>Prompts</b> — це <b>шаблони запитів</b> які користувач вибирає зі списку. GitHub MCP server може експортувати prompt <code>summarize_pr</code> що формує правильний запит на резюмування pull request з усім необхідним context.<br><br><b>Властивості:</b><br>• <b>Ініціює користувач</b> (через UI dropdown), не модель<br>• Можуть мати <b>аргументи</b> (наприклад <code>summarize_pr(pr_number)</code>)<br>• Server повертає <b>готовий промпт</b> — не виконує його сам<br>• Корисно для <b>повторюваних операцій</b>, складних промптів, командно-стандартизованих запитів<br><br><b>Аналогія:</b> snippets у VSCode або saved searches у Jira. Зменшує когнітивне навантаження.',
+    code: '<span class="c">// Prompt declaration</span>\n<span class="k">@app</span>.list_prompts()\n<span class="k">async def</span> <span class="n">list_prompts</span>():\n  <span class="k">return</span> [\n    Prompt(\n      name=<span class="s">"summarize_pr"</span>,\n      description=<span class="s">"Generate PR summary"</span>,\n      arguments=[\n        PromptArgument(\n          name=<span class="s">"pr_number"</span>,\n          required=<span class="k">True</span>\n        )\n      ]\n    )\n  ]\n\n<span class="k">@app</span>.get_prompt()\n<span class="k">async def</span> <span class="n">get_prompt</span>(name, args):\n  <span class="k">if</span> name == <span class="s">"summarize_pr"</span>:\n    pr = github_fetch(args[<span class="s">"pr_number"</span>])\n    <span class="k">return</span> <span class="s">f"Summarize this PR: {pr.body}"</span>'
+  },
+  apps: {
+    cls: 'apps',
+    title: '🪟 Apps — інтерактивний UI всередині Host (нове у 2026)',
+    def: '<b>MCP Apps</b> — четвертий тип капабіліті, запущений у січні 2026 спільно Anthropic, OpenAI, MCP-UI та Block. Перше офіційне розширення (SEP-1865) у новому Extensions framework. Сервер <b>повертає інтерактивний HTML</b>, який рендериться у <b>sandboxed iframe</b> всередині Claude, ChatGPT, Goose або VS Code Insiders.<br><br><b>Чому це change in kind, не in degree:</b> до Apps MCP оперував тільки текстом. Тепер сервер може показати календар з кліком, форму бронювання, графік, діаграму, креслення Figma. Юзер взаємодіє з UI — Host надсилає події назад на сервер.<br><br><b>Партнери першого дня:</b> Amplitude, Asana, Box, Canva, Clay, Figma, Hex, monday.com, Slack. <b>Підтримка хостами:</b> Claude (Pro/Max/Team/Enterprise), ChatGPT, Goose, VS Code Insiders.<br><br><b>Технічно:</b> sandbox = iframe з вимкненим top-navigation і без доступу до cookies Host. Безпека успадковує browser isolation model.',
+    code: '<span class="c">// MCP App declaration (SEP-1865)</span>\n<span class="k">@app</span>.list_apps()\n<span class="k">async def</span> <span class="n">list_apps</span>():\n  <span class="k">return</span> [\n    App(\n      id=<span class="s">"calendar-picker"</span>,\n      name=<span class="s">"Date picker"</span>,\n      mimeType=<span class="s">"text/html"</span>,\n      sandbox=<span class="s">"strict"</span>\n    )\n  ]\n\n<span class="k">@app</span>.render_app()\n<span class="k">async def</span> <span class="n">render_app</span>(app_id, ctx):\n  <span class="k">if</span> app_id == <span class="s">"calendar-picker"</span>:\n    <span class="k">return</span> AppResponse(\n      html=load_template(<span class="s">"calendar.html"</span>),\n      events=[<span class="s">"date.selected"</span>]\n    )\n\n<span class="c">// Host renders HTML in sandboxed iframe</span>\n<span class="c">// User clicks → event → back to server</span>'
+  }
+};
+
+let capCurrent = 'tools';
+function capRender() {
+  const d = capData[capCurrent];
+  document.querySelectorAll('#capTabs .capTab').forEach(t => {
+    t.classList.remove('active','tools','resources','prompts','apps');
+    if (t.dataset.cap === capCurrent) {
+      t.classList.add('active', d.cls);
+    } else {
+      t.classList.add(t.dataset.cap);
+    }
+  });
+  document.getElementById('capStage').innerHTML = `
+    <div class="capCol">
+      <div class="capDef">
+        <h4>${d.title}</h4>
+        ${d.def}
+      </div>
+      <div class="capCode">${d.code}</div>
+    </div>
+  `;
+}
+
+document.querySelectorAll('#capTabs .capTab').forEach(t => {
+  t.addEventListener('click', () => {
+    capCurrent = t.dataset.cap;
+    capRender();
+  });
+});
+capRender();
+
+// === DEMO 4: RPC flow (Host → LLM → Client → Server → API → response) ===
+const rpcSteps = [
+  {
+    active: [],
+    arrows: [],
+    caption: '<span class="step">▶ Press Play</span> Користувач у Claude Desktop запитує: <b>"Що нового у моєму GitHub репозиторії?"</b> Покажемо як цей запит проходить 7 кроків через стек і повертається з відповіддю.'
+  },
+  {
+    active: ['rpcN1','rpcN2'],
+    arrows: ['rpcL1'],
+    caption: '<span class="step">1 · User → Host</span> Користувач друкує запит у Claude Desktop chat. <b>Host</b> отримує його, готує до передачі у LLM з списком доступних tools (від усіх підключених MCP-серверів).'
+  },
+  {
+    active: ['rpcN1','rpcN2','rpcN3'],
+    arrows: ['rpcL1','rpcL2'],
+    caption: '<span class="step">2 · Host → LLM</span> Host шле модель з prompt + список <b>tools з усіх MCP-серверів</b>. LLM бачить серед них <code>list_recent_commits</code> з GitHub server. Модель <b>сама вирішує</b> що цей tool потрібен.'
+  },
+  {
+    active: ['rpcN1','rpcN2','rpcN3','rpcN4'],
+    arrows: ['rpcL1','rpcL2','rpcL3'],
+    caption: '<span class="step">3 · LLM → Host → Client</span> LLM повертає <b>tool_use block</b>: <code>{name: "list_recent_commits", args: {repo: "user/project"}}</code>. Host знаходить що цей tool належить GitHub server → пропускає виклик відповідному <b>MCP Client</b>.'
+  },
+  {
+    active: ['rpcN1','rpcN2','rpcN3','rpcN4','rpcN5'],
+    arrows: ['rpcL1','rpcL2','rpcL3','rpcL4'],
+    caption: '<span class="step">4 · Client → Server (JSON-RPC)</span> Client серіалізує виклик у JSON-RPC і шле через stdio до <b>GitHub MCP Server</b>: <code>{"method": "tools/call", "params": {"name": "list_recent_commits", ...}}</code>.'
+  },
+  {
+    active: ['rpcN1','rpcN2','rpcN3','rpcN4','rpcN5','rpcN6'],
+    arrows: ['rpcL1','rpcL2','rpcL3','rpcL4','rpcL5'],
+    caption: '<span class="step">5 · Server → GitHub API</span> Server робить <b>реальний HTTPS виклик</b> до <code>api.github.com/repos/user/project/commits</code> з OAuth token. <b>Server знає про GitHub API, LLM не знає.</b>'
+  },
+  {
+    active: ['rpcN1','rpcN2','rpcN3','rpcN4','rpcN5','rpcN6','rpcN7'],
+    arrows: ['rpcL1','rpcL2','rpcL3','rpcL4','rpcL5','rpcL6'],
+    caption: '<span class="step">6 · API → Server → Client</span> GitHub API повертає JSON з 5 commits (autor, title, date). Server обгортає у JSON-RPC response і шле назад через stdio до Client.'
+  },
+  {
+    active: ['rpcN1','rpcN2','rpcN3','rpcN4','rpcN5','rpcN6','rpcN7'],
+    arrows: ['rpcL1','rpcL2','rpcL3','rpcL4','rpcL5','rpcL6','rpcL7'],
+    caption: '<span class="step">7 · Client → Host → LLM → User</span> Client передає результат у Host → Host вкладає його у context → <b>LLM генерує фінальну відповідь</b>: "У вашому репо за останній тиждень 5 commits: ... ". Користувач бачить відповідь у chat.'
+  }
+];
+
+const rpcAllNodes = ['rpcN1','rpcN2','rpcN3','rpcN4','rpcN5','rpcN6','rpcN7'];
+const rpcAllArrows = ['rpcL1','rpcL2','rpcL3','rpcL4','rpcL5','rpcL6','rpcL7'];
+let rpcStep = 0;
+let rpcTimer = null;
+
+function rpcRender() {
+  const s = rpcSteps[rpcStep];
+  rpcAllNodes.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('on', s.active.includes(id));
+  });
+  rpcAllArrows.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('on', s.arrows.includes(id));
+  });
+  document.getElementById('rpcCaption').innerHTML = s.caption;
+  document.getElementById('rpcStepLbl').textContent = `step ${rpcStep} / ${rpcSteps.length - 1}`;
+}
+
+function rpcStop() { if (rpcTimer) { clearInterval(rpcTimer); rpcTimer = null; document.getElementById('rpcPlay').textContent = '▶ Play sequence'; } }
+document.getElementById('rpcNext').addEventListener('click', () => { rpcStop(); rpcStep = Math.min(rpcSteps.length - 1, rpcStep + 1); rpcRender(); });
+document.getElementById('rpcPrev').addEventListener('click', () => { rpcStop(); rpcStep = Math.max(0, rpcStep - 1); rpcRender(); });
+document.getElementById('rpcReset').addEventListener('click', () => { rpcStop(); rpcStep = 0; rpcRender(); });
+document.getElementById('rpcPlay').addEventListener('click', () => {
+  if (rpcTimer) { rpcStop(); return; }
+  if (rpcStep >= rpcSteps.length - 1) rpcStep = 0;
+  rpcRender();
+  document.getElementById('rpcPlay').textContent = '⏸ Pause';
+  rpcTimer = setInterval(() => {
+    if (rpcStep >= rpcSteps.length - 1) { rpcStop(); return; }
+    rpcStep++;
+    rpcRender();
+  }, 2400);
+});
+rpcRender();
+
+// === DEMO 5: Wire view (raw JSON-RPC trace) ===
+const wireSteps = [
+  {
+    host: false, server: false, pipe: '', label: '',
+    messages: [],
+    caption: '<span class="step">▶ Press Play</span> Покажемо повний обмін між Host і Server через stdio. <b>7 повідомлень</b>: initialize → initialized notification → tools/list → tools/call.'
+  },
+  {
+    host: true, server: false, pipe: 'down', label: 'request id=1',
+    messages: [{
+      kind: 'req', dir: 'Host → Server', tag: 'REQUEST', id: '1',
+      json: '{\n  "jsonrpc": "2.0",\n  "id": 1,\n  "method": "initialize",\n  "params": {\n    "protocolVersion": "2025-06-18",\n    "capabilities": {},\n    "clientInfo": { "name": "Claude Desktop", "version": "1.4.0" }\n  }\n}'
+    }],
+    caption: '<span class="step">1 · initialize REQUEST</span> Host (Claude Desktop) шле перший конверт. Це <b>request</b>: має <code>id</code>, чекає response. У params — версія протоколу, які capabilities підтримує клієнт, і хто він такий.'
+  },
+  {
+    host: false, server: true, pipe: 'up', label: 'response id=1',
+    messages: [{
+      kind: 'res', dir: 'Server → Host', tag: 'RESPONSE', id: '1',
+      json: '{\n  "jsonrpc": "2.0",\n  "id": 1,\n  "result": {\n    "protocolVersion": "2025-06-18",\n    "capabilities": { "tools": {}, "resources": {} },\n    "serverInfo": { "name": "notes-keeper", "version": "0.1.0" }\n  }\n}'
+    }],
+    caption: '<span class="step">2 · initialize RESPONSE</span> Server відповідає з <b>тим самим id=1</b>. Декларує що вміє: <code>tools</code> і <code>resources</code>. Якби id був інший — Host висне на таймауті. Це найчастіша помилка початківця.'
+  },
+  {
+    host: true, server: false, pipe: 'down', label: 'notification (no id)',
+    messages: [{
+      kind: 'notif', dir: 'Host → Server', tag: 'NOTIFICATION', id: '—',
+      json: '{\n  "jsonrpc": "2.0",\n  "method": "notifications/initialized"\n}'
+    }],
+    caption: '<span class="step">3 · initialized NOTIFICATION</span> Host каже "я готовий". Це <b>notification — без id</b>. Server <b>не повинен</b> відповідати. Fire-and-forget. На цей конверт відповідати — порушення протоколу.'
+  },
+  {
+    host: true, server: false, pipe: 'down', label: 'request id=2',
+    messages: [{
+      kind: 'req', dir: 'Host → Server', tag: 'REQUEST', id: '2',
+      json: '{\n  "jsonrpc": "2.0",\n  "id": 2,\n  "method": "tools/list",\n  "params": {}\n}'
+    }],
+    caption: '<span class="step">4 · tools/list REQUEST</span> Host питає "що ти вмієш?". Новий <code>id=2</code>. Params порожні — це discovery виклик.'
+  },
+  {
+    host: false, server: true, pipe: 'up', label: 'response id=2',
+    messages: [{
+      kind: 'res', dir: 'Server → Host', tag: 'RESPONSE', id: '2',
+      json: '{\n  "jsonrpc": "2.0",\n  "id": 2,\n  "result": {\n    "tools": [{\n      "name": "add_note",\n      "description": "Save a note",\n      "inputSchema": {\n        "type": "object",\n        "properties": { "text": { "type": "string" } },\n        "required": ["text"]\n      }\n    }]\n  }\n}'
+    }],
+    caption: '<span class="step">5 · tools/list RESPONSE</span> Server повертає масив tools з <b>JSON Schema</b>. LLM прочитає цей schema і знатиме як викликати add_note. Це і є основа MCP — типізована декларація можливостей.'
+  },
+  {
+    host: true, server: false, pipe: 'down', label: 'request id=3',
+    messages: [{
+      kind: 'req', dir: 'Host → Server', tag: 'REQUEST', id: '3',
+      json: '{\n  "jsonrpc": "2.0",\n  "id": 3,\n  "method": "tools/call",\n  "params": {\n    "name": "add_note",\n    "arguments": { "text": "привіт з MCP" }\n  }\n}'
+    }],
+    caption: '<span class="step">6 · tools/call REQUEST</span> LLM згенерував tool_use → Host обернув у JSON-RPC і шле. <code>id=3</code>. У params — назва tool і аргументи що згенерувала модель.'
+  },
+  {
+    host: false, server: true, pipe: 'up', label: 'response id=3',
+    messages: [{
+      kind: 'res', dir: 'Server → Host', tag: 'RESPONSE', id: '3',
+      json: '{\n  "jsonrpc": "2.0",\n  "id": 3,\n  "result": {\n    "content": [{\n      "type": "text",\n      "text": "Saved note #1"\n    }],\n    "isError": false\n  }\n}'
+    }],
+    caption: '<span class="step">7 · tools/call RESPONSE</span> Server виконав логіку (зберіг нотатку) і повернув результат. <b>id=3 співпадає з запитом.</b> Host передає result у LLM як tool_result → LLM генерує фінальну відповідь юзеру. Цикл завершено.'
+  }
+];
+
+function wireSyntaxHL(s) {
+  return s
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"([^"\\]*)":/g, '<span class="jk">"$1"</span><span class="jpunct">:</span>')
+    .replace(/: "([^"\\]*)"/g, '<span class="jpunct">:</span> <span class="jstr">"$1"</span>')
+    .replace(/: (\d+)/g, '<span class="jpunct">:</span> <span class="jnum">$1</span>')
+    .replace(/: (true|false|null)/g, '<span class="jpunct">:</span> <span class="jnull">$1</span>')
+    .replace(/([{}\[\],])/g, '<span class="jpunct">$1</span>');
+}
+
+let wireStep = 0;
+let wireTimer = null;
+
+function wireStop() {
+  if (wireTimer) { clearInterval(wireTimer); wireTimer = null; }
+  document.getElementById('wirePlay').textContent = '▶ Play sequence';
+}
+
+function wireRender() {
+  const s = wireSteps[wireStep];
+
+  document.getElementById('wireHost').classList.toggle('on', !!s.host);
+  document.getElementById('wireServer').classList.toggle('on', !!s.server);
+
+  const pipe = document.getElementById('wirePipe');
+  pipe.classList.remove('down','up');
+  if (s.pipe) pipe.classList.add(s.pipe);
+
+  document.getElementById('wireLabelTop').textContent = 'stdio pipe';
+  const lbl = document.getElementById('wireLabelBot');
+  lbl.textContent = s.label || '↑ response · ↓ request';
+  lbl.classList.toggle('on', !!s.label);
+
+  const body = document.getElementById('wireLogBody');
+  if (wireStep === 0) {
+    body.innerHTML = '<div style="color:var(--muted);font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;padding:24px 4px;line-height:1.65">▶ Натисни <b>Play sequence</b> або <b>Next ›</b><br>Кожен крок додасть один JSON-RPC конверт у лог. Підсвічуються поля <code style="color:var(--accent)">id</code> щоб видно було як зв\'язується request ↔ response.</div>';
+  } else {
+    let cumulative = '';
+    for (let i = 1; i <= wireStep; i++) {
+      for (const m of wireSteps[i].messages) {
+        cumulative += `<div class="wireMsg ${m.kind} on">
+          <div class="mHead">
+            <span><span class="mTag">${m.tag}</span> <span class="mDir">${m.dir}</span></span>
+            <span>id=<span class="mIdHi">${m.id}</span></span>
+          </div>
+          <pre>${wireSyntaxHL(m.json)}</pre>
+        </div>`;
+      }
+    }
+    body.innerHTML = cumulative;
+    body.scrollTop = body.scrollHeight;
+  }
+
+  const totalMsgs = wireSteps.slice(1, wireStep + 1).reduce((acc, st) => acc + st.messages.length, 0);
+  document.getElementById('wireMsgCount').textContent = `${totalMsgs} message${totalMsgs === 1 ? '' : 's'}`;
+  document.getElementById('wireCap').innerHTML = s.caption;
+  document.getElementById('wireStepLbl').textContent = `step ${wireStep} / ${wireSteps.length - 1}`;
+}
+
+document.getElementById('wireNext').addEventListener('click', () => { wireStop(); wireStep = Math.min(wireSteps.length - 1, wireStep + 1); wireRender(); });
+document.getElementById('wirePrev').addEventListener('click', () => { wireStop(); wireStep = Math.max(0, wireStep - 1); wireRender(); });
+document.getElementById('wireReset').addEventListener('click', () => { wireStop(); wireStep = 0; wireRender(); });
+document.getElementById('wirePlay').addEventListener('click', () => {
+  if (wireTimer) { wireStop(); return; }
+  if (wireStep >= wireSteps.length - 1) wireStep = 0;
+  document.getElementById('wirePlay').textContent = '⏸ Pause';
+  wireTimer = setInterval(() => {
+    if (wireStep >= wireSteps.length - 1) { wireStop(); return; }
+    wireStep++;
+    wireRender();
+  }, 2400);
+});
+wireRender();
+
+// === DEMO 6: A2A multi-agent collaboration ===
+const a2aSteps = [
+  {
+    active: ['a2aN0'],
+    arrows: [],
+    caption: '<span class="step">▶ Press Play</span> Користувач каже Travel Host Agent: <b>"Book a trip to Lisbon next month"</b>. Host Agent повинен скоординувати дії 3-х спеціалізованих агентів від різних компаній.'
+  },
+  {
+    active: ['a2aN0','a2aN1'],
+    arrows: ['a2aL1'],
+    caption: '<span class="step">1 · User → Host Agent</span> Travel Host Agent отримує запит. Він <b>сам по собі — теж агент</b> з власною LLM. Через A2A discovery (<code>/.well-known/agent.json</code>) він знає що існують Flight, Hotel і Calendar агенти і їх skills.'
+  },
+  {
+    active: ['a2aN0','a2aN1','a2aN2'],
+    arrows: ['a2aL1','a2aL2'],
+    caption: '<span class="step">2 · Host → Flight Agent</span> Host створює <b>Task</b> у Flight Agent: <code>search_flight(from: SFO, to: LIS, when: 2026-06)</code>. Це не tool call — це <b>розмова між агентами</b>. Flight Agent має власну логіку, перевіряє ціни, доступність.'
+  },
+  {
+    active: ['a2aN0','a2aN1','a2aN2','a2aN3','a2aN4'],
+    arrows: ['a2aL1','a2aL2','a2aL3','a2aL4'],
+    caption: '<span class="step">3 · Host → Hotel + Calendar (parallel)</span> Host паралельно делегує Hotel Agent (Booking.com) і Calendar Agent (Google). Кожен працює <b>незалежно</b>, має свій state, повертає результат через SSE stream коли готовий. <b>Це async multi-agent workflow.</b>'
+  },
+  {
+    active: ['a2aN0','a2aN1','a2aN2','a2aN3','a2aN4'],
+    arrows: ['a2aL1','a2aL5','a2aL6','a2aL7'],
+    caption: '<span class="step">4 · Agents → Host (responses)</span> Flight Agent повертає 3 варіанти польотів. Hotel — 5 готелів з рейтингами. Calendar — підтвердження що дати вільні. <b>Кожен агент сам вирішив що повернути</b> — не отримав інструкцію крок-за-кроком.'
+  },
+  {
+    active: ['a2aN0','a2aN1','a2aN2','a2aN3'],
+    arrows: ['a2aL1','a2aL2','a2aL5'],
+    caption: '<span class="step">5 · Host ↔ Flight Agent (negotiation)</span> Host хоче поміняти політ — пропонує Flight Agent: "немає чогось у вівторок?". Flight Agent відповідає з новими варіантами. <b>Це multi-turn діалог</b> між агентами — неможливий у MCP.'
+  },
+  {
+    active: ['a2aN0','a2aN1','a2aN2','a2aN3','a2aN4'],
+    arrows: ['a2aL1','a2aL8'],
+    caption: '<span class="step">6 · Host → User (final)</span> Host агрегує всі рішення і повертає юзеру: "<b>Заброньовано: Lisbon, 12-19 June, $1,847 total. Calendar updated.</b>" Один користувацький запит → 3 агенти від 3 компаній → координація → відповідь. Це і є <b>agentic mesh</b>.'
+  }
+];
+
+const a2aAllNodes = ['a2aN0','a2aN1','a2aN2','a2aN3','a2aN4'];
+const a2aAllArrows = ['a2aL1','a2aL2','a2aL3','a2aL4','a2aL5','a2aL6','a2aL7','a2aL8'];
+let a2aStep = 0;
+let a2aTimer = null;
+
+function a2aRender() {
+  const s = a2aSteps[a2aStep];
+  a2aAllNodes.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('on', s.active.includes(id));
+  });
+  a2aAllArrows.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('on', s.arrows.includes(id));
+  });
+  document.getElementById('a2aCaption').innerHTML = s.caption;
+  document.getElementById('a2aStepLbl').textContent = `step ${a2aStep} / ${a2aSteps.length - 1}`;
+}
+
+function a2aStop() { if (a2aTimer) { clearInterval(a2aTimer); a2aTimer = null; document.getElementById('a2aPlay').textContent = '▶ Play sequence'; } }
+document.getElementById('a2aNext').addEventListener('click', () => { a2aStop(); a2aStep = Math.min(a2aSteps.length - 1, a2aStep + 1); a2aRender(); });
+document.getElementById('a2aPrev').addEventListener('click', () => { a2aStop(); a2aStep = Math.max(0, a2aStep - 1); a2aRender(); });
+document.getElementById('a2aReset').addEventListener('click', () => { a2aStop(); a2aStep = 0; a2aRender(); });
+document.getElementById('a2aPlay').addEventListener('click', () => {
+  if (a2aTimer) { a2aStop(); return; }
+  if (a2aStep >= a2aSteps.length - 1) a2aStep = 0;
+  a2aRender();
+  document.getElementById('a2aPlay').textContent = '⏸ Pause';
+  a2aTimer = setInterval(() => {
+    if (a2aStep >= a2aSteps.length - 1) { a2aStop(); return; }
+    a2aStep++;
+    a2aRender();
+  }, 2600);
+});
+a2aRender();
+</script>
+</body>
+</html>
