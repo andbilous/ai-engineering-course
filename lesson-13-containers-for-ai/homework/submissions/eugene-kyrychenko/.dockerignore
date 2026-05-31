@@ -1,0 +1,16 @@
+# Не тягнемо у build context зайве (швидший build + менший образ + без секретів)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
+.gitignore
+.env
+.env.*
+tests/
+*.md
+Dockerfile*
+.dockerignore
+Makefile
+pyproject.toml
+screenshots/
