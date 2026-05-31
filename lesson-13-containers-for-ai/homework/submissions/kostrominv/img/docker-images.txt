@@ -1,0 +1,3 @@
+REPOSITORY:TAG               SIZE      IMAGE ID
+rag-boilerplate:multistage   383MB     e2fdff17a57a
+rag-boilerplate:naive        1.81GB    b21b1c6cdeba

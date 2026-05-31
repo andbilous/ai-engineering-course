@@ -1,0 +1,25 @@
+# Python / venv
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.model_cache/
+
+# Secrets — never bake into an image
+.env
+
+# VCS / IDE
+.git/
+.gitignore
+
+# Tests & docs — not needed at runtime
+tests/
+README.md
+img/
+
+# Docker build files themselves
+Dockerfile
+Dockerfile.naive
+docker-compose.yml
+.dockerignore
