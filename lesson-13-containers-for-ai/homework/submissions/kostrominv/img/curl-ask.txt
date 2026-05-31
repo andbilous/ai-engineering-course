@@ -1,0 +1,22 @@
+$ curl -X POST localhost:8000/ask -H "Content-Type: application/json" -d '{"question":"What is a vector database?"}'
+
+{
+    "answer": "A vector database stores embeddings and performs approximate nearest-neighbor search to retrieve semantically similar documents. Examples include Qdrant, pgvector, Chroma, and Pinecone.",
+    "sources": [
+        {
+            "score": 0.773156464099884,
+            "question": "What is a vector database?",
+            "answer": "A vector database stores embeddings and performs approximate nearest-neighbor search to retrieve semantically similar documents. Examples: Qdrant, pgvector, Chroma, Pinecone."
+        },
+        {
+            "score": 0.3732990324497223,
+            "question": "What is an embedding?",
+            "answer": "An embedding is a dense numerical vector that represents the semantic meaning of text. Similar texts produce vectors that are close in vector space."
+        },
+        {
+            "score": 0.24249480664730072,
+            "question": "What is RAG?",
+            "answer": "Retrieval-Augmented Generation is a pattern where a language model is grounded on external documents fetched at query time, instead of relying only on its parametric knowledge."
+        }
+    ]
+}

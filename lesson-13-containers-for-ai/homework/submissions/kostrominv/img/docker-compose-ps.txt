@@ -1,0 +1,6 @@
+NAME                       IMAGE                        STATUS                    PORTS
+kostrominv-langfuse-1      langfuse/langfuse:2          Up 18 seconds             0.0.0.0:3000->3000/tcp
+kostrominv-langfuse-db-1   postgres:16-alpine           Up 29 seconds (healthy)   5432/tcp
+kostrominv-qdrant-1        qdrant/qdrant:v1.12.4        Up 29 seconds             0.0.0.0:6333->6333/tcp, 6334/tcp
+kostrominv-rag-1           rag-boilerplate:multistage   Up 18 seconds (healthy)   0.0.0.0:8000->8000/tcp
+kostrominv-redis-1         redis:7.4-alpine             Up 29 seconds (healthy)   0.0.0.0:6379->6379/tcp
