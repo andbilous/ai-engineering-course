@@ -1,0 +1,19 @@
+# Paths are relative to the build context root (boilerplate/), not this file's location.
+
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.python-version
+
+.git/
+.gitignore
+
+.env
+.env.example
+
+tests/
+Makefile
+pyproject.toml
+STUDENT_TODO.md
