@@ -72,6 +72,24 @@ docker compose ps
 
 ---
 
+## Screenshots (докази)
+
+### 1. Docker images — обидва образи
+
+![docker images](screenshots/screenshot-1-docker-images.png)
+
+### 2. POST /ask — реальна відповідь через OpenRouter
+
+![curl /ask](screenshots/screenshot-2-curl-ask.png)
+
+### 3. docker compose ps — 5/5 сервісів healthy
+
+![docker compose ps](screenshots/screenshot-3-compose-ps.png)
+
+Додаткові логи build/curl (для верифікації): `screenshots/0*.log`, `screenshots/05-docker-images.txt`, `screenshots/07-curl-ask.json`, `screenshots/09-compose-ps.txt`.
+
+---
+
 ## Endpoints
 
 | Method | Path | Description |
