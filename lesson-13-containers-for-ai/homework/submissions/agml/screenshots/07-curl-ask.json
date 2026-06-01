@@ -1,0 +1,10 @@
+﻿HTTP/1.1 200 OK
+
+{
+  "answer": "A vector database stores embeddings and performs approximate nearest-neighbor search to retrieve semantically similar documents. Examples include Qdrant, pgvector, Chroma, and Pinecone.",
+  "sources": [
+    { "score": 0.773, "question": "What is a vector database?", }
+    { "score": 0.373, "question": "What is an embedding?", }
+    { "score": 0.243, "question": "What is RAG?" }
+  ]
+}

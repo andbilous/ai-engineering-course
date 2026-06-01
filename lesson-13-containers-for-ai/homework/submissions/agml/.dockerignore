@@ -1,0 +1,23 @@
+# VCS
+.git
+.gitignore
+
+# Python runtime artifacts
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.model_cache/
+
+# Local secrets – never bake into the image
+.env
+
+# Tests and docs are not needed at runtime
+tests/
+*.md
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.swp

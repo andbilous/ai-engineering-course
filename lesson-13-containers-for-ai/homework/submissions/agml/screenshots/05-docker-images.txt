@@ -1,0 +1,3 @@
+﻿REPOSITORY:TAG            IMAGE ID        SIZE
+rag-naive:latest          3e03d53358ce    1.76GB
+rag-api:latest            bdcd1f91e063    367MB
